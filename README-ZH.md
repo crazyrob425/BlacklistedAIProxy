@@ -35,6 +35,15 @@
       PackyCode 是一家可靠且高效的 API 中转服务商，提供 Claude Code、Codex、Gemini 等模型的中转服务。PackyCode 为本软件用户提供特别优惠：<a href="https://www.packyapi.com/register?aff=AIClient2API">通过此链接注册</a>并在充值时输入 <strong>AIClient2API</strong> 优惠码，即可享受 <strong>10% 的折扣</strong>。
     </td>
   </tr>
+  <tr>
+    <td width="25%" align="center" valign="middle">
+      <img src="static/wechat.png" alt="Sponsor Contact" width="150">
+    </td>
+    <td width="75%" align="left" valign="middle">
+      <strong>成为赞助商</strong><br>
+      如果您有意赞助本项目，请扫描左侧微信二维码（添加时请注明来意：<strong>赞助</strong>）。
+    </td>
+  </tr>
 </table>
 
 ---

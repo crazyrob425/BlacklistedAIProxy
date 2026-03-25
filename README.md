@@ -35,6 +35,15 @@
       PackyCode is a reliable and efficient API relay service provider, offering relay services for Claude Code, Codex, Gemini, and more. PackyCode provides special discounts for our software users: <a href="https://www.packyapi.com/register?aff=AIClient2API">register using this link</a> and enter the <strong>AIClient2API</strong> promo code during recharge to get <strong>10% off</strong>.
     </td>
   </tr>
+  <tr>
+    <td width="25%" align="center" valign="middle">
+      <img src="static/wechat.png" alt="Sponsor Contact" width="150">
+    </td>
+    <td width="75%" align="left" valign="middle">
+      <strong>Become a Sponsor</strong><br>
+      If you would like to sponsor this project, please scan the WeChat QR code on the left (Please state your intent: <strong>Sponsorship</strong>).
+    </td>
+  </tr>
 </table>
 
 ---

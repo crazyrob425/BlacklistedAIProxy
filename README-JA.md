@@ -32,7 +32,16 @@
       </a>
     </td>
     <td width="75%" align="left" valign="middle">
-      PackyCode は信頼性が高く効率的な API リレーサービスプロバイダーであり、Claude Code、Codex、Gemini などのリレーサービスを提供しています。PackyCode は当ソフトウェアユーザーに特别割引を提供しています：<a href="https://www.packyapi.com/register?aff=AIClient2API">このリンクから登録</a>し、チャージ時に <strong>AIClient2API</strong> プロモーションコードを入力すると <strong>10% オフ</strong>になります。
+      PackyCode は信頼性が高く効率的な API リレーサービスプロバイダーであり、Claude Code、Codex、Gemini などのリレーサービス提供しています。PackyCode は当ソフトウェアユーザーに特别割引を提供しています：<a href="https://www.packyapi.com/register?aff=AIClient2API">このリンクから登録</a>し、チャージ時に <strong>AIClient2API</strong> プロモーションコードを入力すると <strong>10% オフ</strong>になります。
+    </td>
+  </tr>
+  <tr>
+    <td width="25%" align="center" valign="middle">
+      <img src="static/wechat.png" alt="Sponsor Contact" width="150">
+    </td>
+    <td width="75%" align="left" valign="middle">
+      <strong>スポンサーになる</strong><br>
+      このプロジェクトのスポンサーになりたい場合は、左側の WeChat QR コードをスキャンしてください（追加の際に来意：<strong>スポンサーシップ</strong>と明记してください）。
     </td>
   </tr>
 </table>
