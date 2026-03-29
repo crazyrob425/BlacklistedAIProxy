@@ -47,6 +47,21 @@ const KIRO_CONSTANTS = {
     TOTAL_CONTEXT_TOKENS: 200000, // Claude Sonnet 4.5 actual context is 200K
 };
 
+// Per-model context window sizes for accurate token estimation
+const MODEL_CONTEXT_TOKENS = {
+    "claude-opus-4-6": 1000000,
+    "claude-opus-4-5": 1000000,
+    "claude-opus-4-5-20251101": 1000000,
+    "claude-sonnet-4-6": 200000,
+    "claude-sonnet-4-5": 200000,
+    "claude-sonnet-4-5-20250929": 200000,
+    "claude-haiku-4-5": 200000,
+    "claude-haiku-4-5-20251001": 200000,
+};
+
+function getContextTokensForModel(model) {
+    return MODEL_CONTEXT_TOKENS[model] || KIRO_CONSTANTS.TOTAL_CONTEXT_TOKENS;
+}
 // 从 provider-models.js 获取支持的模型列表
 const KIRO_MODELS = getProviderModels(MODEL_PROVIDER.KIRO_API);
 
@@ -2631,7 +2646,8 @@ async saveCredentialsToFile(filePath, newData) {
             // 总 token = TOTAL_CONTEXT_TOKENS * contextUsagePercentage / 100
             // input token = 总 token - output token
             if (contextUsagePercentage !== null && contextUsagePercentage > 0) {
-                const totalTokens = Math.round(KIRO_CONSTANTS.TOTAL_CONTEXT_TOKENS * contextUsagePercentage / 100);
+                const contextTokens = getContextTokensForModel(finalModel);
+                const totalTokens = Math.round(contextTokens * contextUsagePercentage / 100);
                 inputTokens = Math.max(0, totalTokens - outputTokens);
                 logger.info(`[Kiro] Token calculation from contextUsagePercentage: total=${totalTokens}, output=${outputTokens}, input=${inputTokens}`);
             } else {
