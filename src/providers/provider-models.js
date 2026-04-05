@@ -1,8 +1,9 @@
-/**
- * 各提供商支持的模型列表
- * 用于前端UI选择不支持的模型
- */
+import { convertData } from '../convert/convert.js';
+import { MODEL_PROVIDER } from '../utils/common.js';
 
+/**
+ * Provider model catalogs used by the Web UI.
+ */
 export const PROVIDER_MODELS = {
     'gemini-cli-oauth': [
         'gemini-2.5-flash',
@@ -48,9 +49,7 @@ export const PROVIDER_MODELS = {
         'vision-model'
     ],
     'openai-iflow': [
-        // iFlow 特有模型
         'iflow-rome-30ba3b',
-        // Qwen 模型
         'qwen3-coder-plus',
         'qwen3-max',
         'qwen3-vl-plus',
@@ -59,16 +58,12 @@ export const PROVIDER_MODELS = {
         'qwen3-235b-a22b-thinking-2507',
         'qwen3-235b-a22b-instruct',
         'qwen3-235b',
-        // Kimi 模型
         'kimi-k2-0905',
         'kimi-k2',
-        // GLM 模型
         'glm-4.6',
-        // DeepSeek 模型
         'deepseek-v3.2',
         'deepseek-r1',
         'deepseek-v3',
-        // 手动定义
         'glm-4.7',
         'glm-5',
         'kimi-k2.5',
@@ -110,30 +105,100 @@ export const PROVIDER_MODELS = {
     ]
 };
 
+export const MANAGED_MODEL_LIST_PROVIDERS = [
+    MODEL_PROVIDER.OPENAI_CUSTOM,
+    MODEL_PROVIDER.OPENAI_CUSTOM_RESPONSES
+];
+
+export function getManagedModelListProviderType(providerType) {
+    return MANAGED_MODEL_LIST_PROVIDERS.find(baseType =>
+        providerType === baseType || providerType.startsWith(baseType + '-')
+    ) || null;
+}
+
+export function usesManagedModelList(providerType) {
+    return getManagedModelListProviderType(providerType) !== null;
+}
+
+export function normalizeModelIds(models = []) {
+    return [...new Set(
+        (Array.isArray(models) ? models : [])
+            .filter(model => typeof model === 'string')
+            .map(model => model.trim())
+            .filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b));
+}
+
+function extractModelIdsFromListShape(modelList) {
+    if (!modelList) {
+        return [];
+    }
+
+    if (Array.isArray(modelList)) {
+        return modelList.map(item => {
+            if (typeof item === 'string') return item;
+            return item?.id || item?.name || item?.model || null;
+        }).filter(Boolean);
+    }
+
+    if (Array.isArray(modelList.data)) {
+        return modelList.data.map(item => item?.id || item?.name || item?.model || null).filter(Boolean);
+    }
+
+    if (Array.isArray(modelList.models)) {
+        return modelList.models.map(item => {
+            if (typeof item === 'string') return item;
+            return item?.id || item?.name || item?.model || null;
+        }).filter(Boolean);
+    }
+
+    return [];
+}
+
+export function extractModelIdsFromNativeList(modelList, providerType) {
+    let convertedModelList = modelList;
+
+    try {
+        convertedModelList = convertData(modelList, 'modelList', providerType, MODEL_PROVIDER.OPENAI_CUSTOM);
+    } catch {
+        convertedModelList = modelList;
+    }
+
+    const convertedIds = normalizeModelIds(extractModelIdsFromListShape(convertedModelList));
+    if (convertedIds.length > 0) {
+        return convertedIds;
+    }
+
+    return normalizeModelIds(extractModelIdsFromListShape(modelList));
+}
+
+export function getConfiguredSupportedModels(providerType, providerConfig = {}) {
+    if (!usesManagedModelList(providerType)) {
+        return [];
+    }
+
+    return normalizeModelIds(providerConfig?.supportedModels);
+}
+
 /**
- * 获取指定提供商类型支持的模型列表
- * @param {string} providerType - 提供商类型
- * @returns {Array<string>} 模型列表
+ * Gets models supported by a provider type.
+ * @param {string} providerType
+ * @returns {Array<string>}
  */
 export function getProviderModels(providerType) {
     if (PROVIDER_MODELS[providerType]) {
         return PROVIDER_MODELS[providerType];
     }
-    
-    // 尝试前缀匹配 (例如 openai-custom-1 -> openai-custom)
+
     for (const key of Object.keys(PROVIDER_MODELS)) {
         if (providerType.startsWith(key + '-')) {
             return PROVIDER_MODELS[key];
         }
     }
-    
+
     return [];
 }
 
-/**
- * 获取所有提供商的模型列表
- * @returns {Object} 所有提供商的模型映射
- */
 export function getAllProviderModels() {
     return PROVIDER_MODELS;
 }
