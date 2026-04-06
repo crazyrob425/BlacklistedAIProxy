@@ -2,9 +2,13 @@ import * as fs from 'fs';
 import { getServiceAdapter, getRegisteredProviders } from './adapter.js';
 import logger from '../utils/logger.js';
 import { MODEL_PROVIDER, getProtocolPrefix } from '../utils/common.js';
-import { getProviderModels } from './provider-models.js';
-import { broadcastEvent } from '../ui-modules/event-broadcast.js';
 import { convertData } from '../convert/convert.js';
+import {
+    getConfiguredSupportedModels,
+    getProviderModels,
+    normalizeModelIds
+} from './provider-models.js';
+import { broadcastEvent } from '../ui-modules/event-broadcast.js';
 import { ENDPOINT_TYPE } from '../utils/common.js';
 
 /**
@@ -885,6 +889,10 @@ export class ProviderPoolManager {
         // 如果指定了模型，则排除不支持该模型的提供商
         if (requestedModel) {
             const modelFilteredProviders = availableAndHealthyProviders.filter(p => {
+                const supportedModels = getConfiguredSupportedModels(providerType, p.config);
+                if (supportedModels.length > 0) {
+                    return supportedModels.includes(requestedModel);
+                }
                 // 如果提供商没有配置 notSupportedModels，则认为它支持所有模型
                 if (!p.config.notSupportedModels || !Array.isArray(p.config.notSupportedModels)) {
                     return true;
@@ -1282,6 +1290,15 @@ export class ProviderPoolManager {
         for (const providerType of allProviderTypes) {
             if (this.providerStatus[providerType]) {
                 let models = getProviderModels(providerType);
+                const configuredSupportedModels = normalizeModelIds(
+                    this.providerStatus[providerType].flatMap(providerStatus =>
+                        getConfiguredSupportedModels(providerType, providerStatus.config)
+                    )
+                );
+
+                if (configuredSupportedModels.length > 0) {
+                    models = configuredSupportedModels;
+                }
                 
                 // 如果硬编码的模型列表为空，或者该类型的提供商在号池中没有配置节点，尝试从服务获取
                 if (models.length === 0) {

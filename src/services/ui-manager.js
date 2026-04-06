@@ -144,7 +144,7 @@ export async function handleUIApiRequests(method, pathParam, req, res, currentCo
     const providerModelsMatch = pathParam.match(/^\/api\/provider-models\/([^\/]+)$/);
     if (method === 'GET' && providerModelsMatch) {
         const providerType = decodeURIComponent(providerModelsMatch[1]);
-        return await providerApi.handleGetProviderTypeModels(req, res, providerType);
+        return await providerApi.handleGetProviderTypeModels(req, res, currentConfig, providerPoolManager, providerType);
     }
 
     // Add new provider configuration
@@ -166,6 +166,22 @@ export async function handleUIApiRequests(method, pathParam, req, res, currentCo
     if (method === 'POST' && healthCheckMatch) {
         const providerType = decodeURIComponent(healthCheckMatch[1]);
         return await providerApi.handleHealthCheck(req, res, currentConfig, providerPoolManager, providerType);
+    }
+
+    // Detect available models for a specific provider node
+    const detectModelsMatch = pathParam.match(/^\/api\/providers\/([^\/]+)\/([^\/]+)\/detect-models$/);
+    if (method === 'POST' && detectModelsMatch) {
+        const providerType = decodeURIComponent(detectModelsMatch[1]);
+        const providerUuid = detectModelsMatch[2];
+        return await providerApi.handleDetectProviderModels(req, res, currentConfig, providerPoolManager, providerType, providerUuid);
+    }
+
+    // Perform health check for a specific provider node
+    const singleHealthCheckMatch = pathParam.match(/^\/api\/providers\/([^\/]+)\/([^\/]+)\/health-check$/);
+    if (method === 'POST' && singleHealthCheckMatch) {
+        const providerType = decodeURIComponent(singleHealthCheckMatch[1]);
+        const providerUuid = singleHealthCheckMatch[2];
+        return await providerApi.handleSingleProviderHealthCheck(req, res, currentConfig, providerPoolManager, providerType, providerUuid);
     }
 
     // Delete all unhealthy providers for a specific type

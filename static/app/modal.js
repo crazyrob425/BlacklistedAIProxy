@@ -1,15 +1,382 @@
 // 模态框管理模块
 
-import { showToast, getFieldLabel, getProviderTypeFields } from './utils.js';
+import { escapeHtml, showToast, getFieldLabel, getProviderTypeFields } from './utils.js';
 import { handleProviderPasswordToggle } from './event-handlers.js';
 import { t } from './i18n.js';
+
+const MANAGED_MODEL_LIST_PROVIDERS = new Set(['openai-custom', 'openaiResponses-custom']);
 
 // 分页配置
 const PROVIDERS_PER_PAGE = 5;
 let currentPage = 1;
 let currentProviders = [];
 let currentProviderType = '';
+
+function usesManagedModelList(providerType = '') {
+    return Array.from(MANAGED_MODEL_LIST_PROVIDERS).some(baseType =>
+        providerType === baseType || providerType.startsWith(`${baseType}-`)
+    );
+}
+
+function normalizeModelList(models = []) {
+    return [...new Set(
+        (Array.isArray(models) ? models : [])
+            .filter(model => typeof model === 'string')
+            .map(model => model.trim())
+            .filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b));
+}
+
+function serializeModelsData(models = []) {
+    return encodeURIComponent(JSON.stringify(normalizeModelList(models)));
+}
+
+function parseModelsData(rawValue = '') {
+    if (!rawValue) {
+        return [];
+    }
+
+    try {
+        return normalizeModelList(JSON.parse(decodeURIComponent(rawValue)));
+    } catch (error) {
+        console.warn('Failed to parse models data:', error);
+        return [];
+    }
+}
+
+function renderSupportedModelsValue(models = []) {
+    const selectedModels = normalizeModelList(models);
+    if (selectedModels.length === 0) {
+        return `<div class="supported-models-empty">${escapeHtml(t('modal.provider.supportedModelsEmpty'))}</div>`;
+    }
+
+    return `
+        <div class="supported-models-list">
+            ${selectedModels.map(model => `
+                <span class="supported-model-tag" title="${escapeHtml(model)}">${escapeHtml(model)}</span>
+            `).join('')}
+        </div>
+    `;
+}
+
+function getSupportedModelsContainer(uuid) {
+    return document.querySelector(`.supported-models-container[data-uuid="${uuid}"]`);
+}
+
+function setSupportedModelsSelection(uuid, models, options = {}) {
+    const container = getSupportedModelsContainer(uuid);
+    if (!container) return;
+
+    const normalizedModels = normalizeModelList(models);
+    const encodedModels = serializeModelsData(normalizedModels);
+    container.dataset.selectedModels = encodedModels;
+
+    if (options.updateOriginal) {
+        container.dataset.originalModels = encodedModels;
+    }
+
+    const valueContainer = container.querySelector('.supported-models-values');
+    if (valueContainer) {
+        valueContainer.innerHTML = renderSupportedModelsValue(normalizedModels);
+    }
+
+    const summary = container.querySelector('.supported-models-summary');
+    if (summary) {
+        summary.textContent = t('modal.provider.modelPickerSelected', { count: normalizedModels.length });
+    }
+}
+
+function resetSupportedModelsSelection(uuid) {
+    const container = getSupportedModelsContainer(uuid);
+    if (!container) return;
+    setSupportedModelsSelection(uuid, parseModelsData(container.dataset.originalModels || ''));
+}
+
+function renderSupportedModelsSection(provider) {
+    const selectedModels = normalizeModelList(provider.supportedModels || []);
+    const encodedModels = serializeModelsData(selectedModels);
+
+    return `
+        <div class="config-item supported-models-section">
+            <label>
+                <i class="fas fa-layer-group"></i> <span data-i18n="modal.provider.supportedModels">${t('modal.provider.supportedModels')}</span>
+                <span class="help-text" data-i18n="modal.provider.supportedModelsHelp">${t('modal.provider.supportedModelsHelp')}</span>
+            </label>
+            <div class="supported-models-container"
+                 data-uuid="${provider.uuid}"
+                 data-selected-models="${encodedModels}"
+                 data-original-models="${encodedModels}">
+                <div class="supported-models-toolbar">
+                    <span class="supported-models-summary">${escapeHtml(t('modal.provider.modelPickerSelected', { count: selectedModels.length }))}</span>
+                    <button type="button"
+                            class="btn btn-outline detect-models-btn"
+                            onclick="window.openSupportedModelsPicker('${currentProviderType}', '${provider.uuid}', event)"
+                            disabled>
+                        <i class="fas fa-wand-magic-sparkles"></i>
+                        <span data-i18n="modal.provider.detectModels">${t('modal.provider.detectModels')}</span>
+                    </button>
+                </div>
+                <div class="supported-models-values">
+                    ${renderSupportedModelsValue(selectedModels)}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function collectDraftProviderConfig(providerDetail, providerType, uuid) {
+    const configInputs = providerDetail.querySelectorAll('input[data-config-key]');
+    const configSelects = providerDetail.querySelectorAll('select[data-config-key]');
+    const providerConfig = {};
+
+    configInputs.forEach(input => {
+        const key = input.dataset.configKey;
+        let value = input.value;
+        if (key === 'concurrencyLimit' || key === 'queueLimit') {
+            value = parseInt(value || '0', 10);
+        }
+        providerConfig[key] = value;
+    });
+
+    configSelects.forEach(select => {
+        const key = select.dataset.configKey;
+        providerConfig[key] = select.value === 'true';
+    });
+
+    if (usesManagedModelList(providerType)) {
+        const supportedModels = parseModelsData(getSupportedModelsContainer(uuid)?.dataset.selectedModels || '');
+        providerConfig.supportedModels = supportedModels;
+        providerConfig.notSupportedModels = [];
+    } else {
+        const modelCheckboxes = providerDetail.querySelectorAll(`.model-checkbox[data-uuid="${uuid}"]:checked`);
+        providerConfig.notSupportedModels = Array.from(modelCheckboxes).map(checkbox => checkbox.value);
+    }
+
+    return providerConfig;
+}
 let cachedModels = []; // 缓存模型列表
+
+function closeSupportedModelsPicker(overlay) {
+    if (!overlay) return;
+
+    if (overlay.escapeHandler) {
+        document.removeEventListener('keydown', overlay.escapeHandler);
+    }
+
+    overlay.remove();
+}
+
+function showSupportedModelsPickerModal(providerType, uuid, detectedModels, currentSelectedModels = []) {
+    const existingOverlay = document.querySelector('.provider-model-picker-overlay');
+    if (existingOverlay) {
+        closeSupportedModelsPicker(existingOverlay);
+    }
+
+    const allModels = normalizeModelList([...detectedModels, ...currentSelectedModels]);
+    const selectedModels = new Set(normalizeModelList(currentSelectedModels));
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay provider-model-picker-overlay';
+    overlay.style.display = 'flex';
+    overlay.innerHTML = `
+        <div class="modal-content provider-model-picker-modal">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-cubes"></i>
+                    ${escapeHtml(t('modal.provider.modelPickerTitle', { type: providerType }))}
+                </h3>
+                <button class="modal-close" type="button" aria-label="${escapeHtml(t('common.close'))}">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="provider-model-picker-toolbar">
+                    <input type="search"
+                           class="provider-model-picker-search"
+                           placeholder="${escapeHtml(t('modal.provider.modelPickerSearchPlaceholder'))}">
+                    <label class="provider-model-picker-select-all">
+                        <input type="checkbox" class="provider-model-picker-select-all-input">
+                        <span>${escapeHtml(t('modal.provider.modelPickerSelectAll'))}</span>
+                    </label>
+                    <button type="button" class="btn btn-secondary provider-model-picker-clear">
+                        ${escapeHtml(t('modal.provider.modelPickerClearAll'))}
+                    </button>
+                </div>
+                <div class="provider-model-picker-summary"></div>
+                <div class="provider-model-picker-list"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary provider-model-picker-cancel">
+                    ${escapeHtml(t('common.cancel'))}
+                </button>
+                <button type="button" class="btn btn-primary provider-model-picker-confirm">
+                    ${escapeHtml(t('common.confirm'))}
+                </button>
+            </div>
+        </div>
+    `;
+
+    const searchInput = overlay.querySelector('.provider-model-picker-search');
+    const listContainer = overlay.querySelector('.provider-model-picker-list');
+    const summary = overlay.querySelector('.provider-model-picker-summary');
+    const selectAllInput = overlay.querySelector('.provider-model-picker-select-all-input');
+    const clearButton = overlay.querySelector('.provider-model-picker-clear');
+    const cancelButton = overlay.querySelector('.provider-model-picker-cancel');
+    const confirmButton = overlay.querySelector('.provider-model-picker-confirm');
+    const closeButton = overlay.querySelector('.modal-close');
+
+    const getVisibleModels = () => {
+        const keyword = searchInput.value.trim().toLowerCase();
+        if (!keyword) {
+            return allModels;
+        }
+
+        return allModels.filter(model => model.toLowerCase().includes(keyword));
+    };
+
+    const updateSelectAllState = () => {
+        const visibleModels = getVisibleModels();
+        if (visibleModels.length === 0) {
+            selectAllInput.checked = false;
+            selectAllInput.indeterminate = false;
+            selectAllInput.disabled = true;
+            return;
+        }
+
+        selectAllInput.disabled = false;
+        const checkedCount = visibleModels.filter(model => selectedModels.has(model)).length;
+        selectAllInput.checked = checkedCount === visibleModels.length;
+        selectAllInput.indeterminate = checkedCount > 0 && checkedCount < visibleModels.length;
+    };
+
+    const updateSummary = () => {
+        summary.textContent = t('modal.provider.modelPickerSelected', { count: selectedModels.size });
+    };
+
+    const renderList = () => {
+        const visibleModels = getVisibleModels();
+
+        if (visibleModels.length === 0) {
+            listContainer.innerHTML = `
+                <div class="provider-model-picker-empty">
+                    ${escapeHtml(allModels.length === 0 ? t('modal.provider.detectModelsNoResults') : t('modal.provider.supportedModelsEmpty'))}
+                </div>
+            `;
+            updateSelectAllState();
+            updateSummary();
+            return;
+        }
+
+        listContainer.innerHTML = visibleModels.map(model => `
+            <label class="provider-model-picker-item">
+                <input type="checkbox"
+                       value="${escapeHtml(model)}"
+                       ${selectedModels.has(model) ? 'checked' : ''}>
+                <span>${escapeHtml(model)}</span>
+            </label>
+        `).join('');
+
+        listContainer.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) {
+                    selectedModels.add(checkbox.value);
+                } else {
+                    selectedModels.delete(checkbox.value);
+                }
+                updateSelectAllState();
+                updateSummary();
+            });
+        });
+
+        updateSelectAllState();
+        updateSummary();
+    };
+
+    const handleClose = () => closeSupportedModelsPicker(overlay);
+
+    overlay.escapeHandler = event => {
+        if (event.key === 'Escape') {
+            handleClose();
+        }
+    };
+
+    document.addEventListener('keydown', overlay.escapeHandler);
+    overlay.addEventListener('click', event => {
+        if (event.target === overlay) {
+            handleClose();
+        }
+    });
+
+    searchInput.addEventListener('input', renderList);
+    selectAllInput.addEventListener('change', () => {
+        const visibleModels = getVisibleModels();
+        visibleModels.forEach(model => {
+            if (selectAllInput.checked) {
+                selectedModels.add(model);
+            } else {
+                selectedModels.delete(model);
+            }
+        });
+        renderList();
+    });
+    clearButton.addEventListener('click', () => {
+        selectedModels.clear();
+        renderList();
+    });
+    cancelButton.addEventListener('click', handleClose);
+    closeButton.addEventListener('click', handleClose);
+    confirmButton.addEventListener('click', () => {
+        setSupportedModelsSelection(uuid, Array.from(selectedModels));
+        handleClose();
+    });
+
+    document.body.appendChild(overlay);
+    renderList();
+    searchInput.focus();
+}
+
+async function openSupportedModelsPicker(providerType, uuid, event) {
+    event.stopPropagation();
+
+    if (!usesManagedModelList(providerType)) {
+        return;
+    }
+
+    const providerDetail = event.target.closest('.provider-item-detail');
+    if (!providerDetail) {
+        return;
+    }
+
+    const detectButton = providerDetail.querySelector('.detect-models-btn');
+    const originalHtml = detectButton?.innerHTML;
+    const draftProviderConfig = collectDraftProviderConfig(providerDetail, providerType, uuid);
+
+    try {
+        if (detectButton) {
+            detectButton.disabled = true;
+            detectButton.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${escapeHtml(t('common.loading'))}`;
+        }
+
+        const response = await window.apiClient.post(
+            `/providers/${encodeURIComponent(providerType)}/${uuid}/detect-models`,
+            { providerConfig: draftProviderConfig }
+        );
+
+        showSupportedModelsPickerModal(
+            providerType,
+            uuid,
+            response.models || [],
+            draftProviderConfig.supportedModels || response.selectedModels || []
+        );
+    } catch (error) {
+        console.error('Failed to detect provider models:', error);
+        showToast(t('common.error'), t('modal.provider.detectModelsFailed') + ': ' + error.message, 'error');
+    } finally {
+        if (detectButton) {
+            detectButton.innerHTML = originalHtml;
+            detectButton.disabled = !providerDetail.classList.contains('editing');
+        }
+    }
+}
 
 /**
  * 显示提供商管理模态框
@@ -202,11 +569,11 @@ function goToProviderPage(page) {
     const pageProviders = currentProviders.slice(startIndex, endIndex);
     
     // 如果已缓存模型列表，直接使用
-    if (cachedModels.length > 0) {
+    if (!usesManagedModelList(currentProviderType) && cachedModels.length > 0) {
         pageProviders.forEach(provider => {
             renderNotSupportedModelsSelector(provider.uuid, cachedModels, provider.notSupportedModels || []);
         });
-    } else {
+    } else if (!usesManagedModelList(currentProviderType)) {
         loadModelsForProviderType(currentProviderType, pageProviders);
     }
 }
@@ -232,6 +599,10 @@ function renderProviderListPaginated(providers, page) {
  */
 async function loadModelsForProviderType(providerType, providers) {
     try {
+        if (usesManagedModelList(providerType)) {
+            return;
+        }
+
         // 如果已有缓存，直接使用
         if (cachedModels.length > 0) {
             providers.forEach(provider => {
@@ -424,6 +795,9 @@ function renderProviderList(providers) {
                         </button>
                         <button class="btn-small btn-edit" onclick="window.editProvider('${provider.uuid}', event)">
                             <i class="fas fa-edit"></i> <span data-i18n="modal.provider.edit">编辑</span>
+                        </button>
+                        <button class="btn-small btn-info btn-provider-health-check" onclick="window.performSingleHealthCheck('${provider.uuid}', event)" title="${t('modal.provider.healthCheckCurrentTitle')}">
+                            <i class="fas fa-stethoscope"></i> <span data-i18n="modal.provider.healthCheck">${t('modal.provider.healthCheck')}</span>
                         </button>
                         <button class="btn-small btn-delete" onclick="window.deleteProvider('${provider.uuid}', event)">
                             <i class="fas fa-trash"></i> <span data-i18n="modal.provider.delete">删除</span>
@@ -647,6 +1021,13 @@ function renderProviderConfig(provider) {
     }
     
     // 添加 notSupportedModels 配置区域
+    if (usesManagedModelList(currentProviderType)) {
+        html += '<div class="form-grid full-width">';
+        html += renderSupportedModelsSection(provider);
+        html += '</div>';
+        return html;
+    }
+
     html += '<div class="form-grid full-width">';
     html += `
         <div class="config-item not-supported-models-section">
@@ -683,7 +1064,7 @@ function getFieldOrder(provider) {
     const excludedFields = [
         'isHealthy', 'lastUsed', 'usageCount', 'errorCount', 'lastErrorTime',
         'uuid', 'isDisabled', 'lastHealthCheckTime', 'lastHealthCheckModel', 'lastErrorMessage',
-        'notSupportedModels', 'refreshCount', 'needsRefresh', '_lastSelectionSeq'
+        'notSupportedModels', 'supportedModels', 'refreshCount', 'needsRefresh', '_lastSelectionSeq'
     ];
     
     // 尝试从当前模态框上下文中获取提供商类型
@@ -791,6 +1172,11 @@ function editProvider(uuid, event) {
         modelCheckboxes.forEach(checkbox => {
             checkbox.disabled = false;
         });
+
+        const detectModelsButton = providerDetail.querySelector('.detect-models-btn');
+        if (detectModelsButton) {
+            detectModelsButton.disabled = false;
+        }
         
         // 添加编辑状态类
         providerDetail.classList.add('editing');
@@ -838,6 +1224,20 @@ function cancelEdit(uuid, event) {
     modelCheckboxes.forEach(checkbox => {
         checkbox.disabled = true;
     });
+
+    const detectModelsButton = providerDetail.querySelector('.detect-models-btn');
+    if (detectModelsButton) {
+        detectModelsButton.disabled = true;
+    }
+
+    if (usesManagedModelList(currentProviderType)) {
+        resetSupportedModelsSelection(uuid);
+    } else {
+        const currentProviderData = currentProviders.find(provider => provider.uuid === uuid);
+        if (currentProviderData) {
+            renderNotSupportedModelsSelector(uuid, cachedModels, currentProviderData.notSupportedModels || []);
+        }
+    }
     
     // 移除编辑状态类
     providerDetail.classList.remove('editing');
@@ -871,6 +1271,9 @@ function cancelEdit(uuid, event) {
         <button class="btn-small btn-edit" onclick="window.editProvider('${uuid}', event)">
             <i class="fas fa-edit"></i> <span data-i18n="modal.provider.edit">${t('modal.provider.edit')}</span>
         </button>
+        <button class="btn-small btn-info btn-provider-health-check" onclick="window.performSingleHealthCheck('${uuid}', event)" title="${t('modal.provider.healthCheckCurrentTitle')}">
+            <i class="fas fa-stethoscope"></i> <span data-i18n="modal.provider.healthCheck">${t('modal.provider.healthCheck')}</span>
+        </button>
         <button class="btn-small btn-delete" onclick="window.deleteProvider('${uuid}', event)">
             <i class="fas fa-trash"></i> <span data-i18n="modal.provider.delete">${t('modal.provider.delete')}</span>
         </button>
@@ -891,29 +1294,11 @@ async function saveProvider(uuid, event) {
     const providerDetail = event.target.closest('.provider-item-detail');
     const providerType = providerDetail.closest('.provider-modal').getAttribute('data-provider-type');
     
-    const configInputs = providerDetail.querySelectorAll('input[data-config-key]');
-    const configSelects = providerDetail.querySelectorAll('select[data-config-key]');
-    const providerConfig = {};
+    const providerConfig = collectDraftProviderConfig(providerDetail, providerType, uuid);
     
-    configInputs.forEach(input => {
-        const key = input.dataset.configKey;
-        let value = input.value;
-        if (key === 'concurrencyLimit' || key === 'queueLimit') {
-            value = parseInt(value || '0');
-        }
-        providerConfig[key] = value;
-    });
     
-    configSelects.forEach(select => {
-        const key = select.dataset.configKey;
-        const value = select.value === 'true';
-        providerConfig[key] = value;
-    });
     
     // 收集不支持的模型列表
-    const modelCheckboxes = providerDetail.querySelectorAll(`.model-checkbox[data-uuid="${uuid}"]:checked`);
-    const notSupportedModels = Array.from(modelCheckboxes).map(checkbox => checkbox.value);
-    providerConfig.notSupportedModels = notSupportedModels;
     
     try {
         await window.apiClient.put(`/providers/${encodeURIComponent(providerType)}/${uuid}`, { providerConfig });
@@ -1434,6 +1819,67 @@ async function performHealthCheck(providerType) {
  * @param {string} uuid - 提供商UUID
  * @param {Event} event - 事件对象
  */
+async function performSingleHealthCheck(uuid, event) {
+    event.stopPropagation();
+
+    const button = event.currentTarget || event.target.closest('button');
+    const providerDetail = event.target.closest('.provider-item-detail');
+    const providerType = providerDetail?.closest('.provider-modal')?.getAttribute('data-provider-type');
+
+    if (!providerDetail || !providerType) {
+        showToast(t('common.error'), t('modal.provider.healthCheckSingleFailed', { message: t('common.error') }), 'error');
+        return;
+    }
+
+    const originalHtml = button ? button.innerHTML : '';
+
+    try {
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>${t('modal.provider.healthCheck')}</span>`;
+        }
+
+        showToast(t('common.info'), t('modal.provider.healthCheck') + '...', 'info');
+
+        const response = await window.apiClient.post(
+            `/providers/${encodeURIComponent(providerType)}/${uuid}/health-check`,
+            {}
+        );
+
+        if (!response.success) {
+            showToast(t('common.error'), t('modal.provider.healthCheckSingleFailed', { message: t('common.error') }), 'error');
+            return;
+        }
+
+        const message = response.healthy
+            ? (response.modelName
+                ? t('modal.provider.healthCheckSingleSuccessWithModel', { model: response.modelName })
+                : t('modal.provider.healthCheckSingleSuccess'))
+            : t('modal.provider.healthCheckSingleFailed', { message: response.message || t('common.error') });
+
+        showToast(
+            response.healthy ? t('common.success') : t('common.warning'),
+            message,
+            response.healthy ? 'success' : 'warning'
+        );
+
+        await window.apiClient.post('/reload-config');
+        await refreshProviderConfig(providerType);
+    } catch (error) {
+        console.error('Single provider health check failed:', error);
+        showToast(
+            t('common.error'),
+            t('modal.provider.healthCheckSingleFailed', { message: error.message }),
+            'error'
+        );
+    } finally {
+        if (button && button.isConnected) {
+            button.innerHTML = originalHtml;
+            button.disabled = false;
+        }
+    }
+}
+
 async function refreshProviderUuid(uuid, event) {
     event.stopPropagation();
     
@@ -1610,9 +2056,11 @@ export {
     performHealthCheck,
     deleteUnhealthyProviders,
     refreshUnhealthyUuids,
+    openSupportedModelsPicker,
     loadModelsForProviderType,
     renderNotSupportedModelsSelector,
     goToProviderPage,
+    performSingleHealthCheck,
     refreshProviderUuid
 };
 
@@ -1628,7 +2076,9 @@ window.addProvider = addProvider;
 window.toggleProviderStatus = toggleProviderStatus;
 window.resetAllProvidersHealth = resetAllProvidersHealth;
 window.performHealthCheck = performHealthCheck;
+window.performSingleHealthCheck = performSingleHealthCheck;
 window.deleteUnhealthyProviders = deleteUnhealthyProviders;
 window.refreshUnhealthyUuids = refreshUnhealthyUuids;
+window.openSupportedModelsPicker = openSupportedModelsPicker;
 window.goToProviderPage = goToProviderPage;
 window.refreshProviderUuid = refreshProviderUuid;
