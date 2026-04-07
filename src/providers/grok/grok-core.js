@@ -560,7 +560,6 @@ export class GrokApiService {
 
         const payload = {
             "temporary": requestBody.temporary !== undefined ? requestBody.temporary : true,
-            "modelName": requestBody.modelName || mapping.name || "grok-3",
             "message": message,
             "parentResponseId": requestBody.parentResponseId || undefined,
             "disableSearch": false,
@@ -576,14 +575,11 @@ export class GrokApiService {
             "enableSideBySide": true,
             "responseMetadata": responseMetadata,
             "sendFinalMetadata": true,
-            "metadata": { "request_metadata": {} },
+            "request_metadata": {},
             "disableTextFollowUps": false,
-            "isFromGrokFiles": false,
             "disableMemory": false,
             "forceSideBySide": false,
             "isAsyncChat": false,
-            "skipCancelCurrentInflightRequests": false,
-            "isRegenRequest": false,
             "disableSelfHarmShortCircuit": false,
             "collectionIds": [],
             "connectors": [],
@@ -593,7 +589,7 @@ export class GrokApiService {
                 "devicePixelRatio": 1, 
                 "screenWidth": 2560, 
                 "screenHeight": 1440, 
-                "viewportWidth": 1774, 
+                "viewportWidth": 1116, 
                 "viewportHeight": 1271 
             }
         };
