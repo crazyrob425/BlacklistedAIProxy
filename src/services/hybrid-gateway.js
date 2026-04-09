@@ -1,6 +1,8 @@
 import http from 'http';
 import https from 'https';
 import logger from '../utils/logger.js';
+import { startGatewaySpan, endRequestSpan, ATTR } from '../telemetry/tracing.js';
+import { SpanStatusCode } from '@opentelemetry/api';
 
 const httpAgent = new http.Agent({
     keepAlive: true,
@@ -218,6 +220,10 @@ export async function proxyToHybridGateway(req, res, config, method, path, searc
         return true;
     }
 
+    const canaryPercent = normalizeCanaryPercent(config.HYBRID_GATEWAY_CANARY_PERCENT);
+    const isCanary = !shouldUseCanary(100); // already decided upstream; mark attribute
+    const { span: gwSpan } = startGatewaySpan({ targetUrl, canary: canaryPercent < 100 });
+
     const timeoutMs = Math.max(1000, Number(config.HYBRID_GATEWAY_TIMEOUT_MS) || 120000);
     const transport = target.protocol === 'https:' ? https : http;
     const agent = target.protocol === 'https:' ? httpsAgent : httpAgent;
@@ -267,11 +273,15 @@ export async function proxyToHybridGateway(req, res, config, method, path, searc
                         cacheConfig
                     );
                 }
+                gwSpan.setAttribute(ATTR.HTTP_STATUS_CODE, upstreamRes.statusCode || 502);
+                gwSpan.end();
                 resolve(true);
             });
 
             upstreamRes.on('error', (error) => {
                 logger.error(`[HybridGateway] Upstream response error: ${error.message}`);
+                gwSpan.recordException(error);
+                gwSpan.end();
                 if (!res.headersSent) {
                     res.writeHead(502, { 'Content-Type': 'application/json' });
                 }
@@ -286,6 +296,8 @@ export async function proxyToHybridGateway(req, res, config, method, path, searc
 
         upstreamReq.on('error', (error) => {
             logger.error(`[HybridGateway] Proxy error: ${error.message}`);
+            gwSpan.recordException(error);
+            gwSpan.end();
             if (!res.headersSent) {
                 res.writeHead(502, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ error: { message: `Hybrid gateway request failed: ${error.message}` } }));
