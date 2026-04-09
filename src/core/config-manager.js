@@ -110,7 +110,7 @@ export async function initializeConfig(args = process.argv.slice(2), configFileP
         HYBRID_GATEWAY_CACHE_ENABLED: true,
         HYBRID_GATEWAY_CACHE_TTL_MS: 15000,
         HYBRID_GATEWAY_CACHE_MAX_ENTRIES: 200,
-        HYBRID_GATEWAY_CACHE_MAX_BODY_BYTES: 1048576
+        HYBRID_GATEWAY_CACHE_MAX_BODY_BYTES: 1024 * 1024
     };
 
     let currentConfig = { ...defaultConfig };

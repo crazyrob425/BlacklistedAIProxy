@@ -111,6 +111,8 @@ function getCacheConfig(config) {
 }
 
 function isCacheableRequest(method, path) {
+    // Intentionally cache only stable model-list endpoints.
+    // Generation paths are streaming and should not be cached.
     if (method !== 'GET') return false;
     return path === '/v1/models' || path === '/v1beta/models';
 }
@@ -130,6 +132,9 @@ function maybeReplyFromCache(method, targetUrl, reqHeaders, res, cacheConfig) {
     for (const [name, value] of Object.entries(cached.headers)) {
         res.setHeader(name, value);
     }
+    // LRU: refresh insertion order on cache hit.
+    gatewayCache.delete(key);
+    gatewayCache.set(key, cached);
     res.setHeader('x-hybrid-gateway-cache', 'HIT');
     res.writeHead(cached.statusCode);
     res.end(cached.body);
@@ -149,6 +154,9 @@ function maybeStoreCache(method, path, targetUrl, reqHeaders, statusCode, header
     const safeHeaders = { ...headers };
     delete safeHeaders['set-cookie'];
     const key = getCacheKey(method, targetUrl, reqHeaders);
+    if (gatewayCache.has(key)) {
+        gatewayCache.delete(key);
+    }
     gatewayCache.set(key, {
         statusCode,
         headers: safeHeaders,
@@ -235,7 +243,7 @@ export async function proxyToHybridGateway(req, res, config, method, path, searc
             let capturedBytes = 0;
 
             upstreamRes.on('data', (chunk) => {
-                if (shouldCapture && capturedBytes <= cacheConfig.maxBodyBytes) {
+                if (shouldCapture) {
                     const size = Buffer.byteLength(chunk);
                     capturedBytes += size;
                     if (capturedBytes <= cacheConfig.maxBodyBytes) {

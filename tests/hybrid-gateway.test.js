@@ -39,12 +39,12 @@ function createMockResponse() {
     };
 }
 
-function createMockRequest(method, headers = {}, body = '') {
+function createMockRequest(method, headers = {}, initialData = '') {
     const req = new PassThrough();
     req.method = method;
     req.headers = headers;
     req.url = '/';
-    req.end(body);
+    req.end(initialData);
     return req;
 }
 
