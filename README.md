@@ -560,6 +560,34 @@ For services like Grok that strictly validate TLS fingerprints (JA3/JA4), this p
     - Requests for specific providers (like Grok) are automatically routed to the Sidecar.
     - The Sidecar uses the latest Chrome fingerprint for TLS handshakes and supports automatic HTTP/2 negotiation.
 
+#### 5. Hybrid Gateway (Node + Go Split Routing)
+
+Run Node and Go services side-by-side and let Node route high-throughput endpoints to a lightweight gateway.
+
+```json
+{
+  "HYBRID_GATEWAY_ENABLED": true,
+  "HYBRID_GATEWAY_URL": "http://127.0.0.1:9091",
+  "HYBRID_GATEWAY_PATHS": [
+    "/v1/chat/completions",
+    "/v1/responses",
+    "/v1/messages",
+    "/v1beta/models/*"
+  ],
+  "HYBRID_GATEWAY_CANARY_PERCENT": 50,
+  "HYBRID_GATEWAY_TIMEOUT_MS": 120000,
+  "HYBRID_GATEWAY_CACHE_ENABLED": true,
+  "HYBRID_GATEWAY_CACHE_TTL_MS": 15000,
+  "HYBRID_GATEWAY_CACHE_MAX_ENTRIES": 200,
+  "HYBRID_GATEWAY_CACHE_MAX_BODY_BYTES": 1048576
+}
+```
+
+How it behaves:
+- Existing auth/plugins/middleware still run in Node first, then matched paths are forwarded.
+- Supports canary rollout (`HYBRID_GATEWAY_CANARY_PERCENT`) for gradual migration.
+- Uses keep-alive pooled upstream connections and optional response cache for model-list endpoints.
+
 **Notes**:
 - Local running requires a Go environment (1.20+).
 - **Docker Users**: The image already includes the pre-compiled binary; just enable it in the configuration, no manual compilation required.

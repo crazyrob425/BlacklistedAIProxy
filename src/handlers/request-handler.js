@@ -12,6 +12,7 @@ import { PROMPT_LOG_FILENAME } from '../core/config-manager.js';
 import { getPluginManager } from '../core/plugin-manager.js';
 import { randomUUID } from 'crypto';
 import { handleGrokAssetsProxy } from '../utils/grok-assets-proxy.js';
+import { shouldRouteToHybridGateway, proxyToHybridGateway } from '../services/hybrid-gateway.js';
 
 /**
  * Generate a short unique request ID (8 characters)
@@ -206,6 +207,11 @@ export function createRequestHandler(config, providerPoolManager) {
                 if (middlewareResult.handled) {
                     // 中间件已处理请求
                     return;
+                }
+
+                if (shouldRouteToHybridGateway(currentConfig, method, path)) {
+                    const routed = await proxyToHybridGateway(req, res, currentConfig, method, path, requestUrl.search);
+                    if (routed) return;
                 }
 
                 // Handle count_tokens requests (Anthropic API compatible)

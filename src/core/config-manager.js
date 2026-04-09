@@ -96,7 +96,21 @@ export async function initializeConfig(args = process.argv.slice(2), configFileP
         TLS_SIDECAR_ENABLED_PROVIDERS: [], // 启用 TLS Sidecar 的提供商列表
         TLS_SIDECAR_PORT: 9090,     // sidecar 监听端口
         TLS_SIDECAR_BINARY_PATH: null, // 自定义二进制路径（默认自动搜索）
-        TLS_SIDECAR_PROXY_URL: null    // TLS Sidecar 专用的上游代理地址
+        TLS_SIDECAR_PROXY_URL: null,    // TLS Sidecar 专用的上游代理地址
+        HYBRID_GATEWAY_ENABLED: false,
+        HYBRID_GATEWAY_URL: '',
+        HYBRID_GATEWAY_PATHS: [
+            '/v1/chat/completions',
+            '/v1/responses',
+            '/v1/messages',
+            '/v1beta/models/*'
+        ],
+        HYBRID_GATEWAY_CANARY_PERCENT: 100,
+        HYBRID_GATEWAY_TIMEOUT_MS: 120000,
+        HYBRID_GATEWAY_CACHE_ENABLED: true,
+        HYBRID_GATEWAY_CACHE_TTL_MS: 15000,
+        HYBRID_GATEWAY_CACHE_MAX_ENTRIES: 200,
+        HYBRID_GATEWAY_CACHE_MAX_BODY_BYTES: 1048576
     };
 
     let currentConfig = { ...defaultConfig };
@@ -263,4 +277,3 @@ export async function getSystemPromptFileContent(filePath) {
 }
 
 export { ALL_MODEL_PROVIDERS };
-
