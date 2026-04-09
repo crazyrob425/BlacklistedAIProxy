@@ -1,0 +1,91 @@
+<link rel="stylesheet" href="components/section-workspace.css">
+<section id="workspace" class="section" aria-labelledby="workspace-title">
+    <h2 id="workspace-title"><i class="fas fa-wand-magic-sparkles"></i> 融合工作台</h2>
+
+    <div class="workspace-grid">
+        <div class="workspace-card">
+            <h3><i class="fas fa-compass"></i> 一键引导向导</h3>
+            <p>一步步完成配置、OAuth 登录、轮询策略与凭据速查表生成。</p>
+            <div class="wizard-controls">
+                <button id="wizardPrevStep" class="btn btn-secondary btn-sm">上一步</button>
+                <span id="wizardStepLabel">步骤 1 / 4</span>
+                <button id="wizardNextStep" class="btn btn-primary btn-sm">下一步</button>
+            </div>
+        </div>
+
+        <div class="workspace-card">
+            <h3><i class="fas fa-shuffle"></i> 智能设置融合 (去重)</h3>
+            <p>将重复的“提供商选择”一次设置后同步到代理、TLS Sidecar、健康检查，避免重复输入。</p>
+            <div class="workspace-actions">
+                <button id="syncFromModelProvidersBtn" class="btn btn-primary btn-sm">从模型提供商同步</button>
+                <button id="syncPerformancePresetBtn" class="btn btn-secondary btn-sm">应用高性能预设</button>
+                <button id="syncReliabilityPresetBtn" class="btn btn-secondary btn-sm">应用高可靠预设</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="workspaceWizardStep1" class="workspace-step active">
+        <h3>步骤 1：选择融合模式</h3>
+        <div class="mode-options">
+            <label><input type="radio" name="workspaceMode" value="balanced" checked> 平衡模式（推荐）</label>
+            <label><input type="radio" name="workspaceMode" value="performance"> 性能优先（更激进并发/切换）</label>
+            <label><input type="radio" name="workspaceMode" value="reliability"> 稳定优先（更保守重试/健康检查）</label>
+        </div>
+    </div>
+
+    <div id="workspaceWizardStep2" class="workspace-step">
+        <h3>步骤 2：OAuth 快速连接矩阵</h3>
+        <p>点击下方按钮会打开对应 OAuth 浏览器授权窗口，完成后可继续下一步。</p>
+        <div id="workspaceOauthMatrix" class="oauth-matrix"></div>
+    </div>
+
+    <div id="workspaceWizardStep3" class="workspace-step">
+        <h3>步骤 3：多账号与轮询调优</h3>
+        <div class="workspace-form-row">
+            <div class="form-group">
+                <label for="workspaceTargetAccounts">目标账号规模</label>
+                <input id="workspaceTargetAccounts" class="form-control" type="number" min="1" max="200" value="12">
+            </div>
+            <div class="form-group">
+                <label for="workspaceRolloutPercent">Hybrid Gateway Canary (%)</label>
+                <input id="workspaceRolloutPercent" class="form-control" type="number" min="0" max="100" value="30">
+            </div>
+        </div>
+        <div class="workspace-form-row">
+            <div class="form-group">
+                <label for="workspaceGatewayUrl">Hybrid Gateway URL</label>
+                <input id="workspaceGatewayUrl" class="form-control" type="text" placeholder="http://127.0.0.1:9091">
+            </div>
+            <div class="form-group">
+                <label>模型列表边缘缓存</label>
+                <label class="toggle-switch">
+                    <input id="workspaceGatewayCacheEnabled" type="checkbox" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+        <div class="workspace-actions">
+            <button id="applyWorkspaceTuningBtn" class="btn btn-primary btn-sm">应用调优到配置面板</button>
+            <button id="saveWorkspaceRolloutBtn" class="btn btn-secondary btn-sm">保存 Canary / Gateway 设置</button>
+        </div>
+    </div>
+
+    <div id="workspaceWizardStep4" class="workspace-step">
+        <h3>步骤 4：快速凭据速查表</h3>
+        <p>为常见客户端自动生成可复制的代理 API 连接信息。</p>
+        <textarea id="workspaceCheatSheet" class="form-control" rows="10" readonly></textarea>
+        <div class="workspace-actions">
+            <button id="generateWorkspaceCheatSheetBtn" class="btn btn-primary btn-sm">重新生成</button>
+            <button id="copyWorkspaceCheatSheetBtn" class="btn btn-secondary btn-sm">复制到剪贴板</button>
+        </div>
+    </div>
+
+    <div class="workspace-grid feature-grid">
+        <div class="workspace-feature"><i class="fas fa-link"></i><span>协议同步中枢</span></div>
+        <div class="workspace-feature"><i class="fas fa-rocket"></i><span>性能/稳定策略模板</span></div>
+        <div class="workspace-feature"><i class="fas fa-key"></i><span>OAuth 连接矩阵</span></div>
+        <div class="workspace-feature"><i class="fas fa-users-cog"></i><span>多账号轮询调优</span></div>
+        <div class="workspace-feature"><i class="fas fa-wave-square"></i><span>Canary 发布控制</span></div>
+        <div class="workspace-feature"><i class="fas fa-clipboard-list"></i><span>客户端速查表生成</span></div>
+    </div>
+</section>

@@ -87,6 +87,9 @@ import {
 import {
     initTutorialManager
 } from './tutorial-manager.js';
+import {
+    initWorkspaceManager
+} from './workspace-manager.js';
 
 /**
  * 加载初始数据
@@ -125,6 +128,7 @@ function initApp() {
     initImageZoom(); // 初始化图片放大功能
     initPluginManager(); // 初始化插件管理功能
     initTutorialManager(); // 初始化教程管理功能
+    initWorkspaceManager(); // 初始化融合工作台与向导
     initMobileMenu(); // 初始化移动端菜单
     loadInitialData();
     
