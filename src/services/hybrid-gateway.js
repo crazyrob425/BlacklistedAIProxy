@@ -132,7 +132,7 @@ function maybeReplyFromCache(method, targetUrl, reqHeaders, res, cacheConfig) {
     for (const [name, value] of Object.entries(cached.headers)) {
         res.setHeader(name, value);
     }
-    // LRU: refresh insertion order on cache hit.
+    // Refresh insertion order on cache hit so eviction favors older untouched entries.
     gatewayCache.delete(key);
     gatewayCache.set(key, cached);
     res.setHeader('x-hybrid-gateway-cache', 'HIT');

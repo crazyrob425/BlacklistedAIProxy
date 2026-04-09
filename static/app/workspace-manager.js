@@ -99,7 +99,7 @@ function generateCheatSheet() {
     const port = document.getElementById('port')?.value || '3000';
     const apiKey = document.getElementById('apiKey')?.value || '******';
     const providers = getTagValues('modelProvider');
-    const providerNames = getProviderConfigs(providers).filter((p) => providers.includes(p.id)).map((p) => p.name);
+    const providerNames = getProviderConfigs(providers).map((p) => p.name);
     const base = `http://${host}:${port}`;
 
     return [
