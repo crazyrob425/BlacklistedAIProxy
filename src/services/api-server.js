@@ -118,6 +118,11 @@ import 'dotenv/config'; // Import dotenv and configure it
 import '../converters/register-converters.js'; // 注册所有转换器
 import { getProviderPoolManager } from './service-manager.js';
 import { isRetryableNetworkError } from '../utils/common.js';
+import { initTelemetry, shutdownTelemetry } from '../telemetry/otel.js';
+import { langfuseFlush } from '../telemetry/langfuse-bridge.js';
+
+// Initialise OTel SDK as early as possible (no-op when OTEL_ENABLED != "true")
+initTelemetry();
 
 // 检测是否作为子进程运行
 const IS_WORKER_PROCESS = process.env.IS_WORKER_PROCESS === 'true';
@@ -179,6 +184,10 @@ function setupWorkerCommunication() {
  */
 async function gracefulShutdown() {
     logger.info('[Server] Initiating graceful shutdown...');
+
+    // Flush telemetry before closing anything else
+    await langfuseFlush();
+    await shutdownTelemetry();
 
     // 停止 TLS sidecar
     try {

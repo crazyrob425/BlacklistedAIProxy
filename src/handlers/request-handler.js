@@ -12,6 +12,8 @@ import { PROMPT_LOG_FILENAME } from '../core/config-manager.js';
 import { getPluginManager } from '../core/plugin-manager.js';
 import { randomUUID } from 'crypto';
 import { handleGrokAssetsProxy } from '../utils/grok-assets-proxy.js';
+import { shouldRouteToHybridGateway, proxyToHybridGateway } from '../services/hybrid-gateway.js';
+import { startRequestSpan, endRequestSpan, currentTraceId, withContext } from '../telemetry/tracing.js';
 
 /**
  * Generate a short unique request ID (8 characters)
@@ -52,6 +54,15 @@ export function createRequestHandler(config, providerPoolManager) {
         const requestId = `${clientIp}:${generateRequestId()}`;
 
         return logger.runWithContext(requestId, async () => {
+            // Start OTel root span for this request
+            const { span: reqSpan, ctx: otelCtx } = startRequestSpan({
+                method: req.method,
+                path:   req.url,
+                clientIp,
+                requestId,
+            });
+
+            return withContext(otelCtx, async () => {
             // Deep copy the config for each request to allow dynamic modification
             const currentConfig = deepmerge({}, config);
             currentConfig._pluginRequestId = requestId;
@@ -71,6 +82,10 @@ export function createRequestHandler(config, providerPoolManager) {
                 res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
                 res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-goog-api-key, Model-Provider, X-Requested-With, Accept, Origin');
                 res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours cache for preflight
+
+                // Expose trace ID so clients can correlate logs
+                const traceId = currentTraceId();
+                if (traceId) res.setHeader('X-Trace-Id', traceId);
 
                 // Handle CORS preflight requests
                 if (method === 'OPTIONS') {
@@ -218,6 +233,11 @@ export function createRequestHandler(config, providerPoolManager) {
                     return;
                 }
 
+                if (shouldRouteToHybridGateway(currentConfig, method, path)) {
+                    const routed = await proxyToHybridGateway(req, res, currentConfig, method, path, requestUrl.search);
+                    if (routed) return;
+                }
+
                 // Handle count_tokens requests (Anthropic API compatible)
                 if (path.includes('/count_tokens') && method === 'POST') {
                     try {
@@ -269,9 +289,12 @@ export function createRequestHandler(config, providerPoolManager) {
                     handleError(res, error, currentConfig.MODEL_PROVIDER, null, req);
                 }
             } finally {
+                // End OTel root span
+                endRequestSpan(reqSpan, res.statusCode || 0);
                 // Clear request context after request is complete
                 logger.clearRequestContext(requestId);
             }
+            }); // end withContext
         });
     };
 

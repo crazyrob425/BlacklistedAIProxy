@@ -1,0 +1,55 @@
+# otel-collector-config.yaml
+#
+# OpenTelemetry Collector configuration for BlacklistedAIProxy
+# Routes traces to Jaeger (and optionally to Langfuse via OTLP).
+#
+# Ref: https://opentelemetry.io/docs/collector/configuration/
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+
+  # Redact sensitive attributes before exporting
+  attributes/redact:
+    actions:
+      - key: http.client_ip
+        action: hash
+      - key: proxy.request_id
+        action: insert
+        value: "redacted"
+
+exporters:
+  # Send to Jaeger
+  otlp/jaeger:
+    endpoint: jaeger:14250
+    tls:
+      insecure: true
+
+  # Debug logging (disable in production)
+  debug:
+    verbosity: basic
+
+  # Prometheus metrics (optional)
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+
+service:
+  pipelines:
+    traces:
+      receivers:  [otlp]
+      processors: [batch, attributes/redact]
+      exporters:  [otlp/jaeger, debug]
+
+    metrics:
+      receivers:  [otlp]
+      processors: [batch]
+      exporters:  [prometheus]

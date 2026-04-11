@@ -88,6 +88,15 @@ export async function handleGetConfig(req, res, currentConfig) {
         TLS_SIDECAR_ENABLED_PROVIDERS: currentConfig.TLS_SIDECAR_ENABLED_PROVIDERS,
         TLS_SIDECAR_PORT: currentConfig.TLS_SIDECAR_PORT,
         TLS_SIDECAR_PROXY_URL: currentConfig.TLS_SIDECAR_PROXY_URL,
+        HYBRID_GATEWAY_ENABLED: currentConfig.HYBRID_GATEWAY_ENABLED,
+        HYBRID_GATEWAY_URL: currentConfig.HYBRID_GATEWAY_URL,
+        HYBRID_GATEWAY_PATHS: currentConfig.HYBRID_GATEWAY_PATHS,
+        HYBRID_GATEWAY_CANARY_PERCENT: currentConfig.HYBRID_GATEWAY_CANARY_PERCENT,
+        HYBRID_GATEWAY_TIMEOUT_MS: currentConfig.HYBRID_GATEWAY_TIMEOUT_MS,
+        HYBRID_GATEWAY_CACHE_ENABLED: currentConfig.HYBRID_GATEWAY_CACHE_ENABLED,
+        HYBRID_GATEWAY_CACHE_TTL_MS: currentConfig.HYBRID_GATEWAY_CACHE_TTL_MS,
+        HYBRID_GATEWAY_CACHE_MAX_ENTRIES: currentConfig.HYBRID_GATEWAY_CACHE_MAX_ENTRIES,
+        HYBRID_GATEWAY_CACHE_MAX_BODY_BYTES: currentConfig.HYBRID_GATEWAY_CACHE_MAX_BODY_BYTES,
         LOG_ENABLED: currentConfig.LOG_ENABLED,
         LOG_OUTPUT_MODE: currentConfig.LOG_OUTPUT_MODE,
         LOG_LEVEL: currentConfig.LOG_LEVEL,
@@ -186,6 +195,15 @@ export async function handleUpdateConfig(req, res, currentConfig) {
         if (newConfig.TLS_SIDECAR_ENABLED_PROVIDERS !== undefined) currentConfig.TLS_SIDECAR_ENABLED_PROVIDERS = newConfig.TLS_SIDECAR_ENABLED_PROVIDERS;
         if (newConfig.TLS_SIDECAR_PORT !== undefined) currentConfig.TLS_SIDECAR_PORT = newConfig.TLS_SIDECAR_PORT;
         if (newConfig.TLS_SIDECAR_PROXY_URL !== undefined) currentConfig.TLS_SIDECAR_PROXY_URL = newConfig.TLS_SIDECAR_PROXY_URL;
+        if (newConfig.HYBRID_GATEWAY_ENABLED !== undefined) currentConfig.HYBRID_GATEWAY_ENABLED = newConfig.HYBRID_GATEWAY_ENABLED;
+        if (newConfig.HYBRID_GATEWAY_URL !== undefined) currentConfig.HYBRID_GATEWAY_URL = newConfig.HYBRID_GATEWAY_URL;
+        if (newConfig.HYBRID_GATEWAY_PATHS !== undefined) currentConfig.HYBRID_GATEWAY_PATHS = newConfig.HYBRID_GATEWAY_PATHS;
+        if (newConfig.HYBRID_GATEWAY_CANARY_PERCENT !== undefined) currentConfig.HYBRID_GATEWAY_CANARY_PERCENT = newConfig.HYBRID_GATEWAY_CANARY_PERCENT;
+        if (newConfig.HYBRID_GATEWAY_TIMEOUT_MS !== undefined) currentConfig.HYBRID_GATEWAY_TIMEOUT_MS = newConfig.HYBRID_GATEWAY_TIMEOUT_MS;
+        if (newConfig.HYBRID_GATEWAY_CACHE_ENABLED !== undefined) currentConfig.HYBRID_GATEWAY_CACHE_ENABLED = newConfig.HYBRID_GATEWAY_CACHE_ENABLED;
+        if (newConfig.HYBRID_GATEWAY_CACHE_TTL_MS !== undefined) currentConfig.HYBRID_GATEWAY_CACHE_TTL_MS = newConfig.HYBRID_GATEWAY_CACHE_TTL_MS;
+        if (newConfig.HYBRID_GATEWAY_CACHE_MAX_ENTRIES !== undefined) currentConfig.HYBRID_GATEWAY_CACHE_MAX_ENTRIES = newConfig.HYBRID_GATEWAY_CACHE_MAX_ENTRIES;
+        if (newConfig.HYBRID_GATEWAY_CACHE_MAX_BODY_BYTES !== undefined) currentConfig.HYBRID_GATEWAY_CACHE_MAX_BODY_BYTES = newConfig.HYBRID_GATEWAY_CACHE_MAX_BODY_BYTES;
 
         // Log settings
         if (newConfig.LOG_ENABLED !== undefined) currentConfig.LOG_ENABLED = newConfig.LOG_ENABLED;
@@ -323,6 +341,15 @@ export async function handleUpdateConfig(req, res, currentConfig) {
                 TLS_SIDECAR_ENABLED_PROVIDERS: currentConfig.TLS_SIDECAR_ENABLED_PROVIDERS,
                 TLS_SIDECAR_PORT: currentConfig.TLS_SIDECAR_PORT,
                 TLS_SIDECAR_PROXY_URL: currentConfig.TLS_SIDECAR_PROXY_URL,
+                HYBRID_GATEWAY_ENABLED: currentConfig.HYBRID_GATEWAY_ENABLED,
+                HYBRID_GATEWAY_URL: currentConfig.HYBRID_GATEWAY_URL,
+                HYBRID_GATEWAY_PATHS: currentConfig.HYBRID_GATEWAY_PATHS,
+                HYBRID_GATEWAY_CANARY_PERCENT: currentConfig.HYBRID_GATEWAY_CANARY_PERCENT,
+                HYBRID_GATEWAY_TIMEOUT_MS: currentConfig.HYBRID_GATEWAY_TIMEOUT_MS,
+                HYBRID_GATEWAY_CACHE_ENABLED: currentConfig.HYBRID_GATEWAY_CACHE_ENABLED,
+                HYBRID_GATEWAY_CACHE_TTL_MS: currentConfig.HYBRID_GATEWAY_CACHE_TTL_MS,
+                HYBRID_GATEWAY_CACHE_MAX_ENTRIES: currentConfig.HYBRID_GATEWAY_CACHE_MAX_ENTRIES,
+                HYBRID_GATEWAY_CACHE_MAX_BODY_BYTES: currentConfig.HYBRID_GATEWAY_CACHE_MAX_BODY_BYTES,
                 SCHEDULED_HEALTH_CHECK: currentConfig.SCHEDULED_HEALTH_CHECK
             };
 

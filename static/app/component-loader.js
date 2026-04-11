@@ -102,6 +102,7 @@ async function initializeComponents() {
             { path: `${basePath}section-dashboard.html`, container: '#content-container', position: 'beforeend' },
             { path: `${basePath}section-guide.html`, container: '#content-container', position: 'beforeend' },
             { path: `${basePath}section-tutorial.html`, container: '#content-container', position: 'beforeend' },
+            { path: `${basePath}section-workspace.html`, container: '#content-container', position: 'beforeend' },
             { path: `${basePath}section-config.html`, container: '#content-container', position: 'beforeend' },
             { path: `${basePath}section-upload-config.html`, container: '#content-container', position: 'beforeend' },
             { path: `${basePath}section-providers.html`, container: '#content-container', position: 'beforeend' },
