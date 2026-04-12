@@ -1,6 +1,6 @@
-# AIClient2API Provider 接入指南
+# BlacklistedAPI Provider 接入指南
 
-本文档详细说明了如何向 AIClient2API 项目接入全新的模型提供商（Provider），涵盖从后端核心逻辑到前端 UI 管理的全流程调整。
+本文档详细说明了如何向 BlacklistedAPI 项目接入全新的模型提供商（Provider），涵盖从后端核心逻辑到前端 UI 管理的全流程调整。
 
 ## 1. 接入流程概览
 

@@ -2,7 +2,7 @@
 $OutputEncoding = [System.Text.Encoding]::UTF8
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  AI Client 2 API Quick Setup Script" -ForegroundColor Cyan
+Write-Host "  BlacklistedAPI Quick Setup Script" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -62,7 +62,7 @@ if (-not (Test-Path "src\core\master.js")) {
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
-Write-Host "  Starting AIClient2API Server..." -ForegroundColor Green
+Write-Host "  Starting BlacklistedAPI Server..." -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host "Server will start at http://localhost:3000"
 Write-Host "Press Ctrl+C to stop the server"

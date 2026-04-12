@@ -1,12 +1,12 @@
 # OpenClaw 配置指南
 
-在 OpenClaw 中使用 AIClient-2-API 的快速配置指南。
+在 OpenClaw 中使用 BlacklistedAPI 的快速配置指南。
 
 ---
 
 ## 前置准备
 
-1. 启动 AIClient-2-API 服务
+1. 启动 BlacklistedAPI 服务
 2. 在 Web UI (`http://localhost:3000`) 配置至少一个提供商
 3. 记录配置文件中的 API Key
 4. 安装 OpenClaw
@@ -28,16 +28,16 @@
   },
   agents: {
     defaults: {
-      model: { primary: "aiclient2api/gemini-3-flash-preview" },
+      model: { primary: "blacklistedapi/gemini-3-flash-preview" },
       models: {
-        "aiclient2api/gemini-3-flash-preview": { alias: "Gemini 3 Flash" }
+        "blacklistedapi/gemini-3-flash-preview": { alias: "Gemini 3 Flash" }
       }
     }
   },
   models: {
     mode: "merge",
     providers: {
-      aiclient2api: {
+      blacklistedapi: {
         baseUrl: "http://localhost:3000/v1",
         apiKey: "${AICLIENT2API_KEY}",
         api: "openai-completions",
@@ -69,16 +69,16 @@
   },
   agents: {
     defaults: {
-      model: { primary: "aiclient2api/claude-sonnet-4-5" },
+      model: { primary: "blacklistedapi/claude-sonnet-4-5" },
       models: {
-        "aiclient2api/claude-sonnet-4-5": { alias: "Claude Sonnet 4.5" }
+        "blacklistedapi/claude-sonnet-4-5": { alias: "Claude Sonnet 4.5" }
       }
     }
   },
   models: {
     mode: "merge",
     providers: {
-      aiclient2api: {
+      blacklistedapi: {
         baseUrl: "http://localhost:3000",
         apiKey: "${AICLIENT2API_KEY}",
         api: "anthropic-messages",
@@ -110,7 +110,7 @@
   models: {
     providers: {
       // Kiro 提供的 Claude (OpenAI 协议)
-      "aiclient2api-kiro": {
+      "blacklistedapi-kiro": {
         baseUrl: "http://localhost:3000/claude-kiro-oauth/v1",
         apiKey: "${AICLIENT2API_KEY}",
         api: "openai-completions",
@@ -118,7 +118,7 @@
       },
       
       // Kiro 提供的 Claude (Claude 协议)
-      "aiclient2api-kiro-claude": {
+      "blacklistedapi-kiro-claude": {
         baseUrl: "http://localhost:3000/claude-kiro-oauth",
         apiKey: "${AICLIENT2API_KEY}",
         api: "anthropic-messages",
@@ -126,7 +126,7 @@
       },
       
       // Gemini CLI (OpenAI 协议)
-      "aiclient2api-gemini": {
+      "blacklistedapi-gemini": {
         baseUrl: "http://localhost:3000/gemini-cli-oauth/v1",
         apiKey: "${AICLIENT2API_KEY}",
         api: "openai-completions",
@@ -134,7 +134,7 @@
       },
       
       // Antigravity (OpenAI 协议)
-      "aiclient2api-antigravity": {
+      "blacklistedapi-antigravity": {
         baseUrl: "http://localhost:3000/gemini-antigravity/v1",
         apiKey: "${AICLIENT2API_KEY}",
         api: "openai-completions",
@@ -154,9 +154,9 @@
   agents: {
     defaults: {
       model: {
-        primary: "aiclient2api/claude-sonnet-4-5",
+        primary: "blacklistedapi/claude-sonnet-4-5",
         fallbacks: [
-          "aiclient2api/gemini-3-flash-preview"
+          "blacklistedapi/gemini-3-flash-preview"
         ]
       }
     }
@@ -173,10 +173,10 @@
 openclaw models list
 
 # 切换模型
-openclaw models set aiclient2api/claude-sonnet-4-5
+openclaw models set blacklistedapi/claude-sonnet-4-5
 
 # 使用指定模型对话
-openclaw chat --model aiclient2api/gemini-3-flash-preview "你的问题"
+openclaw chat --model blacklistedapi/gemini-3-flash-preview "你的问题"
 ```
 
 ---
@@ -195,7 +195,7 @@ openclaw chat --model aiclient2api/gemini-3-flash-preview "你的问题"
 ## 常见问题
 
 **Q: 连接失败？**
-- 确认 AIClient-2-API 服务运行中
+- 确认 BlacklistedAPI 服务运行中
 - 检查 Base URL 是否正确（OpenAI 协议需要 `/v1` 后缀）
 - 尝试使用 `127.0.0.1` 替代 `localhost`
 
@@ -204,10 +204,10 @@ openclaw chat --model aiclient2api/gemini-3-flash-preview "你的问题"
 - 确认环境变量 `AICLIENT2API_KEY` 已设置
 
 **Q: 模型不可用？**
-- 在 AIClient-2-API Web UI 确认已配置对应提供商
+- 在 BlacklistedAPI Web UI 确认已配置对应提供商
 - 运行 `openclaw gateway restart` 重启网关
 - 运行 `openclaw models list` 验证模型列表
 
 ---
 
-更多信息请参考 [AIClient-2-API 文档](../README-ZH.md)
+更多信息请参考 [BlacklistedAPI 文档](../README-ZH.md)
