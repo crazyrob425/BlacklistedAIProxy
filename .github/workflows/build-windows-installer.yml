@@ -46,9 +46,21 @@ jobs:
         shell: pwsh
         run: |
           $ver = (Get-Content VERSION -Raw).Trim()
+          $expectedTag = "v$ver"
+
+          if ("${{ github.event_name }}" -eq "push") {
+            $tag = "${{ github.ref_name }}"
+            if ($tag -ne $expectedTag) {
+              throw "Tag/VERSION mismatch: workflow was triggered by tag '$tag' but VERSION contains '$ver' (expected tag '$expectedTag')."
+            }
+          } else {
+            $tag = $expectedTag
+          }
+
           echo "version=$ver" >> $env:GITHUB_OUTPUT
-          echo "tag=v$ver" >> $env:GITHUB_OUTPUT
+          echo "tag=$tag" >> $env:GITHUB_OUTPUT
           Write-Host "Building version: $ver"
+          Write-Host "Using release tag: $tag"
 
       # ── Set up Node.js ────────────────────────────────────────────────────────
       - name: Setup Node.js
