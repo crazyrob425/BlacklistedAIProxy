@@ -1,0 +1,327 @@
+name: Build Windows Installer & Beta Release
+
+# Triggers:
+#   1. Manually via Actions tab (workflow_dispatch) — for ad-hoc builds
+#   2. On push of a version tag (v*-beta* or v*) — for automated releases
+on:
+  workflow_dispatch:
+    inputs:
+      prerelease:
+        description: "Mark as pre-release?"
+        required: false
+        default: "true"
+        type: choice
+        options: ["true", "false"]
+      release_notes:
+        description: "Additional release notes (appended to auto-generated notes)"
+        required: false
+        default: ""
+  push:
+    tags:
+      - "v*-beta*"
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+env:
+  NODE_VERSION: "20.19.1"          # pinned LTS — also used for bundled runtime
+  NSSM_VERSION: "2.24"
+  NSSM_URL: "https://nssm.cc/release/nssm-2.24.zip"
+
+jobs:
+  build-installer:
+    name: Build Windows Installer
+    runs-on: windows-latest
+    permissions:
+      contents: write   # needed to create GitHub releases
+
+    steps:
+      # ── Checkout ─────────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ── Read version from VERSION file ────────────────────────────────────────
+      - name: Read version
+        id: version
+        shell: pwsh
+        run: |
+          $ver = (Get-Content VERSION -Raw).Trim()
+          echo "version=$ver" >> $env:GITHUB_OUTPUT
+          echo "tag=v$ver" >> $env:GITHUB_OUTPUT
+          Write-Host "Building version: $ver"
+
+      # ── Set up Node.js ────────────────────────────────────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      # ── Install production dependencies ───────────────────────────────────────
+      - name: Install production dependencies
+        run: npm ci --omit=dev
+        shell: pwsh
+
+      # ── Generate placeholder bitmap assets (if real ones are absent) ──────────
+      - name: Generate installer bitmap assets
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path installer\assets | Out-Null
+          Add-Type -AssemblyName System.Drawing
+
+          # WizardImage.bmp — 164x314
+          $bmp = New-Object System.Drawing.Bitmap(164, 314)
+          $g   = [System.Drawing.Graphics]::FromImage($bmp)
+          $g.Clear([System.Drawing.Color]::FromArgb(13, 13, 13))
+          $brush  = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(0, 180, 255))
+          $brush2 = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::White)
+          $font1  = New-Object System.Drawing.Font("Arial", 11, [System.Drawing.FontStyle]::Bold)
+          $font2  = New-Object System.Drawing.Font("Arial", 8,  [System.Drawing.FontStyle]::Regular)
+          $g.DrawString("Blacklisted", $font1, $brush,  12, 120)
+          $g.DrawString("AIProxy",     $font1, $brush,  12, 140)
+          $g.DrawString("by Blacklisted",  $font2, $brush2, 12, 165)
+          $g.DrawString("Binary Labs",     $font2, $brush2, 12, 178)
+          $g.DrawString("v${{ steps.version.outputs.version }}", $font2, $brush2, 12, 195)
+          $bmp.Save("installer\assets\WizardImage.bmp", [System.Drawing.Imaging.ImageFormat]::Bmp)
+          $bmp.Dispose()
+
+          # WizardSmallImage.bmp — 55x55
+          $bmp2 = New-Object System.Drawing.Bitmap(55, 55)
+          $g2   = [System.Drawing.Graphics]::FromImage($bmp2)
+          $g2.Clear([System.Drawing.Color]::FromArgb(0, 180, 255))
+          $brush3 = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(13, 13, 13))
+          $font3  = New-Object System.Drawing.Font("Arial", 8, [System.Drawing.FontStyle]::Bold)
+          $g2.DrawString("BAP", $font3, $brush3, 8, 20)
+          $bmp2.Save("installer\assets\WizardSmallImage.bmp", [System.Drawing.Imaging.ImageFormat]::Bmp)
+          $bmp2.Dispose()
+          Write-Host "Bitmap assets generated."
+
+      # ── Generate .ico from PNG (extract from static assets or create one) ────
+      - name: Generate SetupIcon.ico placeholder
+        shell: pwsh
+        run: |
+          Add-Type -AssemblyName System.Drawing
+          $sizes = @(256, 128, 64, 32, 16)
+          # Create a simple solid-colour icon
+          $bmp = New-Object System.Drawing.Bitmap(256, 256)
+          $g   = [System.Drawing.Graphics]::FromImage($bmp)
+          $g.Clear([System.Drawing.Color]::FromArgb(0, 180, 255))
+          $brush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(13, 13, 13))
+          $font  = New-Object System.Drawing.Font("Arial", 80, [System.Drawing.FontStyle]::Bold)
+          $g.DrawString("B", $font, $brush, 60, 60)
+          $bmp.Save("installer\assets\SetupIcon.bmp", [System.Drawing.Imaging.ImageFormat]::Bmp)
+          $bmp.Dispose()
+          # Copy as ico (Inno Setup can use BMP for icon; for a proper ICO use a dedicated tool)
+          Copy-Item "installer\assets\SetupIcon.bmp" "installer\assets\SetupIcon.ico"
+          Write-Host "Icon placeholder generated."
+
+      # ── Download NSSM ─────────────────────────────────────────────────────────
+      - name: Download NSSM ${{ env.NSSM_VERSION }}
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path build\nssm | Out-Null
+          $zip = "build\nssm.zip"
+          Invoke-WebRequest -Uri "${{ env.NSSM_URL }}" -OutFile $zip -UseBasicParsing
+          Expand-Archive -Path $zip -DestinationPath build\nssm_raw -Force
+          # Find nssm.exe (64-bit)
+          $nssm = Get-ChildItem -Path build\nssm_raw -Filter "nssm.exe" -Recurse |
+                  Where-Object { $_.FullName -match "win64" } |
+                  Select-Object -First 1
+          if (-not $nssm) {
+            $nssm = Get-ChildItem -Path build\nssm_raw -Filter "nssm.exe" -Recurse |
+                    Select-Object -First 1
+          }
+          Copy-Item $nssm.FullName "build\nssm\nssm.exe"
+          Write-Host "NSSM located at: $(Get-Item 'build\nssm\nssm.exe')"
+
+      # ── Download Node.js portable zip for bundling ────────────────────────────
+      - name: Download Node.js ${{ env.NODE_VERSION }} portable (x64)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path build\node | Out-Null
+          $nodeUrl = "https://nodejs.org/dist/v${{ env.NODE_VERSION }}/node-v${{ env.NODE_VERSION }}-win-x64.zip"
+          $nodeZip = "build\node-portable.zip"
+          Write-Host "Downloading Node.js from: $nodeUrl"
+          Invoke-WebRequest -Uri $nodeUrl -OutFile $nodeZip -UseBasicParsing
+          Expand-Archive -Path $nodeZip -DestinationPath build\node_raw -Force
+          # Flatten: move contents of the single subfolder into build\node\
+          $inner = Get-ChildItem -Path build\node_raw -Directory | Select-Object -First 1
+          if ($inner) {
+            Copy-Item "$($inner.FullName)\*" "build\node\" -Recurse -Force
+          }
+          Write-Host "Node.js runtime ready at build\node\"
+
+      # ── Create portable zip archive ───────────────────────────────────────────
+      - name: Build portable zip archive
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path build | Out-Null
+          $portableDir = "build\portable_staging"
+          New-Item -ItemType Directory -Force -Path $portableDir | Out-Null
+
+          # Copy app files
+          $dirs = @("src", "configs", "static", "node_modules", "docs")
+          foreach ($d in $dirs) {
+            if (Test-Path $d) {
+              Copy-Item $d "$portableDir\$d" -Recurse -Force
+            }
+          }
+          $files = @("package.json", "VERSION", "LICENSE", "README.md", "healthcheck.js")
+          foreach ($f in $files) {
+            if (Test-Path $f) { Copy-Item $f "$portableDir\$f" }
+          }
+
+          # Copy Node.js runtime into portable bundle
+          Copy-Item "build\node" "$portableDir\runtime" -Recurse -Force
+
+          # Compress to zip
+          Compress-Archive -Path "$portableDir\*" -DestinationPath "build\BlacklistedAIProxy-portable.zip" -Force
+          Write-Host "Portable zip created: build\BlacklistedAIProxy-portable.zip"
+          $size = (Get-Item "build\BlacklistedAIProxy-portable.zip").Length / 1MB
+          Write-Host ("Zip size: {0:N1} MB" -f $size)
+
+      # ── Copy node-portable.zip for portable launcher ──────────────────────────
+      - name: Prepare portable node zip for launcher
+        shell: pwsh
+        run: |
+          Copy-Item "build\node-portable.zip" "installer\portable\node-portable.zip" -Force
+          Write-Host "Node portable zip copied for launcher."
+
+      # ── Install Inno Setup ────────────────────────────────────────────────────
+      - name: Install Inno Setup 6
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+          Write-Host "Inno Setup installed."
+
+      # ── Compile the installer ─────────────────────────────────────────────────
+      - name: Compile installer
+        shell: pwsh
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            $iscc = Get-ChildItem -Path "C:\Program Files*" -Filter "ISCC.exe" -Recurse -ErrorAction SilentlyContinue |
+                    Select-Object -First 1 | Select-Object -ExpandProperty FullName
+          }
+          if (-not $iscc) { throw "ISCC.exe not found" }
+
+          Write-Host "Compiling with: $iscc"
+          & $iscc "installer\BlacklistedProxy.iss" `
+            /DAppVersion="${{ steps.version.outputs.version }}" `
+            /O"installer\Output"
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup compilation failed (exit code $LASTEXITCODE)" }
+
+          $installer = Get-ChildItem -Path "installer\Output" -Filter "*.exe" | Select-Object -First 1
+          Write-Host "Installer built: $($installer.FullName)"
+          $size = $installer.Length / 1MB
+          Write-Host ("Installer size: {0:N1} MB" -f $size)
+          echo "installer_path=$($installer.FullName)" >> $env:GITHUB_OUTPUT
+          echo "installer_name=$($installer.Name)" >> $env:GITHUB_OUTPUT
+        id: compile
+
+      # ── Generate SHA256 checksum ──────────────────────────────────────────────
+      - name: Generate checksum
+        shell: pwsh
+        run: |
+          $installer = "${{ steps.compile.outputs.installer_path }}"
+          $hash = (Get-FileHash $installer -Algorithm SHA256).Hash
+          $checksumFile = "$installer.sha256"
+      # SHA-256 checksum — format is compatible with `sha256sum -c` on Linux/macOS
+      "$hash  ${{ steps.compile.outputs.installer_name }}" | Out-File $checksumFile -Encoding ASCII
+          Write-Host "SHA256: $hash"
+          echo "checksum_path=$checksumFile" >> $env:GITHUB_OUTPUT
+          echo "sha256=$hash" >> $env:GITHUB_OUTPUT
+        id: checksum
+
+      # ── Determine if this is a pre-release ────────────────────────────────────
+      - name: Determine release type
+        id: release_type
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.version.outputs.tag }}"
+          $isPreRelease = $tag -match "beta|alpha|rc|pre"
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $isPreRelease = "${{ inputs.prerelease }}" -eq "true"
+          }
+          echo "prerelease=$($isPreRelease.ToString().ToLower())" >> $env:GITHUB_OUTPUT
+          Write-Host "Pre-release: $isPreRelease"
+
+      # ── Build release notes ───────────────────────────────────────────────────
+      - name: Generate release notes
+        id: release_notes
+        shell: pwsh
+        run: |
+          $ver = "${{ steps.version.outputs.version }}"
+          $sha = "${{ steps.checksum.outputs.sha256 }}"
+          $name = "${{ steps.compile.outputs.installer_name }}"
+
+          $notes = @"
+          ## BlacklistedAIProxy $ver — Windows Beta Release
+
+          > **⚠️ BETA SOFTWARE** — This is pre-release software. Read all warnings in the installer before proceeding.
+
+          ### What's included
+          - Full Install mode: Windows Service (auto-start at boot), self-healing watchdog, Start Menu shortcuts, uninstaller
+          - Portable mode: USB-friendly, no service, no registry, no traces after exit
+          - Bundled Node.js ${{ env.NODE_VERSION }} runtime (no separate install required)
+          - Complete legal agreements, privacy policy, and AI spoofing risk disclosure
+
+          ### Quick start
+          1. Download \`$name\` below
+          2. Verify the SHA-256 checksum (see below)
+          3. Run the installer as Administrator
+          4. Read and accept all legal terms
+          5. Choose **Full Install** (recommended) or **Portable**
+          6. After install, edit \`configs\config.json\` to add your provider credentials
+          7. The service starts automatically (Full Install) or use \`Launch BlacklistedAIProxy.bat\` (Portable)
+
+          ### SHA-256 Checksum
+          \`\`\`
+          $sha  $name
+          \`\`\`
+
+          ### Report bugs
+          👉 [Open a GitHub Issue](https://github.com/crazyrob425/BlacklistedAIProxy/issues/new?labels=bug,beta-feedback)
+
+          Or use the **Report a Bug** shortcut installed with the application.
+
+          ### Requirements
+          - Windows 10 or later (x64)
+          - Administrator privileges (Full Install only)
+          - Internet connection to reach AI providers
+
+          ${{ inputs.release_notes != '' && format('### Additional Notes{0}{1}', '\n', inputs.release_notes) || '' }}
+
+          ---
+          *Built by the Blacklisted Binary Labs Dev Team — [blacklistedbinary.com](https://blacklistedbinary.com)*
+          "@
+
+          # Write to file to avoid escaping issues
+          $notes | Out-File "release_notes.md" -Encoding UTF8
+          Write-Host "Release notes generated."
+
+      # ── Upload artifact (for debugging / manual download from Actions) ────────
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BlacklistedAIProxy-Setup-${{ steps.version.outputs.version }}
+          path: |
+            ${{ steps.compile.outputs.installer_path }}
+            ${{ steps.checksum.outputs.checksum_path }}
+          retention-days: 30
+
+      # ── Create GitHub Release ─────────────────────────────────────────────────
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "BlacklistedAIProxy ${{ steps.version.outputs.version }} — Windows Beta"
+          body_path: release_notes.md
+          prerelease: ${{ steps.release_type.outputs.prerelease }}
+          draft: false
+          files: |
+            ${{ steps.compile.outputs.installer_path }}
+            ${{ steps.checksum.outputs.checksum_path }}
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
