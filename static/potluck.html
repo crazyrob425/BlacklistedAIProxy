@@ -905,24 +905,29 @@
             startDate.setMonth(now.getMonth() - 3);
             startDate.setDate(startDate.getDate() - startDate.getDay());
             
-            // 提取每日总 Token
+            // 提取每日总 Token 和请求数
             const dailyData = {};
             Object.entries(usageHistory).forEach(([date, data]) => {
-                dailyData[date] = data.summary?.totalTokens || 0;
+                dailyData[date] = {
+                    totalTokens: data.summary?.totalTokens || 0,
+                    requestCount: data.summary?.requestCount || 0
+                };
             });
             
-            const values = Object.values(dailyData);
+            const values = Object.values(dailyData).map(d => d.totalTokens);
             const max = Math.max(...values, 1000);
             const dayCount = Math.floor((now - startDate) / (24 * 3600 * 1000)) + 1;
             let currentTotal = 0;
             
-            for(let i = 0; i < dayCount + 7; i++){
+            for(let i = 0; i < dayCount; i++){
                 const date = new Date(startDate);
                 date.setDate(startDate.getDate() + i);
-                if (date > now && date.getDay() !== 0) continue;
+                if (date > now) break;
                 
                 const dateKey = date.toISOString().split('T')[0];
-                const tokens = dailyData[dateKey] || 0;
+                const entry = dailyData[dateKey] || { totalTokens: 0, requestCount: 0 };
+                const tokens = entry.totalTokens;
+                const requests = entry.requestCount;
                 currentTotal += tokens;
                 
                 let level = 0;
@@ -938,7 +943,7 @@
                 day.className = 'calendar-day';
                 day.dataset.level = level;
                 
-                const tipText = `${dateKey}: ${formatTokenCompact(tokens)} Tokens`;
+                const tipText = `${dateKey}: ${formatNumber(requests)} 次请求, ${formatTokenCompact(tokens)} Tokens`;
                 day.onmouseenter = (e) => {
                     tooltip.textContent = tipText;
                     tooltip.style.display = 'block';
@@ -1003,8 +1008,8 @@
             const container = document.getElementById(elementId);
             const sorted = Object.entries(data).sort((a, b) => b[1] - a[1]);
             
-            // 最多显示前 6 个
-            const topData = sorted.slice(0, 6);
+            // 最多显示前 3 个
+            const topData = sorted.slice(0, 3);
             
             container.innerHTML = topData.map(([name, count]) => {
                 const percent = Math.round((count / total) * 100);
@@ -1021,13 +1026,13 @@
                 `;
             }).join('');
             
-            if (sorted.length > 6) {
-                const otherCount = sorted.slice(6).reduce((sum, item) => sum + item[1], 0);
+            if (sorted.length > 3) {
+                const otherCount = sorted.slice(3).reduce((sum, item) => sum + item[1], 0);
                 const otherPercent = Math.round((otherCount / total) * 100);
                 container.innerHTML += `
                     <div class="distribution-item">
                         <div class="dist-info">
-                            <span class="dist-name" style="font-style: italic;">其他 (${sorted.length - 6} 个)</span>
+                            <span class="dist-name" style="font-style: italic;">其他 (${sorted.length - 3} 个)</span>
                             <span class="dist-count">${formatNumber(otherCount)} 次 (${otherPercent}%)</span>
                         </div>
                         <div class="dist-bar">

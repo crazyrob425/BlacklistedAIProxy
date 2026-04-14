@@ -149,14 +149,15 @@
       const dayCount = Math.floor((now - startDate) / (24 * 3600 * 1000)) + 1;
       let currentTotal = 0;
       
-      for(let i = 0; i < dayCount + 7; i++){
+      for(let i = 0; i < dayCount; i++){
         const date = new Date(startDate);
         date.setDate(startDate.getDate() + i);
-        if (date > now && date.getDay() !== 0) continue;
+        if (date > now) break;
         
         const dateKey = date.toISOString().split('T')[0];
-        const data = dailyData[dateKey] || { totalTokens: 0 };
+        const data = dailyData[dateKey] || { totalTokens: 0, requestCount: 0 };
         const tokens = data.totalTokens || 0;
+        const requests = data.requestCount || 0;
         currentTotal += tokens;
         
         let level = 0;
@@ -172,7 +173,7 @@
         day.className = 'calendar-day';
         day.dataset.level = level;
         
-        const tipText = `${dateKey}: ${fmtToken(tokens)} Tokens`;
+        const tipText = `${dateKey}: ${fmt(requests)} 次请求, ${fmtToken(tokens)} Tokens`;
         day.onmouseenter = (e) => {
           tooltip.textContent = tipText;
           tooltip.style.display = 'block';
