@@ -11,7 +11,7 @@ $GITHUB_LABELS     = "bug,beta-feedback"
 
 # ── Collect system info ───────────────────────────────────────────────────────
 
-$osInfo      = (Get-WmiObject Win32_OperatingSystem).Caption
+$osInfo      = (Get-CimInstance Win32_OperatingSystem).Caption
 $nodeVersion = try { (& node --version 2>&1).Trim() } catch { "Not found" }
 $appVersion  = try { (Get-Content (Join-Path $InstallDir "VERSION") -Raw).Trim() } catch { "Unknown" }
 $logPath     = Join-Path $InstallDir "logs"

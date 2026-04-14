@@ -90,7 +90,7 @@ try {
         $cfg = Get-Content $ConfigDst -Raw | ConvertFrom-Json
         $cfg.SERVER_PORT      = $Port
         $cfg.REQUIRED_API_KEY = $ApiKey
-        $cfg | ConvertTo-Json -Depth 20 | Set-Content $ConfigDst
+        $cfg | ConvertTo-Json -Depth 20 | Set-Content $ConfigDst -Encoding UTF8
     }
 
     # ── Start the proxy ───────────────────────────────────────────────────────

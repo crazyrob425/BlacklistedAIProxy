@@ -22,7 +22,7 @@ const CHECK_INTERVAL_MS = parseInt(process.env.BAP_WATCHDOG_INTERVAL_MS || '3000
 const RESTART_DELAY_MS  = 5_000;    // wait 5 s before restarting
 const MAX_RETRIES       = 5;        // max restart attempts in one window
 const RETRY_WINDOW_MS   = 300_000;  // 5-minute rolling window for retries
-const LOG_DIR           = join(__dirname, '..', 'logs');
+const LOG_DIR           = join(__dirname, 'logs');
 const LOG_FILE          = join(LOG_DIR, 'watchdog.log');
 
 // ── Logging ───────────────────────────────────────────────────────────────────

@@ -133,7 +133,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path build\nssm | Out-Null
           $zip = "build\nssm.zip"
-          Invoke-WebRequest -Uri "${{ env.NSSM_URL }}" -OutFile $zip -UseBasicParsing
+          Invoke-WebRequest -Uri "${{ env.NSSM_URL }}" -OutFile $zip
           Expand-Archive -Path $zip -DestinationPath build\nssm_raw -Force
           # Find nssm.exe (64-bit)
           $nssm = Get-ChildItem -Path build\nssm_raw -Filter "nssm.exe" -Recurse |
@@ -154,7 +154,7 @@ jobs:
           $nodeUrl = "https://nodejs.org/dist/v${{ env.NODE_VERSION }}/node-v${{ env.NODE_VERSION }}-win-x64.zip"
           $nodeZip = "build\node-portable.zip"
           Write-Host "Downloading Node.js from: $nodeUrl"
-          Invoke-WebRequest -Uri $nodeUrl -OutFile $nodeZip -UseBasicParsing
+          Invoke-WebRequest -Uri $nodeUrl -OutFile $nodeZip
           Expand-Archive -Path $nodeZip -DestinationPath build\node_raw -Force
           # Flatten: move contents of the single subfolder into build\node\
           $inner = Get-ChildItem -Path build\node_raw -Directory | Select-Object -First 1
