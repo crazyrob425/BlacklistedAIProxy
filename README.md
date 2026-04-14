@@ -38,14 +38,17 @@ Built on **Node.js**, hardened with **Go TLS tricks**, secured with **OpenTeleme
 
 > *"We didn't build from scratch. We stood on the shoulders of legends and then immediately climbed higher."*
 
-BlacklistedAPI is forged from the fusion of two legendary open-source codebases:
+BlacklistedAPI is forged from the fusion of two legendary open-source codebases. Without them, this doesn't exist.
 
-| Ancestor | What It Did | What We Took |
-|---|---|---|
-| 🔥 **[justlovemaki/AIClient-2-API](https://github.com/justlovemaki/AIClient-2-API)** | The original client-2-API proxy engine. Pioneered the OAuth bypass technique for Gemini, Kiro, Antigravity, Codex. Over 1,000 GitHub stars. Pure engineering genius. | The entire protocol engine, provider adapters, account pool manager, Web UI, and TLS sidecar |
-| ⚡ **[crazyrob425/BlacklistedAIProxy](https://github.com/crazyrob425/BlacklistedAIProxy)** | The Blacklisted Binary Labs enhancement layer. Added enterprise observability, security red-teaming, governance roadmap, and hardened the whole thing into a production-grade weapon. | OTel + Langfuse tracing, Promptfoo test suite, security hardening, the Blacklisted name and attitude |
+| Ancestor | Language | What They Built | What We Took |
+|---|---|---|---|
+| 🔥 **[router-for-me/CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI)** | Go | The original CLI proxy engine — OpenAI/Gemini/Claude/Codex compatible endpoints, multi-account round-robin, OAuth flows for every major provider, reusable Go SDK, and a whole ecosystem of downstream projects built on top of it. The blueprint that proved this was possible. | The core proxy architecture patterns, multi-account load balancing concepts, OAuth flow designs, and provider routing strategy |
+| ⚡ **[justlovemaki/AIClient-2-API](https://github.com/justlovemaki/AIClient-2-API)** | Node.js | The Node.js implementation that brought in the Web UI management console, TLS fingerprint bypass via Go uTLS sidecar, Antigravity/Kiro/Grok protocol support, account pool manager with async refresh queue, and the three-way OpenAI↔Claude↔Gemini protocol conversion engine. | The entire Node.js codebase — protocol engine, provider adapters, account pool manager, Web UI, TLS sidecar, and every OAuth integration |
 
-Mad respect to **[@justlovemaki](https://github.com/justlovemaki)** for building the engine that started it all. We took it, turbocharged it, strapped a skull on it, and set it loose.
+Mad respect to **[@router-for-me](https://github.com/router-for-me)** for proving the concept and building the original Go engine that spawned an ecosystem.  
+Mad respect to **[@justlovemaki](https://github.com/justlovemaki)** for taking that torch and rebuilding it in Node.js with a full UI, multi-protocol conversion, and enough features to make enterprise engineers nervous.
+
+**BlacklistedAPI** is what happens when you take both of those, slam them together, add Blacklisted Binary Labs energy, and refuse to ask permission.
 
 ---
 
@@ -425,10 +428,11 @@ Do **NOT** use it to circumvent paid services without authorization, abuse rate 
 
 ## 🙏 Acknowledgements
 
-Standing ovation for:
-- **[@justlovemaki](https://github.com/justlovemaki)** — For building the protocol engine that made this all possible. `justlovemaki/AIClient-2-API` is the ancestor. Honor it.
+Standing ovation for the real ones:
+- **[@router-for-me](https://github.com/router-for-me)** — For `CLIProxyAPI`, the original Go-based CLI proxy engine that proved the whole concept worked and spawned an entire ecosystem of projects. The blueprint.
+- **[@justlovemaki](https://github.com/justlovemaki)** — For `AIClient-2-API`, the Node.js reimplementation with full Web UI, TLS bypass, multi-protocol conversion, and a feature set wild enough to make this worth combining. The engine.
 - The open-source legends powering the stack: **OpenTelemetry**, **Langfuse**, **Promptfoo**, **uTLS**
-- Every person who starred `AIClient-2-API` before we got here
+- Every star, fork, and contributor on both source repos — you built the foundation we're standing on
 
 ---
 
