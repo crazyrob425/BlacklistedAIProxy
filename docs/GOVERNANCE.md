@@ -22,7 +22,7 @@ criteria, and sign-off gates for the BlacklistedAIProxy enhancement programme.
 
 ## Implementation waves
 
-### Wave 1 — Observability + Quality + Governance ✅ In progress
+### Wave 1 — Observability + Quality + Governance ✅ Complete
 
 **Epic A: Observability foundation (Langfuse + OTel)**
 - Deliverables:
@@ -100,7 +100,7 @@ criteria, and sign-off gates for the BlacklistedAIProxy enhancement programme.
 
 Before starting each wave, the following must be approved:
 
-- [ ] **Wave 1**: Top-8 shortlist; pattern-only vs direct-dep choices; licensing policy
+- [x] **Wave 1**: Top-8 shortlist; pattern-only vs direct-dep choices; licensing policy ✅ Signed off — all Epic A/B/H deliverables merged and verified
 - [ ] **Wave 2**: proxy-core contract; auth trust boundary map
 - [ ] **Wave 3**: edge router choice (Traefik vs Caddy); UI IA spec
 - [ ] **Wave 4**: resilience profile defaults; conditional feature scope
