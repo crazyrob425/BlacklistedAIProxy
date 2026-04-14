@@ -21,7 +21,7 @@ static/app/
 
 ```html
 <!-- 文本内容 -->
-<h1 data-i18n="header.title">AIClient2API 管理控制台</h1>
+<h1 data-i18n="header.title">BlacklistedAPI 管理控制台</h1>
 
 <!-- 按钮文本 -->
 <button data-i18n="common.save">保存</button>

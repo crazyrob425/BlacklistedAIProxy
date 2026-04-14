@@ -587,7 +587,7 @@ function createKiroHttpCallbackServer(port, codeVerifier, expectedState, options
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'User-Agent': 'AIClient-2-API/1.0.0'
+                            'User-Agent': 'BlacklistedAPI/1.0.0'
                         },
                         body: JSON.stringify({
                             code,
