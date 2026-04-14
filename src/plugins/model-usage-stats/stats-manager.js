@@ -220,6 +220,13 @@ function normalizeUsageCandidate(candidate) {
     }
 
     const usage = candidate.usage || candidate.message?.usage || candidate.usageMetadata || candidate.response?.usage || null;
+    const reasoningTokens = toNumber(
+        candidate.completion_tokens_details?.reasoning_tokens ??
+        candidate.output_tokens_details?.reasoning_tokens ??
+        usage?.completion_tokens_details?.reasoning_tokens ??
+        usage?.output_tokens_details?.reasoning_tokens ??
+        usage?.thoughtsTokenCount
+    );
     const promptTokens = toNumber(
         candidate.prompt_tokens ??
         usage?.prompt_tokens ??
@@ -233,7 +240,7 @@ function normalizeUsageCandidate(candidate) {
         usage?.output_tokens ??
         usage?.candidatesTokenCount ??
         usage?.outputTokenCount
-    );
+    ) + reasoningTokens;
     const totalTokens = toNumber(
         candidate.total_tokens ??
         usage?.total_tokens ??
@@ -254,7 +261,7 @@ function normalizeUsageCandidate(candidate) {
     return {
         promptTokens,
         completionTokens,
-        totalTokens: totalTokens || promptTokens + completionTokens,
+        totalTokens: totalTokens || (promptTokens + completionTokens),
         cachedTokens
     };
 }
@@ -322,6 +329,14 @@ function applyUsage(target, usage, timestamp) {
     target.totalTokens += usage.totalTokens || (usage.promptTokens + usage.completionTokens);
     target.cachedTokens += usage.cachedTokens;
     target.lastUsedAt = timestamp;
+}
+
+function resetUsageBlockTokens(block) {
+    if (!block || typeof block !== 'object') return;
+    block.promptTokens = 0;
+    block.completionTokens = 0;
+    block.totalTokens = 0;
+    block.cachedTokens = 0;
 }
 
 export function setConfigGetter(getter) {
@@ -397,5 +412,25 @@ export async function resetStats() {
     markDirty();
     await persistIfDirty();
     logger.warn('[Model Usage Stats] Stats store reset');
+    return getStats();
+}
+
+export async function resetTokenStats() {
+    ensureLoaded();
+
+    resetUsageBlockTokens(statsStore.summary);
+
+    for (const providerStore of Object.values(statsStore.providers || {})) {
+        resetUsageBlockTokens(providerStore.summary);
+
+        for (const modelStore of Object.values(providerStore.models || {})) {
+            resetUsageBlockTokens(modelStore);
+        }
+    }
+
+    pendingRequests.clear();
+    markDirty();
+    await persistIfDirty();
+    logger.warn('[Model Usage Stats] Token stats reset');
     return getStats();
 }

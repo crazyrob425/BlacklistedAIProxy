@@ -1,7 +1,7 @@
 import logger from '../../utils/logger.js';
 import { checkAuth } from '../../ui-modules/auth.js';
 import { isAuthorized } from '../../utils/common.js';
-import { getStats, resetStats } from './stats-manager.js';
+import { getStats, resetStats, resetTokenStats } from './stats-manager.js';
 
 function sendJson(res, statusCode, data) {
     res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -55,6 +55,16 @@ export async function handleModelUsageStatsRoutes(method, path, req, res, config
             sendJson(res, 200, {
                 success: true,
                 message: '模型统计已重置',
+                data: stats
+            });
+            return true;
+        }
+
+        if ((method === 'POST' || method === 'DELETE') && path === '/api/model-usage-stats/reset-tokens') {
+            const stats = await resetTokenStats();
+            sendJson(res, 200, {
+                success: true,
+                message: '模型 Token 统计已重置',
                 data: stats
             });
             return true;

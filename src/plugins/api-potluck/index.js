@@ -15,11 +15,13 @@ import {
     deleteKey,
     updateKeyLimit,
     resetKeyUsage,
+    resetKeyTokenStats,
     toggleKey,
     updateKeyName,
     validateKey,
     incrementUsage,
     getStats,
+    resetAllTokenStats,
     KEY_PREFIX,
     setConfigGetter
 } from './key-manager.js';
@@ -47,28 +49,45 @@ function normalizeUsageCandidate(candidate) {
     }
 
     const usage = candidate.usage || candidate.message?.usage || candidate.usageMetadata || candidate.response?.usage || null;
+    const reasoningTokens = toNumber(
+        candidate.completion_tokens_details?.reasoning_tokens ??
+        candidate.output_tokens_details?.reasoning_tokens ??
+        usage?.completion_tokens_details?.reasoning_tokens ??
+        usage?.output_tokens_details?.reasoning_tokens ??
+        usage?.thoughtsTokenCount
+    );
     const promptTokens = toNumber(
         candidate.prompt_tokens ??
         usage?.prompt_tokens ??
         usage?.input_tokens ??
-        usage?.promptTokenCount
+        usage?.promptTokenCount ??
+        usage?.inputTokenCount
     );
     const completionTokens = toNumber(
         candidate.completion_tokens ??
         usage?.completion_tokens ??
         usage?.output_tokens ??
-        usage?.candidatesTokenCount
-    );
+        usage?.candidatesTokenCount ??
+        usage?.outputTokenCount
+    ) + reasoningTokens;
     const totalTokens = toNumber(
         candidate.total_tokens ??
         usage?.total_tokens ??
         usage?.totalTokenCount
-    ) || promptTokens + completionTokens;
+    );
+
+    const cachedTokens = toNumber(
+        candidate.cached_tokens ??
+        usage?.cached_tokens ??
+        usage?.cache_read_input_tokens ??
+        usage?.cachedContentTokenCount
+    );
 
     return {
         promptTokens,
         completionTokens,
-        totalTokens
+        totalTokens: totalTokens || (promptTokens + completionTokens),
+        cachedTokens
     };
 }
 
@@ -77,7 +96,8 @@ function mergeUsage(baseUsage, nextUsage) {
     return {
         promptTokens: Math.max(baseUsage.promptTokens, nextUsage.promptTokens),
         completionTokens: Math.max(baseUsage.completionTokens, nextUsage.completionTokens),
-        totalTokens: Math.max(baseUsage.totalTokens, nextUsage.totalTokens)
+        totalTokens: Math.max(baseUsage.totalTokens, nextUsage.totalTokens),
+        cachedTokens: Math.max(baseUsage.cachedTokens || 0, nextUsage.cachedTokens || 0)
     };
 }
 
@@ -85,8 +105,27 @@ function extractUsage(...candidates) {
     return candidates.reduce((usage, candidate) => mergeUsage(usage, normalizeUsageCandidate(candidate)), {
         promptTokens: 0,
         completionTokens: 0,
-        totalTokens: 0
+        totalTokens: 0,
+        cachedTokens: 0
     });
+}
+
+function getTrackedRequestIds(hookContext = {}) {
+    return [...new Set([
+        hookContext._monitorRequestId,
+        hookContext._pluginRequestId
+    ].filter(Boolean))];
+}
+
+function getPendingUsageForHookContext(hookContext = {}) {
+    for (const requestId of getTrackedRequestIds(hookContext)) {
+        const usage = pendingUsage.get(requestId);
+        if (usage) {
+            return usage;
+        }
+    }
+
+    return { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
 }
 
 /**
@@ -222,13 +261,11 @@ const apiPotluckPlugin = {
          * @param {Object} hookContext - 钩子上下文，包含请求和模型信息
          */
         async onContentGenerated(hookContext) {
-            const requestId = hookContext._pluginRequestId || hookContext._monitorRequestId;
+            const trackedRequestIds = getTrackedRequestIds(hookContext);
 
             if (hookContext.potluckApiKey) {
                 try {
-                    const usage = requestId
-                        ? (pendingUsage.get(requestId) || { promptTokens: 0, completionTokens: 0, totalTokens: 0 })
-                        : { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+                    const usage = getPendingUsageForHookContext(hookContext);
 
                     // 传入提供商和模型信息
                     await incrementUsage(
@@ -243,7 +280,7 @@ const apiPotluckPlugin = {
                 }
             }
 
-            if (requestId) {
+            for (const requestId of trackedRequestIds) {
                 pendingUsage.delete(requestId);
             }
         }
@@ -258,11 +295,13 @@ const apiPotluckPlugin = {
         deleteKey,
         updateKeyLimit,
         resetKeyUsage,
+        resetKeyTokenStats,
         toggleKey,
         updateKeyName,
         validateKey,
         incrementUsage,
         getStats,
+        resetAllTokenStats,
         KEY_PREFIX,
         extractPotluckKey,
         isPotluckRequest
@@ -279,11 +318,13 @@ export {
     deleteKey,
     updateKeyLimit,
     resetKeyUsage,
+    resetKeyTokenStats,
     toggleKey,
     updateKeyName,
     validateKey,
     incrementUsage,
     getStats,
+    resetAllTokenStats,
     KEY_PREFIX,
     extractPotluckKey,
     isPotluckRequest

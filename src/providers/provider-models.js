@@ -44,10 +44,10 @@ export const PROVIDER_MODELS = {
     'openai-custom': [],
     'openaiResponses-custom': [],
     'openai-qwen-oauth': [
+        'coder-model',
+        'vision-model',
         'qwen3-coder-plus',
         'qwen3-coder-flash',
-        'coder-model',
-        'vision-model'
     ],
     'openai-iflow': [
         // iFlow 特有模型

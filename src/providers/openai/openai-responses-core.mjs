@@ -304,7 +304,7 @@ function generateResponseCompleted(requestId, usage) {
       },
       safety_identifier: `user-${uuidv4().replace(/-/g, '')}`, // 随机值
       service_tier: "default",
-      status: "completed",
+      status: (state.toolCalls && state.toolCalls.length > 0) ? "requires_action" : "completed",
       store: false,
       temperature: 1,
       text: {

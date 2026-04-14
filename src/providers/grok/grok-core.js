@@ -67,6 +67,15 @@ function normalizeGrokModelId(modelId) {
     return isGrokNsfwModel(modelId) ? modelId.slice(0, -5) : modelId;
 }
 
+/** 供 GrokConverter 在上游无 token 字段时用 Claude tokenizer 估算（非 Grok 官方计费） */
+function attachGrokUsageEstimatePayload(collected, requestBody) {
+    if (!collected || !requestBody) return;
+    const promptText = requestBody.message || "";
+    const toolsJson = requestBody.tools && Array.isArray(requestBody.tools) && requestBody.tools.length
+        ? JSON.stringify(requestBody.tools) : "";
+    collected._grokUsageEstimatePayload = { promptText, toolsJson };
+}
+
 export class GrokApiService {
     constructor(config) {
         this.config = config;
@@ -722,8 +731,17 @@ export class GrokApiService {
         
         try {
             for await (const chunk of stream) {
-                const resp = chunk.result?.response;
+                const res = chunk.result;
+                if (res?.usage && typeof res.usage === 'object') {
+                    if (!collected.usage) collected.usage = {};
+                    Object.assign(collected.usage, res.usage);
+                }
+                const resp = res?.response;
                 if (!resp) continue;
+                if (resp.usage && typeof resp.usage === 'object') {
+                    if (!collected.usage) collected.usage = {};
+                    Object.assign(collected.usage, resp.usage);
+                }
 
                 // 增加原始输出日志以排查多图生成问题
                 if (resp.cardAttachment || resp.streamingImageGenerationResponse || resp.modelResponse?.cardAttachmentsJson) {
@@ -756,6 +774,15 @@ export class GrokApiService {
                     } else {
                         // 合并 modelResponse 中的消息
                         if (mr.message) collected.modelResponse.message = mr.message;
+                        if (mr.metadata) {
+                            const prev = collected.modelResponse.metadata || {};
+                            const next = mr.metadata;
+                            const merged = { ...prev, ...next };
+                            if (prev.llm_info && next.llm_info && typeof prev.llm_info === 'object' && typeof next.llm_info === 'object') {
+                                merged.llm_info = { ...prev.llm_info, ...next.llm_info };
+                            }
+                            collected.modelResponse.metadata = merged;
+                        }
                         // 合并 cardAttachmentsJson (如果存在且未预过滤，但此处通常已由流预处理)
                         if (Array.isArray(mr.cardAttachmentsJson)) {
                             if (!collected.modelResponse.cardAttachmentsJson) collected.modelResponse.cardAttachmentsJson = [];
@@ -825,10 +852,12 @@ export class GrokApiService {
             // 如果已经采集到了图片或视频，则不抛出异常，而是返回已有的结果
             if (collected.cardAttachments.length > 0 || collected.generatedImageUrls.length > 0 || collected.finalVideoUrl) {
                 logger.warn(`[Grok] Error during collection, but partial results exist. Returning what we have: ${error.message}`);
+                attachGrokUsageEstimatePayload(collected, requestBody);
                 return collected;
             }
             throw error;
         }
+        attachGrokUsageEstimatePayload(collected, requestBody);
         return collected;
     }
 
@@ -994,6 +1023,7 @@ export class GrokApiService {
             logger.warn(`[Grok Video Skip] isVideo is TRUE but NO postId found to create share link.`);
         }
 
+        attachGrokUsageEstimatePayload(collected, requestBody);
         return collected;
     }
 
@@ -1112,7 +1142,8 @@ export class GrokApiService {
         if (collected.cardAttachments.length === 0) {
             throw new Error("WebSocket generation returned no images");
         }
-        
+
+        attachGrokUsageEstimatePayload(collected, requestBody);
         return collected;
     }
 
@@ -1308,6 +1339,7 @@ export class GrokApiService {
             });
             const rl = readline.createInterface({ input: response.data, terminal: false });
             let lastResponseId = payload.responseMetadata?.requestModelDetails?.modelId || "final";
+            let grokStreamUsagePayloadAttached = false;
 
             for await (const line of rl) {
                 const trimmed = line.trim();
@@ -1317,6 +1349,10 @@ export class GrokApiService {
                 try {
                     const json = JSON.parse(dataStr);
                     if (json.result?.response) {
+                        if (requestBody && !grokStreamUsagePayloadAttached) {
+                            attachGrokUsageEstimatePayload(json.result, requestBody);
+                            grokStreamUsagePayloadAttached = true;
+                        }
                         const resp = json.result.response;
                         resp._requestBaseUrl = reqBaseUrl;
                         resp._uuid = this.uuid;
@@ -1392,8 +1428,20 @@ export class GrokApiService {
                         }
                     }
                     hasYieldedData = true;
+                    if (process.env.GROK_LOG_LAST_CHUNK === '1' || /^true$/i.test(process.env.GROK_LOG_LAST_CHUNK || '')) {
+                        this._grokLastStreamJsonForDebug = json;
+                    }
                     yield json;
                 } catch (e) {}
+            }
+            if ((process.env.GROK_LOG_LAST_CHUNK === '1' || /^true$/i.test(process.env.GROK_LOG_LAST_CHUNK || '')) && this._grokLastStreamJsonForDebug) {
+                try {
+                    const s = JSON.stringify(this._grokLastStreamJsonForDebug);
+                    logger.info(`[Grok] Last SSE chunk before synthetic isDone (truncated 4000): ${s.slice(0, 4000)}`);
+                } catch (err) {
+                    logger.warn(`[Grok] Could not stringify last chunk: ${err.message}`);
+                }
+                this._grokLastStreamJsonForDebug = null;
             }
             yield { result: { response: { isDone: true, responseId: lastResponseId, _requestBaseUrl: reqBaseUrl, _uuid: this.uuid } } };
         } catch (error) {

@@ -1642,11 +1642,29 @@ export class OpenAIConverter extends BaseConverter {
             content: messageContent
         });
 
+        // Handle tool calls (function_call output items)
+        if (message.tool_calls && message.tool_calls.length > 0) {
+            for (const tc of message.tool_calls) {
+                if (tc.type === 'function' && tc.function) {
+                    output.push({
+                        type: 'function_call',
+                        id: tc.id || `fc_${Date.now()}`,
+                        call_id: tc.id || `call_${Date.now()}`,
+                        name: tc.function.name,
+                        arguments: tc.function.arguments || '{}',
+                        status: 'completed'
+                    });
+                }
+            }
+        }
+
+        const hasToolCalls = message.tool_calls && message.tool_calls.length > 0;
+
         return {
             id: openaiResponse.id || `resp_${Date.now()}`,
             object: 'response',
             created_at: openaiResponse.created || Math.floor(Date.now() / 1000),
-            status: choice.finish_reason === 'stop' ? 'completed' : 'in_progress',
+            status: hasToolCalls ? 'requires_action' : (choice.finish_reason === 'stop' ? 'completed' : 'in_progress'),
             model: model || openaiResponse.model || 'unknown',
             output: output,
             usage: openaiResponse.usage ? {
@@ -1736,7 +1754,7 @@ export class OpenAIConverter extends BaseConverter {
                         item_id: toolCall.id || `call_${uuidv4().replace(/-/g, '')}`,
                         output_index: outputIndex,
                         sequence_number: 3,
-                        type: "response.custom_tool_call_input.delta"
+                        type: "response.function_call_arguments.delta"
                     });
                 }
             }

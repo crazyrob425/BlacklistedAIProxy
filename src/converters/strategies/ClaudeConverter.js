@@ -315,6 +315,10 @@ export class ClaudeConverter extends BaseConverter {
                     prompt_tokens: claudeResponse.usage?.input_tokens || 0,
                     completion_tokens: claudeResponse.usage?.output_tokens || 0,
                     total_tokens: (claudeResponse.usage?.input_tokens || 0) + (claudeResponse.usage?.output_tokens || 0),
+                    cached_tokens: claudeResponse.usage?.cache_read_input_tokens || 0,
+                    prompt_tokens_details: {
+                        cached_tokens: claudeResponse.usage?.cache_read_input_tokens || 0
+                    }
                 },
             };
         }
@@ -1648,22 +1652,42 @@ export class ClaudeConverter extends BaseConverter {
      * Claude响应 -> OpenAI Responses响应
      */
     toOpenAIResponsesResponse(claudeResponse, model) {
-        const content = this.processClaudeResponseContent(claudeResponse.content);
-        const textContent = typeof content === 'string' ? content : JSON.stringify(content);
+        const output = [];
+        const messageContent = [];
+        let hasToolUse = false;
 
-        let output = [];
-        output.push({
+        // Process Claude content blocks, handling both text and tool_use
+        if (Array.isArray(claudeResponse.content)) {
+            for (const block of claudeResponse.content) {
+                if (block.type === 'text' && block.text) {
+                    messageContent.push({
+                        annotations: [],
+                        logprobs: [],
+                        text: block.text,
+                        type: "output_text"
+                    });
+                } else if (block.type === 'tool_use') {
+                    hasToolUse = true;
+                    output.push({
+                        type: "function_call",
+                        id: block.id || `fc_${uuidv4().replace(/-/g, '')}`,
+                        call_id: block.id || `call_${uuidv4().replace(/-/g, '')}`,
+                        name: block.name,
+                        arguments: typeof block.input === 'string' ? block.input : JSON.stringify(block.input || {}),
+                        status: "completed"
+                    });
+                }
+            }
+        }
+
+        // Always include the message output item (even if content is empty)
+        output.unshift({
             type: "message",
             id: `msg_${uuidv4().replace(/-/g, '')}`,
             summary: [],
             role: "assistant",
             status: "completed",
-            content: [{
-                annotations: [],
-                logprobs: [],
-                text: textContent,
-                type: "output_text"
-            }]
+            content: messageContent
         });
 
         return {
@@ -1684,7 +1708,7 @@ export class ClaudeConverter extends BaseConverter {
             reasoning: {},
             safety_identifier: "user-" + uuidv4().replace(/-/g, ''),
             service_tier: "default",
-            status: "completed",
+            status: hasToolUse ? "requires_action" : "completed",
             store: false,
             temperature: 1,
             text: {

@@ -414,9 +414,17 @@
                 <div class="label">今日 Tokens</div>
                 <div class="value" id="statTodayTokens">0</div>
             </div>
+            <div class="stat-card cyan">
+                <div class="label">今日缓存 Tokens</div>
+                <div class="value" id="statTodayCachedTokens">0</div>
+            </div>
             <div class="stat-card purple">
                 <div class="label">累计 Tokens</div>
                 <div class="value" id="statTotalTokens">0</div>
+            </div>
+            <div class="stat-card cyan">
+                <div class="label">累计缓存 Tokens</div>
+                <div class="value" id="statTotalCachedTokens">0</div>
             </div>
         </div>
 
@@ -475,6 +483,24 @@
         let currentApiKey = '';
         let isLoggedIn = false;
         const formatNumber = (num) => new Intl.NumberFormat('zh-CN').format(Number(num || 0));
+        const formatTokenCompact = (num) => {
+            const value = Number(num || 0);
+            if (!Number.isFinite(value)) return '0';
+            const abs = Math.abs(value);
+            const units = [
+                { threshold: 1e9, suffix: 'G' },
+                { threshold: 1e6, suffix: 'M' },
+                { threshold: 1e3, suffix: 'K' }
+            ];
+            for (const unit of units) {
+                if (abs >= unit.threshold) {
+                    const scaled = value / unit.threshold;
+                    const digits = Math.abs(scaled) >= 100 ? 0 : Math.abs(scaled) >= 10 ? 1 : 2;
+                    return `${scaled.toFixed(digits).replace(/\.0+$|(\.\d*[1-9])0+$/,'$1')}${unit.suffix}`;
+                }
+            }
+            return formatNumber(value);
+        };
         const usageCount = (entry) => typeof entry === 'number' ? entry : Number(entry?.requestCount || 0);
         const usageTokens = (entry) => typeof entry === 'number' ? 0 : Number(entry?.totalTokens || 0);
         
@@ -577,8 +603,10 @@
             document.getElementById('statTotal').textContent = data.total || 0;
 
             // Token 用量
-            document.getElementById('statTodayTokens').textContent = formatNumber(data.usage?.totalTokens || 0);
-            document.getElementById('statTotalTokens').textContent = formatNumber(data.tokens?.total || 0);
+            document.getElementById('statTodayTokens').textContent = formatTokenCompact(data.usage?.totalTokens || 0);
+            document.getElementById('statTodayCachedTokens').textContent = formatTokenCompact(data.usage?.cachedTokens || 0);
+            document.getElementById('statTotalTokens').textContent = formatTokenCompact(data.tokens?.total || 0);
+            document.getElementById('statTotalCachedTokens').textContent = formatTokenCompact(data.tokens?.cached || 0);
             
             // 最后使用时间
             if (data.lastUsedAt) {
@@ -634,7 +662,7 @@
 
             // 渲染提供商分布
             renderDistribution('providerDistribution', aggregatedProviders, totalCalls);
-            document.getElementById('providerTotalCount').textContent = `${formatNumber(totalCalls)} 次 / ${formatNumber(totalTokens)} Tokens`;
+            document.getElementById('providerTotalCount').textContent = `${formatNumber(totalCalls)} 次 / ${formatTokenCompact(totalTokens)} Tokens`;
 
             // 渲染模型分布
             renderDistribution('modelDistribution', aggregatedModels, totalCalls);

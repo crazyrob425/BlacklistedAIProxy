@@ -616,9 +616,17 @@
                 <div class="label">今日总 Tokens</div>
                 <div class="value" id="todayTokens">0</div>
             </div>
+            <div class="stat-card cyan">
+                <div class="label">今日缓存 Tokens</div>
+                <div class="value" id="todayCachedTokens">0</div>
+            </div>
             <div class="stat-card pink">
                 <div class="label">累计 Tokens</div>
                 <div class="value" id="totalTokens">0</div>
+            </div>
+            <div class="stat-card cyan">
+                <div class="label">累计缓存 Tokens</div>
+                <div class="value" id="totalCachedTokens">0</div>
             </div>
         </div>
 
@@ -670,6 +678,9 @@
                         </select>
                     </div>
                     <div class="btn-limit-wrapper">
+                        <button class="btn btn-secondary btn-sm" onclick="resetAllTokenStats()">
+                            <i class="fas fa-eraser"></i> <span class="btn-limit-text">重置全部 Token</span>
+                        </button>
                         <button class="btn btn-secondary btn-sm" onclick="showApplyLimitModal()">
                             <i class="fas fa-cog"></i> <span class="btn-limit-text">批量应用限额</span>
                         </button>
@@ -795,6 +806,24 @@
 
         function getToken() { return localStorage.getItem('authToken'); }
         function formatNumber(num) { return new Intl.NumberFormat('zh-CN').format(Number(num || 0)); }
+        function formatTokenCompact(num) {
+            const value = Number(num || 0);
+            if (!Number.isFinite(value)) return '0';
+            const abs = Math.abs(value);
+            const units = [
+                { threshold: 1e9, suffix: 'G' },
+                { threshold: 1e6, suffix: 'M' },
+                { threshold: 1e3, suffix: 'K' }
+            ];
+            for (const unit of units) {
+                if (abs >= unit.threshold) {
+                    const scaled = value / unit.threshold;
+                    const digits = Math.abs(scaled) >= 100 ? 0 : Math.abs(scaled) >= 10 ? 1 : 2;
+                    return `${scaled.toFixed(digits).replace(/\.0+$|(\.\d*[1-9])0+$/,'$1')}${unit.suffix}`;
+                }
+            }
+            return formatNumber(value);
+        }
         function usageCount(entry) { return typeof entry === 'number' ? entry : Number(entry?.requestCount || 0); }
         function usageTokens(entry) { return typeof entry === 'number' ? 0 : Number(entry?.totalTokens || 0); }
 
@@ -816,8 +845,10 @@
             document.getElementById('enabledKeys').textContent = stats.enabledKeys;
             document.getElementById('todayUsage').textContent = stats.todayTotalUsage;
             document.getElementById('totalUsage').textContent = stats.totalUsage;
-            document.getElementById('todayTokens').textContent = formatNumber(stats.todayTotalTokens);
-            document.getElementById('totalTokens').textContent = formatNumber(stats.totalTokens);
+            document.getElementById('todayTokens').textContent = formatTokenCompact(stats.todayTotalTokens);
+            document.getElementById('todayCachedTokens').textContent = formatTokenCompact(stats.todayCachedTokens || 0);
+            document.getElementById('totalTokens').textContent = formatTokenCompact(stats.totalTokens);
+            document.getElementById('totalCachedTokens').textContent = formatTokenCompact(stats.totalCachedTokens || 0);
             
             // 渲染使用历史分布
             renderUsageHistory(stats.usageHistory);
@@ -865,7 +896,7 @@
 
             // 渲染提供商分布
             renderDistribution('providerDistribution', aggregatedProviders, totalCalls);
-            document.getElementById('providerTotalCount').textContent = `${formatNumber(totalCalls)} 次 / ${formatNumber(totalTokens)} Tokens`;
+            document.getElementById('providerTotalCount').textContent = `${formatNumber(totalCalls)} 次 / ${formatTokenCompact(totalTokens)} Tokens`;
 
             // 渲染模型分布 (模型总数与提供商总数一致)
             renderDistribution('modelDistribution', aggregatedModels, totalCalls);
@@ -1025,13 +1056,13 @@
                         <div class="key-stat">
                             <div class="label">今日/限额</div>
                             <div class="value ${valueClass}">${key.todayUsage}/${key.dailyLimit}</div>
-                            <div class="value muted">${formatNumber(key.todayTotalTokens || 0)} Tokens</div>
+                            <div class="value muted">${formatTokenCompact(key.todayTotalTokens || 0)} Tokens ${key.todayCachedTokens ? `(含 ${formatTokenCompact(key.todayCachedTokens)} 缓存)` : ''}</div>
                             <div class="progress-bar"><div class="fill ${progressClass}" style="width:${Math.min(usagePercent, 100)}%"></div></div>
                         </div>
                         <div class="key-stat">
                             <div class="label">累计</div>
                             <div class="value">${key.totalUsage}</div>
-                            <div class="value muted">${formatNumber(key.totalTokens || 0)} Tokens</div>
+                            <div class="value muted">${formatTokenCompact(key.totalTokens || 0)} Tokens ${key.totalCachedTokens ? `(含 ${formatTokenCompact(key.totalCachedTokens)} 缓存)` : ''}</div>
                         </div>
                         <div class="key-stat">
                             <div class="label">最后调用</div>
@@ -1044,6 +1075,7 @@
                     </div>
                     <div class="key-actions">
                         <button class="btn btn-secondary btn-sm" onclick="resetUsage('${key.id}')" title="重置今日用量"><i class="fas fa-redo"></i> <span class="btn-text">重置</span></button>
+                        <button class="btn btn-secondary btn-sm" onclick="resetTokenStats('${key.id}')" title="重置 Token 统计"><i class="fas fa-eraser"></i> <span class="btn-text">Token</span></button>
                         <button class="btn btn-secondary btn-sm" onclick="openEditLimit('${key.id}', ${key.dailyLimit})" title="修改限额"><i class="fas fa-sliders-h"></i> <span class="btn-text">限额</span></button>
                         <button class="btn btn-secondary btn-sm" onclick="toggleKey('${key.id}')" title="${key.enabled ? '禁用' : '启用'}">${key.enabled ? '<i class="fas fa-toggle-on"></i>' : '<i class="fas fa-toggle-off"></i>'} <span class="btn-text">${key.enabled ? '禁用' : '启用'}</span></button>
                         <button class="btn btn-danger btn-sm" onclick="deleteKey('${key.id}')" title="删除"><i class="fas fa-trash"></i> <span class="btn-text">删除</span></button>
@@ -1107,6 +1139,20 @@
             if (!confirm('确定要重置该 Key 的今日调用次数吗？')) return;
             const result = await apiRequest(`${API_BASE}/keys/${encodeURIComponent(keyId)}/reset`, { method: 'POST' });
             if (result && result.success) { showToast('已重置', 'success'); loadData(); }
+            else { showToast(result?.error?.message || '操作失败', 'error'); }
+        }
+
+        async function resetTokenStats(keyId) {
+            if (!confirm('确定要重置该 Key 的 Token 统计吗？这会清空该 Key 的今日/累计 Token 与历史 Token 统计，但保留调用次数。')) return;
+            const result = await apiRequest(`${API_BASE}/keys/${encodeURIComponent(keyId)}/reset-tokens`, { method: 'POST' });
+            if (result && result.success) { showToast('Token 统计已重置', 'success'); loadData(); }
+            else { showToast(result?.error?.message || '操作失败', 'error'); }
+        }
+
+        async function resetAllTokenStats() {
+            if (!confirm('确定要重置全部 Key 的 Token 统计吗？这会清空所有 Key 的今日/累计 Token 与历史 Token 统计，但保留调用次数。')) return;
+            const result = await apiRequest(`${API_BASE}/stats/reset-tokens`, { method: 'POST' });
+            if (result && result.success) { showToast('全部 Token 统计已重置', 'success'); loadData(); }
             else { showToast(result?.error?.message || '操作失败', 'error'); }
         }
 

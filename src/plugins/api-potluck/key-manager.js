@@ -52,7 +52,8 @@ function createUsageBucket() {
         requestCount: 0,
         promptTokens: 0,
         completionTokens: 0,
-        totalTokens: 0
+        totalTokens: 0,
+        cachedTokens: 0
     };
 }
 
@@ -75,7 +76,8 @@ function normalizeUsageBucket(bucket) {
         requestCount: toNumber(bucket?.requestCount),
         promptTokens: toNumber(bucket?.promptTokens),
         completionTokens: toNumber(bucket?.completionTokens),
-        totalTokens: toNumber(bucket?.totalTokens)
+        totalTokens: toNumber(bucket?.totalTokens),
+        cachedTokens: toNumber(bucket?.cachedTokens)
     };
 }
 
@@ -105,9 +107,11 @@ function normalizeKeyData(keyData = {}) {
         todayPromptTokens: toNumber(keyData.todayPromptTokens),
         todayCompletionTokens: toNumber(keyData.todayCompletionTokens),
         todayTotalTokens: toNumber(keyData.todayTotalTokens),
+        todayCachedTokens: toNumber(keyData.todayCachedTokens),
         totalPromptTokens: toNumber(keyData.totalPromptTokens),
         totalCompletionTokens: toNumber(keyData.totalCompletionTokens),
         totalTokens: toNumber(keyData.totalTokens),
+        totalCachedTokens: toNumber(keyData.totalCachedTokens),
         usageHistory: {}
     };
 
@@ -131,6 +135,32 @@ function addUsage(target, usage = {}) {
     target.promptTokens += toNumber(usage.promptTokens);
     target.completionTokens += toNumber(usage.completionTokens);
     target.totalTokens += toNumber(usage.totalTokens);
+    target.cachedTokens += toNumber(usage.cachedTokens);
+}
+
+function resetUsageBucketTokens(bucket) {
+    if (!bucket || typeof bucket !== 'object') return;
+    bucket.promptTokens = 0;
+    bucket.completionTokens = 0;
+    bucket.totalTokens = 0;
+    bucket.cachedTokens = 0;
+}
+
+function resetUsageHistoryTokens(usageHistory) {
+    if (!usageHistory || typeof usageHistory !== 'object') return;
+
+    for (const day of Object.values(usageHistory)) {
+        if (!day || typeof day !== 'object') continue;
+        resetUsageBucketTokens(day.summary);
+
+        for (const usage of Object.values(day.providers || {})) {
+            resetUsageBucketTokens(usage);
+        }
+
+        for (const usage of Object.values(day.models || {})) {
+            resetUsageBucketTokens(usage);
+        }
+    }
 }
 
 /**
@@ -172,7 +202,7 @@ function syncWriteToFile() {
     try {
         const dir = path.dirname(KEYS_STORE_FILE);
         if (!existsSync(dir)) {
-            require('fs').mkdirSync(dir, { recursive: true });
+            mkdirSync(dir, { recursive: true });
         }
         writeFileSync(KEYS_STORE_FILE, JSON.stringify(keyStore, null, 2), 'utf8');
     } catch (error) {
@@ -248,6 +278,7 @@ function checkAndResetDailyCount(keyData) {
         keyData.todayPromptTokens = 0;
         keyData.todayCompletionTokens = 0;
         keyData.todayTotalTokens = 0;
+        keyData.todayCachedTokens = 0;
         keyData.lastResetDate = today;
     }
     return keyData;
@@ -255,7 +286,6 @@ function checkAndResetDailyCount(keyData) {
 
 /**
  * 创建新的 API Key
-
  * @param {string} name - Key 名称
  * @param {number} [dailyLimit] - 每日限额，不传则使用配置的默认值
  */
@@ -278,9 +308,11 @@ export async function createKey(name = '', dailyLimit = null) {
         todayPromptTokens: 0,
         todayCompletionTokens: 0,
         todayTotalTokens: 0,
+        todayCachedTokens: 0,
         totalPromptTokens: 0,
         totalCompletionTokens: 0,
         totalTokens: 0,
+        totalCachedTokens: 0,
         lastResetDate: today,
         lastUsedAt: null,
         enabled: true
@@ -354,11 +386,65 @@ export async function resetKeyUsage(keyId) {
     keyStore.keys[keyId].todayPromptTokens = 0;
     keyStore.keys[keyId].todayCompletionTokens = 0;
     keyStore.keys[keyId].todayTotalTokens = 0;
+    keyStore.keys[keyId].todayCachedTokens = 0;
     keyStore.keys[keyId].lastResetDate = getTodayDateString();
     if (!keyStore.keys[keyId].usageHistory) keyStore.keys[keyId].usageHistory = {};
     keyStore.keys[keyId].usageHistory[getTodayDateString()] = normalizeUsageHistoryDay();
     markDirty();
     return keyStore.keys[keyId];
+}
+
+/**
+ * 重置单个 Key 的 Token 统计（保留调用次数）
+ */
+export async function resetKeyTokenStats(keyId) {
+    ensureLoaded();
+    const keyData = keyStore.keys[keyId];
+    if (!keyData) return null;
+
+    keyData.todayPromptTokens = 0;
+    keyData.todayCompletionTokens = 0;
+    keyData.todayTotalTokens = 0;
+    keyData.todayCachedTokens = 0;
+    keyData.totalPromptTokens = 0;
+    keyData.totalCompletionTokens = 0;
+    keyData.totalTokens = 0;
+    keyData.totalCachedTokens = 0;
+    resetUsageHistoryTokens(keyData.usageHistory);
+
+    markDirty();
+    await persistIfDirty();
+    logger.info(`[API Potluck] Reset token stats for key: ${keyId.substring(0, 12)}...`);
+    return keyData;
+}
+
+/**
+ * 重置所有 Key 的 Token 统计（保留调用次数）
+ */
+export async function resetAllTokenStats() {
+    ensureLoaded();
+    let updated = 0;
+
+    for (const keyData of Object.values(keyStore.keys)) {
+        keyData.todayPromptTokens = 0;
+        keyData.todayCompletionTokens = 0;
+        keyData.todayTotalTokens = 0;
+        keyData.todayCachedTokens = 0;
+        keyData.totalPromptTokens = 0;
+        keyData.totalCompletionTokens = 0;
+        keyData.totalTokens = 0;
+        keyData.totalCachedTokens = 0;
+        resetUsageHistoryTokens(keyData.usageHistory);
+        updated++;
+    }
+
+    if (updated > 0) {
+        markDirty();
+        await persistIfDirty();
+    }
+
+    logger.info(`[API Potluck] Reset token stats for all keys: ${updated}`);
+    return { total: Object.keys(keyStore.keys).length, updated };
 }
 
 /**
@@ -448,7 +534,7 @@ export async function validateKey(apiKey) {
  * @param {string} apiKey - API Key
  * @param {string} provider - 使用的提供商
  * @param {string} model - 使用的模型
- * @param {{promptTokens?: number, completionTokens?: number, totalTokens?: number}} usage - token 用量
+ * @param {{promptTokens?: number, completionTokens?: number, totalTokens?: number, cachedTokens?: number}} usage - token 用量
  */
 export async function incrementUsage(apiKey, provider = 'unknown', model = 'unknown', usage = {}) {
     ensureLoaded();
@@ -469,9 +555,11 @@ export async function incrementUsage(apiKey, provider = 'unknown', model = 'unkn
     keyData.todayPromptTokens += toNumber(usage.promptTokens);
     keyData.todayCompletionTokens += toNumber(usage.completionTokens);
     keyData.todayTotalTokens += toNumber(usage.totalTokens);
+    keyData.todayCachedTokens += toNumber(usage.cachedTokens);
     keyData.totalPromptTokens += toNumber(usage.promptTokens);
     keyData.totalCompletionTokens += toNumber(usage.completionTokens);
     keyData.totalTokens += toNumber(usage.totalTokens);
+    keyData.totalCachedTokens += toNumber(usage.cachedTokens);
     keyData.lastUsedAt = new Date().toISOString();
 
     // 记录个人按天统计 (每个 Key 独立)
@@ -514,8 +602,8 @@ export async function getStats() {
     ensureLoaded();
     const keys = Object.values(keyStore.keys);
     let enabledKeys = 0, todayTotalUsage = 0, totalUsage = 0;
-    let todayPromptTokens = 0, todayCompletionTokens = 0, todayTotalTokens = 0;
-    let totalPromptTokens = 0, totalCompletionTokens = 0, totalTokens = 0;
+    let todayPromptTokens = 0, todayCompletionTokens = 0, todayTotalTokens = 0, todayCachedTokens = 0;
+    let totalPromptTokens = 0, totalCompletionTokens = 0, totalTokens = 0, totalCachedTokens = 0;
     const aggregatedHistory = {};
 
     for (const key of keys) {
@@ -526,9 +614,11 @@ export async function getStats() {
         todayPromptTokens += key.todayPromptTokens || 0;
         todayCompletionTokens += key.todayCompletionTokens || 0;
         todayTotalTokens += key.todayTotalTokens || 0;
+        todayCachedTokens += key.todayCachedTokens || 0;
         totalPromptTokens += key.totalPromptTokens || 0;
         totalCompletionTokens += key.totalCompletionTokens || 0;
         totalTokens += key.totalTokens || 0;
+        totalCachedTokens += key.totalCachedTokens || 0;
 
         // 汇总每个 Key 的历史数据
         if (key.usageHistory) {
@@ -566,9 +656,11 @@ export async function getStats() {
         todayPromptTokens,
         todayCompletionTokens,
         todayTotalTokens,
+        todayCachedTokens,
         totalPromptTokens,
         totalCompletionTokens,
         totalTokens,
+        totalCachedTokens,
         usageHistory: aggregatedHistory
     };
 }
@@ -576,7 +668,7 @@ export async function getStats() {
 
 /**
  * 批量更新所有 Key 的每日限额
- * @param {number} newLimit - 新的每日限额
+ * @param {number} newLimit - 新s的每日限额
  * @returns {Promise<{total: number, updated: number}>}
  */
 export async function applyDailyLimitToAllKeys(newLimit) {

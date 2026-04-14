@@ -1025,7 +1025,7 @@ export async function handleContentGenerationRequest(req, res, service, endpoint
     // - 凭证切换重试：凭证被标记不健康后切换到其他凭证
     // 当没有不同的健康凭证可用时，重试会自动停止
     const credentialSwitchMaxRetries = CONFIG.CREDENTIAL_SWITCH_MAX_RETRIES || 5;
-    const retryContext = providerPoolManager ? { CONFIG, currentRetry: 0, maxRetries: credentialSwitchMaxRetries } : null;
+    const retryContext = { CONFIG, currentRetry: 0, maxRetries: credentialSwitchMaxRetries };
     
     if (isStream) {
         await handleStreamRequest(res, service, model, processedRequestBody, fromProvider, toProvider, CONFIG.PROMPT_LOG_MODE, PROMPT_LOG_FILENAME, providerPoolManager, actualUuid, actualCustomName, retryContext);

@@ -668,7 +668,7 @@ export class QwenApiService {
         const maxRetries = (this.config && this.config.REQUEST_MAX_RETRIES) || 3;
         const baseDelay = (this.config && this.config.REQUEST_BASE_DELAY) || 1000;
 
-        const version = "0.13.2";
+        const version = "0.14.2";
         const userAgent = `QwenCode/${version} (${process.platform}; ${process.arch})`;
 
         try {

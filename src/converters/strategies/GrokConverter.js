@@ -5,8 +5,10 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import logger from '../../utils/logger.js';
+import { countTextTokens } from '../../utils/token-utils.js';
 import { BaseConverter } from '../BaseConverter.js';
 import { MODEL_PROTOCOL_PREFIX } from '../../utils/common.js';
+import { ConverterFactory } from '../ConverterFactory.js';
 
 /**
  * Grok转换器类
@@ -21,6 +23,8 @@ export class GrokConverter extends BaseConverter {
         super('grok');
         // 用于跟踪每个请求的状态
         this.requestStates = new Map();
+        /** @type {Map<string, boolean>} 流式 Claude 转换是否已发送 message_start（按 streamRequestId） */
+        this._claudeMsgStartSent = new Map();
     }
 
     /**
@@ -111,10 +115,181 @@ export class GrokConverter extends BaseConverter {
                 requestBaseUrl: "",
                 uuid: null,
                 seen_images: new Set(), // 用于去重已输出的图片
-                pending_text_buffer: "" // 用于处理流式输出中被截断的 URL
+                pending_text_buffer: "", // 用于处理流式输出中被截断的 URL
+                usageAcc: null, // 流式过程中最后一次解析到的上游用量（末包常为合成 isDone 无用量）
+                usageEstimatePayload: null // grok-core 注入的 prompt/tools 文本，用于本地估算
             });
         }
         return this.requestStates.get(requestId);
+    }
+
+    _nTok(v) {
+        const n = Number(v);
+        return Number.isFinite(n) && n >= 0 ? Math.trunc(n) : 0;
+    }
+
+    _packOpenAIUsage(prompt, completion, total) {
+        const pt = this._nTok(prompt);
+        const ct = this._nTok(completion);
+        let tt = this._nTok(total);
+        if (!tt && (pt || ct)) tt = pt + ct;
+        if (!pt && !ct && !tt) return null;
+        return { prompt_tokens: pt, completion_tokens: ct, total_tokens: tt || pt + ct };
+    }
+
+    _usageFromUsageLike(u) {
+        if (!u || typeof u !== "object") return null;
+        return this._packOpenAIUsage(
+            u.prompt_tokens ?? u.input_tokens ?? u.promptTokens ?? u.inputTokens
+                ?? u.prompt_token_count ?? u.input_token_count,
+            u.completion_tokens ?? u.output_tokens ?? u.completionTokens ?? u.outputTokens
+                ?? u.completion_token_count ?? u.output_token_count,
+            u.total_tokens ?? u.totalTokens ?? u.total_token_count
+        );
+    }
+
+    _usageFromLlmInfoLike(li) {
+        if (!li || typeof li !== "object") return null;
+        return this._packOpenAIUsage(
+            li.inputTokens ?? li.promptTokens ?? li.prompt_tokens ?? li.input_tokens
+                ?? li.prompt_token_count ?? li.input_token_count,
+            li.outputTokens ?? li.completionTokens ?? li.completion_tokens ?? li.output_tokens
+                ?? li.completion_token_count ?? li.output_token_count,
+            li.totalTokens ?? li.total_tokens ?? li.total_token_count
+        );
+    }
+
+    _usageRank(u) {
+        return u ? (u.total_tokens || u.prompt_tokens + u.completion_tokens) : 0;
+    }
+
+    _usageFromRecord(node) {
+        if (!node || typeof node !== "object") return null;
+        return this._usageFromUsageLike(node.usage)
+            || this._usageFromUsageLike(node.tokenUsage)
+            || this._usageFromLlmInfoLike(node.llmInfo)
+            || this._usageFromLlmInfoLike(node.llm_info);
+    }
+
+    _bestUsageFromNodes(nodes) {
+        let best = null;
+        for (const node of nodes) {
+            const u = this._usageFromRecord(node);
+            if (u && this._usageRank(u) >= this._usageRank(best)) best = u;
+        }
+        return best;
+    }
+
+    _preferHigherUsage(a, b) {
+        if (this._usageRank(b) > this._usageRank(a)) return b || a;
+        return a || b;
+    }
+
+    /**
+     * 上游无有效 usage 时，用 Claude tokenizer 估算（与 Grok/xAI 官方计费可能不一致，仅作展示/配额参考）
+     */
+    _fillUsageWithEstimateIfNeeded(upstream, payload, completionText) {
+        if (process.env.GROK_DISABLE_USAGE_ESTIMATE === '1' || /^true$/i.test(process.env.GROK_DISABLE_USAGE_ESTIMATE || '')) {
+            return upstream && typeof upstream === 'object'
+                ? upstream
+                : { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+        }
+        const u = upstream && typeof upstream === 'object'
+            ? upstream
+            : { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+        if (this._usageRank(u) > 0) {
+            return {
+                prompt_tokens: u.prompt_tokens,
+                completion_tokens: u.completion_tokens,
+                total_tokens: u.total_tokens || u.prompt_tokens + u.completion_tokens,
+            };
+        }
+        const promptStr = `${payload?.promptText ?? ''}${payload?.toolsJson ?? ''}`;
+        const pt = countTextTokens(promptStr);
+        const ct = countTextTokens(completionText || '');
+        return {
+            prompt_tokens: pt,
+            completion_tokens: ct,
+            total_tokens: pt + ct,
+        };
+    }
+
+    /**
+     * 在整块 JSON 内深度查找类 usage 对象（Grok 上游字段位置不固定时兜底）
+     */
+    _deepFindUsage(obj, depth = 0, maxDepth = 6) {
+        if (!obj || typeof obj !== "object" || depth > maxDepth) return null;
+        if (Array.isArray(obj)) {
+            let best = null;
+            const lim = Math.min(obj.length, 80);
+            for (let i = 0; i < lim; i++) {
+                const u = this._deepFindUsage(obj[i], depth + 1, maxDepth);
+                best = this._preferHigherUsage(best, u);
+            }
+            return best;
+        }
+        const direct = this._usageFromUsageLike(obj) || this._usageFromLlmInfoLike(obj);
+        if (direct) return direct;
+        let best = null;
+        const keys = Object.keys(obj);
+        const lim = Math.min(keys.length, 80);
+        for (let i = 0; i < lim; i++) {
+            const v = obj[keys[i]];
+            if (v == null || typeof v !== "object") continue;
+            const u = this._deepFindUsage(v, depth + 1, maxDepth);
+            best = this._preferHigherUsage(best, u);
+        }
+        return best;
+    }
+
+    /**
+     * 从 Grok app-chat 流式块解析用量（兼容 result 层、response、modelResponse.metadata.llm_info 等）
+     */
+    _extractGrokUsageFromChunk(grokChunk, resp) {
+        const nodes = [];
+        if (grokChunk?.result) nodes.push(grokChunk.result);
+        if (resp) nodes.push(resp);
+        if (resp?.modelResponse) {
+            nodes.push(resp.modelResponse);
+            const md = resp.modelResponse.metadata;
+            if (md) {
+                nodes.push(md);
+                if (md.llm_info) nodes.push(md.llm_info);
+            }
+        }
+        const shallow = this._bestUsageFromNodes(nodes);
+        const deep = this._deepFindUsage(grokChunk, 0, 6);
+        return this._preferHigherUsage(shallow, deep);
+    }
+
+    /**
+     * 从非流式聚合结果解析用量
+     */
+    _extractGrokUsageFromCollected(grokResponse) {
+        const nodes = [grokResponse, grokResponse?.modelResponse];
+        if (grokResponse?.usage) nodes.push({ usage: grokResponse.usage });
+        const md = grokResponse?.modelResponse?.metadata;
+        if (md) {
+            nodes.push(md);
+            if (md.llm_info) nodes.push(md.llm_info);
+        }
+        if (grokResponse?.llmInfo) nodes.push(grokResponse.llmInfo);
+        const shallow = this._bestUsageFromNodes(nodes);
+        const deep = this._deepFindUsage(grokResponse, 0, 6);
+        return this._preferHigherUsage(shallow, deep);
+    }
+
+    /**
+     * 部署后验证用量：环境变量 GROK_LOG_USAGE=1（或 true）时，每次完成响应打一行 info，默认关闭。
+     */
+    _maybeLogGrokUsage(kind, model, responseId, usage) {
+        const flag = process.env.GROK_LOG_USAGE;
+        if (flag !== '1' && !/^true$/i.test(String(flag || ''))) return;
+        if (!usage) return;
+        logger.info(
+            `[Grok usage] ${kind} model=${model ?? '?'} id=${responseId ?? '?'} ` +
+            `in=${usage.prompt_tokens} out=${usage.completion_tokens} total=${usage.total_tokens}`
+        );
     }
 
     /**
@@ -268,6 +443,12 @@ export class GrokConverter extends BaseConverter {
                 return this.toOpenAIResponsesResponse(data, model);
             case MODEL_PROTOCOL_PREFIX.CODEX:
                 return this.toCodexResponse(data, model);
+            case MODEL_PROTOCOL_PREFIX.CLAUDE: {
+                const openaiRes = this.toOpenAIResponse(data, model);
+                if (!openaiRes) return data;
+                const openaiConverter = ConverterFactory.getConverter(MODEL_PROTOCOL_PREFIX.OPENAI);
+                return openaiConverter.toClaudeResponse(openaiRes, model);
+            }
             default:
                 return data;
         }
@@ -276,7 +457,7 @@ export class GrokConverter extends BaseConverter {
     /**
      * 转换流式响应块
      */
-    convertStreamChunk(chunk, targetProtocol, model) {
+    convertStreamChunk(chunk, targetProtocol, model, requestId) {
         switch (targetProtocol) {
             case MODEL_PROTOCOL_PREFIX.OPENAI:
                 return this.toOpenAIStreamChunk(chunk, model);
@@ -286,6 +467,8 @@ export class GrokConverter extends BaseConverter {
                 return this.toOpenAIResponsesStreamChunk(chunk, model);
             case MODEL_PROTOCOL_PREFIX.CODEX:
                 return this.toCodexStreamChunk(chunk, model);
+            case MODEL_PROTOCOL_PREFIX.CLAUDE:
+                return this.toClaudeStreamChunk(chunk, model, requestId);
             default:
                 return chunk;
         }
@@ -555,7 +738,19 @@ export class GrokConverter extends BaseConverter {
         }
 
         // 解析工具调用
+        const contentForTokenCount = content;
         const { text, toolCalls } = this.parseToolCalls(content);
+
+        let usage = this._extractGrokUsageFromCollected(grokResponse) || {
+            prompt_tokens: 0,
+            completion_tokens: 0,
+            total_tokens: 0,
+        };
+        usage = this._fillUsageWithEstimateIfNeeded(
+            usage,
+            grokResponse._grokUsageEstimatePayload,
+            contentForTokenCount
+        );
 
         const result = {
             id: responseId,
@@ -571,17 +766,14 @@ export class GrokConverter extends BaseConverter {
                 },
                 finish_reason: toolCalls ? "tool_calls" : "stop",
             }],
-            usage: {
-                prompt_tokens: 0,
-                completion_tokens: 0,
-                total_tokens: 0,
-            },
+            usage,
         };
 
         if (toolCalls) {
             result.choices[0].message.tool_calls = toolCalls;
         }
 
+        this._maybeLogGrokUsage('unary', model, result.id, result.usage);
         return result;
     }
 
@@ -617,6 +809,15 @@ export class GrokConverter extends BaseConverter {
         }
         if (resp.rolloutId) {
             state.rollout_id = String(resp.rolloutId);
+        }
+
+        const usageHere = this._extractGrokUsageFromChunk(grokChunk, resp);
+        if (usageHere && this._usageRank(usageHere) >= this._usageRank(state.usageAcc)) {
+            state.usageAcc = usageHere;
+        }
+        const est = grokChunk.result?._grokUsageEstimatePayload;
+        if (est && !state.usageEstimatePayload) {
+            state.usageEstimatePayload = est;
         }
 
         const chunks = [];
@@ -657,6 +858,17 @@ export class GrokConverter extends BaseConverter {
             // 处理 buffer 中的工具调用
             const { text, toolCalls } = this.parseToolCalls(state.content_buffer);
             
+            let terminalUsage = state.usageAcc || usageHere || {
+                prompt_tokens: 0,
+                completion_tokens: 0,
+                total_tokens: 0
+            };
+            terminalUsage = this._fillUsageWithEstimateIfNeeded(
+                terminalUsage,
+                state.usageEstimatePayload,
+                state.content_buffer || ''
+            );
+            this._maybeLogGrokUsage('stream', model, responseId, terminalUsage);
             if (toolCalls) {
                 chunks.push({
                     id: responseId,
@@ -664,6 +876,7 @@ export class GrokConverter extends BaseConverter {
                     created: Math.floor(Date.now() / 1000),
                     model: model,
                     system_fingerprint: state.fingerprint,
+                    usage: terminalUsage,
                     choices: [{
                         index: 0,
                         delta: { 
@@ -680,6 +893,7 @@ export class GrokConverter extends BaseConverter {
                     created: Math.floor(Date.now() / 1000),
                     model: model,
                     system_fingerprint: state.fingerprint,
+                    usage: terminalUsage,
                     choices: [{
                         index: 0,
                         delta: { content: finalContent || null },
@@ -1168,6 +1382,54 @@ export class GrokConverter extends BaseConverter {
         }
 
         return codexChunks.length > 0 ? codexChunks : null;
+    }
+
+    toClaudeStreamChunk(chunk, model, requestId) {
+        const openaiPieces = this.toOpenAIStreamChunk(chunk, model);
+        if (!openaiPieces) return null;
+
+        const key = requestId || '_';
+        const openaiConverter = ConverterFactory.getConverter(MODEL_PROTOCOL_PREFIX.OPENAI);
+        const pieces = Array.isArray(openaiPieces) ? openaiPieces : [openaiPieces];
+        const out = [];
+
+        for (const p of pieces) {
+            const events = openaiConverter.toClaudeStreamChunk(p, model);
+            if (!events) continue;
+
+            const arr = Array.isArray(events) ? events : [events];
+            for (const ev of arr) {
+                if (!this._claudeMsgStartSent.get(key)) {
+                    this._claudeMsgStartSent.set(key, true);
+                    const msgId = `msg_${String(p.id || uuidv4()).replace(/^chatcmpl-/, '')}`;
+                    out.push({
+                        type: 'message_start',
+                        message: {
+                            id: msgId,
+                            type: 'message',
+                            role: 'assistant',
+                            content: [],
+                            model: model || p.model || 'unknown',
+                            stop_reason: null,
+                            stop_sequence: null,
+                            usage: {
+                                input_tokens: 0,
+                                output_tokens: 0,
+                                cache_creation_input_tokens: 0,
+                                cache_read_input_tokens: 0
+                            }
+                        }
+                    });
+                }
+                out.push(ev);
+            }
+        }
+
+        if (chunk?.result?.response?.isDone) {
+            this._claudeMsgStartSent.delete(key);
+        }
+
+        return out.length === 0 ? null : (out.length === 1 ? out[0] : out);
     }
 
     /**

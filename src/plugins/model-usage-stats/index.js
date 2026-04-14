@@ -6,6 +6,7 @@ import {
     recordStreamChunkUsage,
     recordUnaryUsage,
     resetStats,
+    resetTokenStats,
     setConfigGetter
 } from './stats-manager.js';
 
@@ -81,12 +82,14 @@ const modelUsageStatsPlugin = {
 
     exports: {
         getStats,
-        resetStats
+        resetStats,
+        resetTokenStats
     }
 };
 
 export default modelUsageStatsPlugin;
 export {
     getStats,
-    resetStats
+    resetStats,
+    resetTokenStats
 };
