@@ -238,8 +238,8 @@ jobs:
           $installer = "${{ steps.compile.outputs.installer_path }}"
           $hash = (Get-FileHash $installer -Algorithm SHA256).Hash
           $checksumFile = "$installer.sha256"
-      # SHA-256 checksum — format is compatible with `sha256sum -c` on Linux/macOS
-      "$hash  ${{ steps.compile.outputs.installer_name }}" | Out-File $checksumFile -Encoding ASCII
+          # SHA-256 checksum — format is compatible with `sha256sum -c` on Linux/macOS
+          "$hash  ${{ steps.compile.outputs.installer_name }}" | Out-File $checksumFile -Encoding ASCII
           Write-Host "SHA256: $hash"
           echo "checksum_path=$checksumFile" >> $env:GITHUB_OUTPUT
           echo "sha256=$hash" >> $env:GITHUB_OUTPUT
