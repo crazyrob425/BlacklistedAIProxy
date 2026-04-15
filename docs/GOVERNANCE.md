@@ -1,7 +1,7 @@
 # Governance & Implementation Roadmap
 
 This document captures the implementation plan, wave schedule, epic acceptance
-criteria, and sign-off gates for the BlacklistedAIProxy enhancement programme.
+criteria, and sign-off gates for the BlacklistedAPI enhancement programme.
 
 ---
 

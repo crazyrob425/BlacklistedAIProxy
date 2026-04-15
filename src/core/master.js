@@ -372,7 +372,7 @@ function setupSignalHandlers() {
  */
 async function main() {
     logger.info('='.repeat(50));
-    logger.info('[Master] AIClient2API Master Process');
+    logger.info('[Master] BlacklistedAPI Master Process');
     logger.info('[Master] PID:', process.pid);
     logger.info('[Master] Node version:', process.version);
     logger.info('[Master] Working directory:', process.cwd());

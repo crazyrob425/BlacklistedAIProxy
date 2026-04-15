@@ -1,0 +1,183 @@
+name: Windows Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'VERSION'
+
+permissions:
+  contents: write
+
+jobs:
+  windows-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(cat VERSION | tr -d '\n\r ')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+          echo "zip=BlacklistedAPI-$VERSION-windows-x64.zip" >> $GITHUB_OUTPUT
+
+      - name: Check if tag already exists
+        id: check_tag
+        run: |
+          if git rev-parse "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Go
+        if: steps.check_tag.outputs.exists == 'false'
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache-dependency-path: tls-sidecar/go.sum
+
+      - name: Build TLS sidecar for Windows (amd64)
+        if: steps.check_tag.outputs.exists == 'false'
+        working-directory: tls-sidecar
+        run: |
+          go mod download
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 \
+            go build -ldflags="-s -w" -o tls-sidecar.exe .
+
+      - name: Assemble Windows release package
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          STAGING="staging/BlacklistedAPI-${{ steps.version.outputs.version }}-windows-x64"
+          mkdir -p "$STAGING/tls-sidecar"
+
+          # Application source
+          cp -r src configs static docs "$STAGING/" 2>/dev/null || true
+          cp package.json package-lock.json healthcheck.js VERSION "$STAGING/"
+
+          # Windows launchers
+          cp install-and-run.bat install-and-run.ps1 "$STAGING/"
+
+          # Pre-built Windows TLS sidecar binary
+          cp tls-sidecar/tls-sidecar.exe "$STAGING/tls-sidecar/tls-sidecar.exe"
+          cp tls-sidecar/go.mod           "$STAGING/tls-sidecar/"
+
+          # Write a quick-start README for Windows users
+          cat > "$STAGING/README-WINDOWS.md" << 'EOF'
+          # BlacklistedAPI — Windows Quick Start
+
+          ## Requirements
+          - **Node.js ≥ 20** — https://nodejs.org/
+
+          ## Run (double-click or PowerShell)
+          ```
+          install-and-run.bat
+          ```
+          Or from PowerShell:
+          ```powershell
+          .\install-and-run.ps1
+          ```
+
+          The server starts at **http://localhost:3000**  
+          The management UI is available at **http://localhost:3000**
+
+          ## Notes
+          - The `tls-sidecar/tls-sidecar.exe` binary is pre-compiled for Windows x64 — no Go required.
+          - To update to a newer release, re-download the zip or run `install-and-run.bat --pull` (requires Git).
+
+          ## Support
+          https://github.com/crazyrob425/BlacklistedAIProxy/issues
+          EOF
+
+          cd staging
+          zip -r "../${{ steps.version.outputs.zip }}" "$(basename "$STAGING")"
+          echo "Created ${{ steps.version.outputs.zip }}"
+
+      - name: Create Git tag
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${{ steps.version.outputs.version }}" \
+                 -m "Release v${{ steps.version.outputs.version }}"
+          git push origin "v${{ steps.version.outputs.version }}"
+
+      - name: Create GitHub Release with Windows package
+        if: steps.check_tag.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "BlacklistedAPI v${{ steps.version.outputs.version }}"
+          body: |
+            ## 🪟 BlacklistedAPI v${{ steps.version.outputs.version }} — Windows Release
+
+            **BlacklistedAPI** is an OpenAI-compatible reverse proxy that unlocks
+            client-only AI models (Gemini CLI, Claude Kiro, Grok, Codex, Qwen Code, and more)
+            so you can call them from any app or IDE — no permission slips required.
+
+            ---
+
+            ### ⚡ Windows Quick Install
+
+            1. **[Download the zip below](#assets)** — `${{ steps.version.outputs.zip }}`
+            2. Extract anywhere
+            3. Double-click **`install-and-run.bat`** (or run `.\install-and-run.ps1` in PowerShell)
+            4. Open **http://localhost:3000** in your browser
+
+            > **Requires Node.js ≥ 20** → https://nodejs.org/
+
+            The Windows zip includes a **pre-built `tls-sidecar.exe`** for Windows x64 — no Go toolchain needed.
+
+            ---
+
+            ### 🐳 Other Platforms
+
+            | Platform | How to run |
+            |---|---|
+            | 🐧 Linux / macOS | `bash install-and-run.sh` |
+            | 🐳 Docker | `docker pull ${{ secrets.DOCKERHUB_USERNAME }}/blacklisted-api:${{ steps.version.outputs.version }}` |
+
+            ---
+
+            ### 📦 What's in the Windows zip
+
+            ```
+            BlacklistedAPI-${{ steps.version.outputs.version }}-windows-x64/
+            ├── src/                    ← Node.js application source
+            ├── configs/                ← Example config files
+            ├── static/                 ← Web UI assets
+            ├── tls-sidecar/
+            │   └── tls-sidecar.exe    ← Pre-built Windows x64 binary
+            ├── package.json
+            ├── install-and-run.bat    ← Double-click launcher
+            ├── install-and-run.ps1    ← PowerShell setup & run script
+            └── README-WINDOWS.md      ← Windows quick-start guide
+            ```
+
+            ---
+
+            ### 🔗 Links
+
+            - 📖 [Full Documentation](https://github.com/crazyrob425/BlacklistedAIProxy#readme)
+            - 🐛 [Report an Issue](https://github.com/crazyrob425/BlacklistedAIProxy/issues)
+            - 🐳 [Docker Hub](https://hub.docker.com/r/crazyrob425/blacklisted-api)
+
+          files: ${{ steps.version.outputs.zip }}
+          draft: false
+          prerelease: false
+
+      - name: Build summary
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          echo "## 🪟 Windows Release Published :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** v${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Asset:** \`${{ steps.version.outputs.zip }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Release URL:** https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY

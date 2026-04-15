@@ -1,12 +1,12 @@
 # OpenClaw Configuration Guide
 
-Quick configuration guide for using AIClient-2-API with OpenClaw.
+Quick configuration guide for using BlacklistedAPI with OpenClaw.
 
 ---
 
 ## Prerequisites
 
-1. Start AIClient-2-API service
+1. Start BlacklistedAPI service
 2. Configure at least one provider in Web UI (`http://localhost:3000`)
 3. Note the API Key from configuration file
 4. Install OpenClaw
@@ -28,16 +28,16 @@ Quick configuration guide for using AIClient-2-API with OpenClaw.
   },
   agents: {
     defaults: {
-      model: { primary: "aiclient2api/gemini-3-flash-preview" },
+      model: { primary: "blacklistedapi/gemini-3-flash-preview" },
       models: {
-        "aiclient2api/gemini-3-flash-preview": { alias: "Gemini 3 Flash" }
+        "blacklistedapi/gemini-3-flash-preview": { alias: "Gemini 3 Flash" }
       }
     }
   },
   models: {
     mode: "merge",
     providers: {
-      aiclient2api: {
+      blacklistedapi: {
         baseUrl: "http://localhost:3000/v1",
         apiKey: "${AICLIENT2API_KEY}",
         api: "openai-completions",
@@ -69,16 +69,16 @@ Quick configuration guide for using AIClient-2-API with OpenClaw.
   },
   agents: {
     defaults: {
-      model: { primary: "aiclient2api/claude-sonnet-4-5" },
+      model: { primary: "blacklistedapi/claude-sonnet-4-5" },
       models: {
-        "aiclient2api/claude-sonnet-4-5": { alias: "Claude Sonnet 4.5" }
+        "blacklistedapi/claude-sonnet-4-5": { alias: "Claude Sonnet 4.5" }
       }
     }
   },
   models: {
     mode: "merge",
     providers: {
-      aiclient2api: {
+      blacklistedapi: {
         baseUrl: "http://localhost:3000",
         apiKey: "${AICLIENT2API_KEY}",
         api: "anthropic-messages",
@@ -110,7 +110,7 @@ Specify a specific provider via routing parameters:
   models: {
     providers: {
       // Kiro Claude (OpenAI Protocol)
-      "aiclient2api-kiro": {
+      "blacklistedapi-kiro": {
         baseUrl: "http://localhost:3000/claude-kiro-oauth/v1",
         apiKey: "${AICLIENT2API_KEY}",
         api: "openai-completions",
@@ -118,7 +118,7 @@ Specify a specific provider via routing parameters:
       },
       
       // Kiro Claude (Claude Protocol)
-      "aiclient2api-kiro-claude": {
+      "blacklistedapi-kiro-claude": {
         baseUrl: "http://localhost:3000/claude-kiro-oauth",
         apiKey: "${AICLIENT2API_KEY}",
         api: "anthropic-messages",
@@ -126,7 +126,7 @@ Specify a specific provider via routing parameters:
       },
       
       // Gemini CLI (OpenAI Protocol)
-      "aiclient2api-gemini": {
+      "blacklistedapi-gemini": {
         baseUrl: "http://localhost:3000/gemini-cli-oauth/v1",
         apiKey: "${AICLIENT2API_KEY}",
         api: "openai-completions",
@@ -134,7 +134,7 @@ Specify a specific provider via routing parameters:
       },
       
       // Antigravity (OpenAI Protocol)
-      "aiclient2api-antigravity": {
+      "blacklistedapi-antigravity": {
         baseUrl: "http://localhost:3000/gemini-antigravity/v1",
         apiKey: "${AICLIENT2API_KEY}",
         api: "openai-completions",
@@ -154,9 +154,9 @@ Specify a specific provider via routing parameters:
   agents: {
     defaults: {
       model: {
-        primary: "aiclient2api/claude-sonnet-4-5",
+        primary: "blacklistedapi/claude-sonnet-4-5",
         fallbacks: [
-          "aiclient2api/gemini-3-flash-preview"
+          "blacklistedapi/gemini-3-flash-preview"
         ]
       }
     }
@@ -173,10 +173,10 @@ Specify a specific provider via routing parameters:
 openclaw models list
 
 # Switch model
-openclaw models set aiclient2api/claude-sonnet-4-5
+openclaw models set blacklistedapi/claude-sonnet-4-5
 
 # Chat with specific model
-openclaw chat --model aiclient2api/gemini-3-flash-preview "your question"
+openclaw chat --model blacklistedapi/gemini-3-flash-preview "your question"
 ```
 
 ---
@@ -195,7 +195,7 @@ openclaw chat --model aiclient2api/gemini-3-flash-preview "your question"
 ## FAQ
 
 **Q: Connection failed?**
-- Confirm AIClient-2-API service is running
+- Confirm BlacklistedAPI service is running
 - Check if Base URL is correct (OpenAI protocol needs `/v1` suffix)
 - Try using `127.0.0.1` instead of `localhost`
 
@@ -204,10 +204,10 @@ openclaw chat --model aiclient2api/gemini-3-flash-preview "your question"
 - Confirm environment variable `AICLIENT2API_KEY` is set
 
 **Q: Model unavailable?**
-- Confirm provider is configured in AIClient-2-API Web UI
+- Confirm provider is configured in BlacklistedAPI Web UI
 - Run `openclaw gateway restart` to restart gateway
 - Run `openclaw models list` to verify model list
 
 ---
 
-For more information, see [AIClient-2-API Documentation](../README.md)
+For more information, see [BlacklistedAPI Documentation](../README.md)
