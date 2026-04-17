@@ -23,6 +23,7 @@ on:
 
 env:
   NODE_VERSION: "20.19.1"          # pinned LTS — also used for bundled runtime
+  GO_VERSION: "1.22"
   NSSM_VERSION: "2.24"
   NSSM_URL: "https://nssm.cc/release/nssm-2.24.zip"
 
@@ -47,6 +48,11 @@ jobs:
         run: |
           $ver = (Get-Content VERSION -Raw).Trim()
           $expectedTag = "v$ver"
+          $numeric = ($ver -replace '[^0-9\.].*$', '')
+          if (-not ($numeric -match '^\d+\.\d+\.\d+$')) {
+            throw "VERSION must start with semver (x.y.z). Got: $ver"
+          }
+          $versionInfo = "$numeric.1"
 
           if ("${{ github.event_name }}" -eq "push") {
             $tag = "${{ github.ref_name }}"
@@ -59,6 +65,7 @@ jobs:
 
           echo "version=$ver" >> $env:GITHUB_OUTPUT
           echo "tag=$tag" >> $env:GITHUB_OUTPUT
+          echo "version_info=$versionInfo" >> $env:GITHUB_OUTPUT
           Write-Host "Building version: $ver"
           Write-Host "Using release tag: $tag"
 
@@ -69,10 +76,32 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
 
+      # ── Set up Go for TLS sidecar build ───────────────────────────────────────
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: tls-sidecar/go.sum
+
       # ── Install production dependencies ───────────────────────────────────────
       - name: Install production dependencies
         run: npm ci --omit=dev
         shell: pwsh
+
+      # ── Build Windows TLS sidecar (required artifact) ─────────────────────────
+      - name: Build tls-sidecar.exe (windows/amd64)
+        shell: pwsh
+        run: |
+          Push-Location tls-sidecar
+          go mod download
+          $env:CGO_ENABLED = "0"
+          $env:GOOS = "windows"
+          $env:GOARCH = "amd64"
+          go build -ldflags="-s -w" -o tls-sidecar.exe .
+          Pop-Location
+          if (-not (Test-Path "tls-sidecar\tls-sidecar.exe")) {
+            throw "Missing required artifact: tls-sidecar\\tls-sidecar.exe"
+          }
 
       # ── Generate placeholder bitmap assets (if real ones are absent) ──────────
       - name: Generate installer bitmap assets
@@ -192,6 +221,23 @@ jobs:
           $size = (Get-Item "build\BlacklistedAIProxy-portable.zip").Length / 1MB
           Write-Host ("Zip size: {0:N1} MB" -f $size)
 
+      # ── Validate required build assets before installer compile ───────────────
+      - name: Validate required Windows build assets
+        shell: pwsh
+        run: |
+          $required = @(
+            "build\nssm\nssm.exe",
+            "build\node\node.exe",
+            "build\BlacklistedAIProxy-portable.zip",
+            "tls-sidecar\tls-sidecar.exe",
+            "installer\BlacklistedProxy.iss"
+          )
+          foreach ($path in $required) {
+            if (-not (Test-Path $path)) {
+              throw "Required artifact missing: $path"
+            }
+          }
+
       # ── Copy node-portable.zip for portable launcher ──────────────────────────
       - name: Prepare portable node zip for launcher
         shell: pwsh
@@ -220,6 +266,7 @@ jobs:
           Write-Host "Compiling with: $iscc"
           & $iscc "installer\BlacklistedProxy.iss" `
             /DAppVersion="${{ steps.version.outputs.version }}" `
+            /DAppVersionNumeric="${{ steps.version.outputs.version_info }}" `
             /O"installer\Output"
           if ($LASTEXITCODE -ne 0) { throw "Inno Setup compilation failed (exit code $LASTEXITCODE)" }
 
@@ -244,6 +291,19 @@ jobs:
           echo "checksum_path=$checksumFile" >> $env:GITHUB_OUTPUT
           echo "sha256=$hash" >> $env:GITHUB_OUTPUT
         id: checksum
+
+      # ── Validate output artifacts ──────────────────────────────────────────────
+      - name: Validate installer and portable artifacts
+        shell: pwsh
+        run: |
+          $installer = "${{ steps.compile.outputs.installer_path }}"
+          $checksum = "${{ steps.checksum.outputs.checksum_path }}"
+          $portable = "build\BlacklistedAIProxy-portable.zip"
+          if (-not (Test-Path $installer)) { throw "Installer not found: $installer" }
+          if (-not (Test-Path $checksum)) { throw "Checksum file not found: $checksum" }
+          if (-not (Test-Path $portable)) { throw "Portable zip not found: $portable" }
+          if ((Get-Item $installer).Length -le 0) { throw "Installer is empty" }
+          if ((Get-Item $portable).Length -le 0) { throw "Portable zip is empty" }
 
       # ── Determine if this is a pre-release ────────────────────────────────────
       - name: Determine release type
@@ -301,6 +361,11 @@ jobs:
           - Windows 10 or later (x64)
           - Administrator privileges (Full Install only)
           - Internet connection to reach AI providers
+
+          ### Known beta limitations
+          - This beta build is currently distributed **without code signing**.
+          - SmartScreen warnings may appear on first launch.
+          - Validate file integrity with the published SHA-256 checksum before running.
 
           ${{ inputs.release_notes != '' && format('### Additional Notes{0}{1}', '\n', inputs.release_notes) || '' }}
 

@@ -26,7 +26,7 @@ jobs:
           VERSION=$(cat VERSION | tr -d '\n\r ')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=v$VERSION" >> $GITHUB_OUTPUT
-          echo "zip=BlacklistedAPI-$VERSION-windows-x64.zip" >> $GITHUB_OUTPUT
+          echo "zip=BlacklistedAIProxy-$VERSION-windows-x64.zip" >> $GITHUB_OUTPUT
 
       - name: Check if tag already exists
         id: check_tag
@@ -55,7 +55,7 @@ jobs:
       - name: Assemble Windows release package
         if: steps.check_tag.outputs.exists == 'false'
         run: |
-          STAGING="staging/BlacklistedAPI-${{ steps.version.outputs.version }}-windows-x64"
+          STAGING="staging/BlacklistedAIProxy-${{ steps.version.outputs.version }}-windows-x64"
           mkdir -p "$STAGING/tls-sidecar"
 
           # Application source
@@ -69,9 +69,11 @@ jobs:
           cp tls-sidecar/tls-sidecar.exe "$STAGING/tls-sidecar/tls-sidecar.exe"
           cp tls-sidecar/go.mod           "$STAGING/tls-sidecar/"
 
+          test -f "$STAGING/tls-sidecar/tls-sidecar.exe"
+
           # Write a quick-start README for Windows users
           cat > "$STAGING/README-WINDOWS.md" << 'EOF'
-          # BlacklistedAPI — Windows Quick Start
+          # BlacklistedAIProxy — Windows Quick Start
 
           ## Requirements
           - **Node.js ≥ 20** — https://nodejs.org/
@@ -114,11 +116,11 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
-          name: "BlacklistedAPI v${{ steps.version.outputs.version }}"
+          name: "BlacklistedAIProxy v${{ steps.version.outputs.version }}"
           body: |
-            ## 🪟 BlacklistedAPI v${{ steps.version.outputs.version }} — Windows Release
+            ## 🪟 BlacklistedAIProxy v${{ steps.version.outputs.version }} — Windows Release
 
-            **BlacklistedAPI** is an OpenAI-compatible reverse proxy that unlocks
+            **BlacklistedAIProxy** is an OpenAI-compatible reverse proxy that unlocks
             client-only AI models (Gemini CLI, Claude Kiro, Grok, Codex, Qwen Code, and more)
             so you can call them from any app or IDE — no permission slips required.
 
@@ -149,7 +151,7 @@ jobs:
             ### 📦 What's in the Windows zip
 
             ```
-            BlacklistedAPI-${{ steps.version.outputs.version }}-windows-x64/
+            BlacklistedAIProxy-${{ steps.version.outputs.version }}-windows-x64/
             ├── src/                    ← Node.js application source
             ├── configs/                ← Example config files
             ├── static/                 ← Web UI assets

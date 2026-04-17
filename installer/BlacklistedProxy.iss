@@ -20,7 +20,12 @@
 #define AppPublisher   "Blacklisted Binary Labs"
 #define AppURL         "https://blacklistedbinary.com"
 #define AppGitHub      "https://github.com/crazyrob425/BlacklistedAIProxy"
-#define AppVersion     "2.13.7-beta.1"
+#ifndef AppVersion
+  #define AppVersion     "2.13.7-beta.1"
+#endif
+#ifndef AppVersionNumeric
+  #define AppVersionNumeric "2.13.7.1"
+#endif
 #define AppExeName     "launcher.bat"
 #define ServiceName    "BlacklistedAIProxy"
 #define WatchdogName   "BlacklistedAIProxyWatchdog"
@@ -36,7 +41,7 @@ AppPublisherURL={#AppURL}
 AppSupportURL={#AppGitHub}/issues
 AppUpdatesURL={#AppGitHub}/releases
 AppCopyright=Copyright (C) 2026 Blacklisted Binary Labs
-VersionInfoVersion=2.13.7.1
+VersionInfoVersion={#AppVersionNumeric}
 ; Note: VersionInfoVersion uses the Windows 4-part numeric scheme (major.minor.patch.build).
 ; AppVersion uses the human-readable semver string (2.13.7-beta.1) — the two intentionally differ.
 VersionInfoCompany={#AppPublisher}
