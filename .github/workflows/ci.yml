@@ -33,6 +33,83 @@ jobs:
       - name: Run unit tests
         run: npm test -- tests/hybrid-gateway.test.js tests/provider-models.unit.test.js tests/security-fixes.unit.test.js --forceExit
 
+  windows-packaging-validation:
+    name: Windows packaging validation
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+
+      - name: Setup Go 1.22
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache-dependency-path: tls-sidecar/go.sum
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build tls-sidecar.exe
+        shell: pwsh
+        run: |
+          Push-Location tls-sidecar
+          go mod download
+          $env:CGO_ENABLED = "0"
+          $env:GOOS = "windows"
+          $env:GOARCH = "amd64"
+          go build -ldflags="-s -w" -o tls-sidecar.exe .
+          Pop-Location
+          if (-not (Test-Path "tls-sidecar\tls-sidecar.exe")) {
+            throw "Missing tls-sidecar\\tls-sidecar.exe"
+          }
+
+      - name: Validate packaging-critical files
+        shell: pwsh
+        run: |
+          $required = @(
+            "installer\BlacklistedProxy.iss",
+            "install-and-run.bat",
+            "install-and-run.ps1",
+            "healthcheck.js",
+            "tls-sidecar\tls-sidecar.exe",
+            "configs\config.json.example",
+            "configs\provider_pools.json.example"
+          )
+          foreach ($path in $required) {
+            if (-not (Test-Path $path)) {
+              throw "Required file missing: $path"
+            }
+          }
+
+      - name: Run unit tests
+        run: npm test -- tests/hybrid-gateway.test.js tests/provider-models.unit.test.js tests/security-fixes.unit.test.js --forceExit
+
+      - name: Smoke-test startup and /health endpoint
+        shell: pwsh
+        run: |
+          Copy-Item "configs\config.json.example" "configs\config.json" -Force
+          Copy-Item "configs\provider_pools.json.example" "configs\provider_pools.json" -Force
+          $proc = Start-Process -FilePath "node" -ArgumentList "src/core/master.js" -PassThru
+          try {
+            Start-Sleep -Seconds 10
+            $resp = Invoke-WebRequest -Uri "http://127.0.0.1:3000/health" -UseBasicParsing -TimeoutSec 10
+            if ($resp.StatusCode -ne 200) {
+              throw "Health check failed with status $($resp.StatusCode)"
+            }
+          } finally {
+            if ($proc -and -not $proc.HasExited) {
+              Stop-Process -Id $proc.Id -Force
+            }
+          }
+
   lint-dockerfile:
     name: Lint Dockerfile
     runs-on: ubuntu-latest

@@ -11,7 +11,9 @@ This directory contains everything needed to build the Windows installer for
 installer/
 ├── BlacklistedProxy.iss        # Main Inno Setup script — compile this
 ├── legal/
-│   └── FullLegalTerms.rtf     # Complete legal agreement (RTF)
+│   ├── FullLegalTerms.rtf     # Complete legal agreement (RTF)
+│   ├── TOS.txt                # Supplemental Terms of Service text
+│   └── HoldHarmless.txt       # Supplemental hold harmless agreement text
 ├── scripts/
 │   ├── watchdog.js             # Self-healing watchdog service (Node.js)
 │   ├── service-setup.js        # Service install/remove helper (Node.js)
@@ -79,6 +81,8 @@ To trigger a manual build:
 3. Choose whether to mark as pre-release
 4. Optionally add release notes
 
+See also: [`docs/WINDOWS_BETA_PRE_RELEASE.md`](../docs/WINDOWS_BETA_PRE_RELEASE.md) for beta scope, QA gates, and go/no-go criteria.
+
 To trigger an automated release, push a version tag:
 ```bash
 git tag v2.13.7-beta.1
@@ -131,3 +135,20 @@ git push origin v2.13.7-beta.1
 
 The installer's License wizard page displays this document. Users must scroll
 through the entire document and click "I Agree" to proceed with installation.
+
+After the License page, the installer also requires explicit checkbox agreement to:
+- Terms of Service (TOS)
+- Hold Harmless & Limitation of Liability
+- Full legal terms acceptance
+
+---
+
+## Checksum verification (recommended)
+
+After downloading `BlacklistedAIProxy-Setup-*.exe` and `.sha256`:
+
+```powershell
+Get-FileHash .\BlacklistedAIProxy-Setup-<version>-win-x64.exe -Algorithm SHA256
+```
+
+Confirm the hash matches the published `.sha256` release asset.

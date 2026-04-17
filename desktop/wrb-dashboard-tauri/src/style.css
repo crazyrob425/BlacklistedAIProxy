@@ -1,0 +1,194 @@
+:root {
+  color-scheme: dark;
+  --bg: #05070d;
+  --bg-2: #0c1222;
+  --glass: rgba(14, 22, 40, 0.72);
+  --border: rgba(124, 181, 255, 0.2);
+  --text: #dbeafe;
+  --muted: #93a7d1;
+  --accent: #63f1ff;
+  --accent-2: #8b5cf6;
+  font-family: Inter, Segoe UI, system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(1200px 600px at 0% 0%, #17203c 0%, transparent 55%),
+    radial-gradient(1200px 700px at 100% 100%, #23113c 0%, transparent 55%),
+    linear-gradient(145deg, var(--bg), var(--bg-2));
+  color: var(--text);
+  overflow: hidden;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+}
+
+.shell {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 12px;
+}
+
+.glass {
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: 0 12px 40px rgba(3, 8, 20, 0.55);
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.brand-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-orb {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 20%, #ffffff, var(--accent) 35%, var(--accent-2) 90%);
+  box-shadow: 0 0 24px rgba(99, 241, 255, 0.7);
+}
+
+.brand-copy h1 {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+
+.brand-copy p {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#healthSparkline {
+  border-radius: 999px;
+  background: rgba(5, 8, 16, 0.5);
+  border: 1px solid rgba(139, 92, 246, 0.35);
+}
+
+.lux-tabs {
+  height: 100%;
+  --track-color: transparent;
+  --indicator-color: linear-gradient(90deg, var(--accent), var(--accent-2));
+}
+
+sl-tab-group::part(base) {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+sl-tab-group::part(nav) {
+  background: rgba(12, 18, 34, 0.62);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 8px;
+  gap: 6px;
+}
+
+sl-tab-group::part(tabs) {
+  gap: 8px;
+}
+
+sl-tab::part(base) {
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 600;
+  color: #dbeafe;
+  transition: all 0.2s ease;
+}
+
+sl-tab[active]::part(base) {
+  background: linear-gradient(120deg, rgba(99, 241, 255, 0.3), rgba(139, 92, 246, 0.34));
+  border: 1px solid rgba(99, 241, 255, 0.5);
+  box-shadow: inset 0 0 20px rgba(99, 241, 255, 0.25);
+}
+
+sl-tab i {
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
+}
+
+sl-tab-panel::part(base) {
+  height: calc(100vh - 180px);
+  padding-top: 10px;
+}
+
+.tab-surface {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  padding: 10px;
+}
+
+.tab-header h2 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.tab-header p {
+  margin: 3px 0 10px;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.wrb-frame {
+  width: 100%;
+  height: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: #02040a;
+}
+
+.tooltip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: rgba(6, 10, 20, 0.95);
+  border: 1px solid rgba(99, 241, 255, 0.45);
+  color: #dbeafe;
+  border-radius: 10px;
+  padding: 6px 8px;
+  font-size: 0.72rem;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.96);
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.tooltip[data-show] {
+  opacity: 1;
+  transform: scale(1);
+}

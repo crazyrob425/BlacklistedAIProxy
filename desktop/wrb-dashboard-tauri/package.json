@@ -1,0 +1,26 @@
+{
+  "name": "wrb-dashboard-tauri",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.10.1",
+    "vite": "^8.0.4"
+  },
+  "dependencies": {
+    "@floating-ui/dom": "^1.7.6",
+    "@shoelace-style/shoelace": "^2.20.1",
+    "@tauri-apps/api": "^2.10.1",
+    "chart.js": "^4.5.1",
+    "gsap": "^3.15.0",
+    "lucide": "^1.8.0",
+    "vanilla-tilt": "^1.8.1"
+  }
+}

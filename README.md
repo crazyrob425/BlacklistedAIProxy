@@ -11,7 +11,7 @@
 
 **[ Blacklisted Binary Labs ]** — *We didn't get the memo saying we had to play nice.*
 
-[![Version](https://img.shields.io/badge/version-2.13.3-red?style=for-the-badge&logo=github)](https://github.com/crazyrob425/BlacklistedAIProxy)
+[![Version](https://img.shields.io/badge/version-2.13.7-red?style=for-the-badge&logo=github)](https://github.com/crazyrob425/BlacklistedAIProxy)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-darkred?style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0)
 [![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A520.0-darkgreen?style=for-the-badge&logo=node.js)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-ready-blue?style=for-the-badge&logo=docker)](https://hub.docker.com/r/crazyrob425/blacklisted-api)
@@ -359,16 +359,16 @@ Restart time  │ <1.5s (master process watchdog)
 
 ```bash
 # Unit tests (fast, no network)
-pnpm exec jest tests/hybrid-gateway.test.js tests/provider-models.unit.test.js tests/security-fixes.unit.test.js
+npm test -- tests/hybrid-gateway.test.js tests/provider-models.unit.test.js tests/security-fixes.unit.test.js --forceExit
 
 # Full test suite
-pnpm test
+npm test
 
 # Promptfoo red-team security suite
-pnpm run test:promptfoo:security
+npm run test:promptfoo:security
 
 # Coverage report
-pnpm run test:coverage
+npm run test:coverage
 ```
 
 ---
@@ -377,7 +377,7 @@ pnpm run test:coverage
 
 | Version | Date | Highlight |
 |---|---|---|
-| 2.13.3 | Current | BlacklistedAPI fork — OTel, Langfuse, Promptfoo hardening |
+| 2.13.7 | Current | BlacklistedAPI fork — OTel, Langfuse, Promptfoo hardening |
 | 2.x | 2026.03 | Grok protocol, multimodal, video gen |
 | 1.x | 2026.01 | Codex OAuth, AI Monitor plugin, async refresh queue |
 | 0.x | 2025.12 | Web UI, Docker Hub, unified config management |
@@ -392,7 +392,7 @@ pnpm run test:coverage
 docker pull crazyrob425/blacklisted-api:latest
 
 # Specific version  
-docker pull crazyrob425/blacklisted-api:2.13.3
+docker pull crazyrob425/blacklisted-api:2.13.7
 ```
 
 ---
@@ -404,6 +404,8 @@ docker pull crazyrob425/blacklisted-api:2.13.3
 - [📋 OpenCode Config Example](./docs/OPENCODE_CONFIG_EXAMPLE.md) — OpenCode integration
 - [📦 Dependency Register](./docs/DEPENDENCY-REGISTER.md) — Third-party inventory
 - [🗺️ Governance Roadmap](./docs/GOVERNANCE.md) — What's coming next
+- [🪟 Windows Beta Blueprint](./docs/WINDOWS_BETA_PRE_RELEASE.md) — Beta scope, QA gates, and go/no-go checklist
+- [🚘 WRB Tauri Desktop App](./desktop/wrb-dashboard-tauri/README.md) — Native Windows tabbed dashboard shell
 
 ---
 
@@ -440,7 +442,7 @@ Standing ovation for the real ones:
 
 ```
 > blacklisted-api --version
-  BlacklistedAPI v2.13.3
+  BlacklistedAPI v2.13.7
   [ Blacklisted Binary Labs ]
   "The proxy they didn't want you to have."
 ```

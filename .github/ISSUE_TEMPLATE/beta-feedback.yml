@@ -1,0 +1,71 @@
+name: Beta feedback
+description: Report Windows beta install/runtime issues
+title: "beta-feedback: "
+labels:
+  - beta-feedback
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing the Windows beta. Please provide enough detail for reproduction.
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output from the VERSION file or release tag (for example v2.13.7-beta.1)
+      placeholder: vX.Y.Z-beta.N
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Windows version
+      options:
+        - Windows 10 x64
+        - Windows 11 x64
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install_mode
+    attributes:
+      label: Install mode
+      options:
+        - Full Install (service + watchdog)
+        - Portable
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      placeholder: Step-by-step actions to reproduce the issue
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_actual
+    attributes:
+      label: Expected vs actual behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and diagnostics (redact secrets)
+      description: Include relevant logs, service status, and /health response details
+      render: shell
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submit checks
+      options:
+        - label: I removed or redacted secrets/tokens/API keys from logs.
+          required: true
+        - label: I confirmed this issue is reproducible.
+          required: true

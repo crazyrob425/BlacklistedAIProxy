@@ -1,0 +1,12 @@
+BlacklistedAIProxy Terms of Service (TOS)
+=========================================
+
+By installing or using this software, you agree to:
+
+1) Use the software only where lawful in your jurisdiction.
+2) Comply with upstream provider terms, policies, and acceptable-use requirements.
+3) Avoid using the software for abuse, fraud, or unauthorized access.
+4) Protect API keys, credentials, and account material from disclosure.
+5) Accept that upstream providers may modify or revoke access at any time.
+
+If you do not agree to these terms, do not install or use this software.
