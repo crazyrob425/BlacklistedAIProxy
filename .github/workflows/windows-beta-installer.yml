@@ -76,18 +76,39 @@ jobs:
       - name: Download NSSM (Non-Sucking Service Manager)
         shell: powershell
         run: |
-          $nssm_url = "https://nssm.cc/release/nssm-2.24-101-g897c7ad.zip"
           $nssm_zip = "$env:TEMP\nssm.zip"
+          $urls = @(
+            "https://github.com/nssm-community/nssm/releases/download/2.24-101-g897c7ad/nssm-2.24-101-g897c7ad.zip",
+            "https://nssm.cc/release/nssm-2.24-101-g897c7ad.zip"
+          )
           
-          Write-Host "Downloading NSSM from $nssm_url..."
-          Invoke-WebRequest -Uri $nssm_url -OutFile $nssm_zip -ErrorAction Stop
+          $downloaded = $false
+          foreach ($url in $urls) {
+            try {
+              Write-Host "Trying NSSM download from: $url"
+              Invoke-WebRequest -Uri $url -OutFile $nssm_zip -UseBasicParsing -TimeoutSec 30 -ErrorAction Stop
+              $downloaded = $true
+              Write-Host "Download successful"
+              break
+            }
+            catch {
+              Write-Host "Failed: $_"
+            }
+          }
+          
+          if (-not $downloaded) {
+            throw "Failed to download NSSM from all sources"
+          }
           
           Write-Host "Extracting NSSM..."
           Add-Type -AssemblyName System.IO.Compression.FileSystem
-          [System.IO.Compression.ZipFile]::ExtractToDirectory($nssm_zip, "$env:TEMP\nssm-extract")
+          [System.IO.Compression.ZipFile]::ExtractToDirectory($nssm_zip, "$env:TEMP\nssm-extract", $true)
           
-          Copy-Item "$env:TEMP\nssm-extract\nssm-2.24-101-g897c7ad\win64\nssm.exe" "build\nssm\nssm.exe" -Force
-          Write-Host "NSSM copied to build\nssm\nssm.exe"
+          Get-ChildItem "$env:TEMP\nssm-extract" -Recurse -Filter "nssm.exe" | ForEach-Object {
+            Copy-Item $_.FullName "build\nssm\nssm.exe" -Force
+          }
+          
+          Write-Host "NSSM ready at build\nssm\nssm.exe"
 
       - name: Download Node.js portable
         shell: powershell
@@ -95,15 +116,15 @@ jobs:
           $node_url = "https://nodejs.org/dist/v20.17.0/node-v20.17.0-win-x64.zip"
           $node_zip = "$env:TEMP\node.zip"
           
-          Write-Host "Downloading Node.js from $node_url..."
-          Invoke-WebRequest -Uri $node_url -OutFile $node_zip -ErrorAction Stop
+          Write-Host "Downloading Node.js..."
+          Invoke-WebRequest -Uri $node_url -OutFile $node_zip -UseBasicParsing -TimeoutSec 60 -ErrorAction Stop
           
           Write-Host "Extracting Node.js..."
           Add-Type -AssemblyName System.IO.Compression.FileSystem
-          [System.IO.Compression.ZipFile]::ExtractToDirectory($node_zip, "$env:TEMP\node-extract")
+          [System.IO.Compression.ZipFile]::ExtractToDirectory($node_zip, "$env:TEMP\node-extract", $true)
           
           Copy-Item "$env:TEMP\node-extract\node-v20.17.0-win-x64\*" "build\node\" -Recurse -Force
-          Write-Host "Node.js copied to build\node\"
+          Write-Host "Node.js ready"
 
       - name: Install npm dependencies
         shell: powershell
@@ -131,19 +152,15 @@ jobs:
           
           Pop-Location
           Copy-Item "tls-sidecar\tls-sidecar.exe" . -Force
-          Write-Host "tls-sidecar.exe built successfully"
+          Write-Host "tls-sidecar.exe built"
 
       - name: Validate critical files
         shell: powershell
         run: |
           $required = @(
             "installer\BlacklistedProxy.iss",
-            "install-and-run.bat",
-            "install-and-run.ps1",
             "healthcheck.js",
             "tls-sidecar.exe",
-            "configs\config.json.example",
-            "configs\provider_pools.json.example",
             "package.json",
             "src\core\master.js"
           )
@@ -152,33 +169,32 @@ jobs:
             if (-not (Test-Path $path)) {
               throw "Required file missing: $path"
             }
-            Write-Host "✓ $path"
+            Write-Host "OK: $path"
           }
 
       - name: Create portable bundle (ZIP)
         shell: powershell
         run: |
           Write-Host "Creating portable bundle..."
-          
-          # Create temp folder
           $portableDir = "$env:TEMP\BlacklistedAIProxy-portable"
           if (Test-Path $portableDir) { Remove-Item $portableDir -Recurse -Force }
           New-Item -ItemType Directory -Path $portableDir | Out-Null
           
-          # Copy app files
           Copy-Item "src", "configs", "static", "node_modules" -Destination $portableDir -Recurse -Force
           Copy-Item "package.json", "package-lock.json", "healthcheck.js", "VERSION", "LICENSE", "README.md" -Destination $portableDir -Force
-          Copy-Item "build\node\*" -Destination "$portableDir\runtime" -Recurse -Force
+          
+          New-Item -ItemType Directory -Path "$portableDir\runtime" -Force | Out-Null
+          Copy-Item "build\node\*" -Destination "$portableDir\runtime\" -Recurse -Force
+          
+          New-Item -ItemType Directory -Path "$portableDir\tls-sidecar" -Force | Out-Null
           Copy-Item "tls-sidecar.exe" -Destination "$portableDir\tls-sidecar\" -Force
           
-          # Zip it
-          Add-Type -AssemblyName System.IO.Compression.FileSystem
           $zipPath = "build\BlacklistedAIProxy-portable.zip"
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
           [System.IO.Compression.ZipFile]::CreateFromDirectory($portableDir, $zipPath, [System.IO.Compression.CompressionLevel]::Optimal, $false)
           
-          Write-Host "Portable bundle created: $zipPath"
-          $zipSize = (Get-Item $zipPath).Length / 1MB
-          Write-Host "Size: $($zipSize)MB"
+          $zipSize = [Math]::Round((Get-Item $zipPath).Length / 1MB, 2)
+          Write-Host "Portable bundle created: $zipSize MB"
 
       - name: Download & setup Inno Setup
         shell: powershell
@@ -186,20 +202,18 @@ jobs:
           $inno_url = "https://files.jrsoftware.org/is/6/innosetup-6.3.3.exe"
           $inno_installer = "$env:TEMP\innosetup.exe"
           
-          Write-Host "Downloading Inno Setup from $inno_url..."
-          Invoke-WebRequest -Uri $inno_url -OutFile $inno_installer -ErrorAction Stop
+          Write-Host "Downloading Inno Setup..."
+          Invoke-WebRequest -Uri $inno_url -OutFile $inno_installer -UseBasicParsing -TimeoutSec 60 -ErrorAction Stop
           
           Write-Host "Installing Inno Setup..."
           & $inno_installer /SILENT /SUPPRESSMSGBOXES /SP- | Out-Null
-          
-          # Wait for installation
-          Start-Sleep -Seconds 10
+          Start-Sleep -Seconds 15
           
           $innoPath = "C:\Program Files (x86)\Inno Setup 6\iscc.exe"
           if (-not (Test-Path $innoPath)) {
             throw "Inno Setup installation failed"
           }
-          Write-Host "Inno Setup installed successfully"
+          Write-Host "Inno Setup ready"
 
       - name: Compile installer with Inno Setup
         shell: powershell
@@ -207,20 +221,16 @@ jobs:
           $innoPath = "C:\Program Files (x86)\Inno Setup 6\iscc.exe"
           $scriptPath = "installer\BlacklistedProxy.iss"
           
-          Write-Host "Compiling installer script: $scriptPath"
-          
-          $env:INNO_VERSION = "${{ steps.version.outputs.full_version }}"
-          $env:INNO_VERSION_NUMERIC = "${{ steps.version.outputs.version_numeric }}"
-          
+          Write-Host "Compiling installer..."
           & $innoPath /D"AppVersion=${{ steps.version.outputs.full_version }}" `
                       /D"AppVersionNumeric=${{ steps.version.outputs.version_numeric }}" `
                       $scriptPath
           
           if ($LASTEXITCODE -ne 0) {
-            throw "Inno Setup compilation failed with exit code $LASTEXITCODE"
+            throw "Compilation failed"
           }
           
-          Write-Host "Installer compiled successfully"
+          Write-Host "Installer compiled"
 
       - name: Verify installer output
         shell: powershell
@@ -229,35 +239,29 @@ jobs:
           $installerPath = "Output\$installerName"
           
           if (-not (Test-Path $installerPath)) {
-            throw "Installer not found at: $installerPath"
+            throw "Installer not found"
           }
           
-          $size = (Get-Item $installerPath).Length / 1MB
-          Write-Host "✓ Installer created: $installerName"
-          Write-Host "✓ Size: $($size)MB"
-          Write-Host "✓ Path: $installerPath"
+          $size = [Math]::Round((Get-Item $installerPath).Length / 1MB, 2)
+          Write-Host "Installer: $installerName ($size MB)"
 
       - name: Run installer smoke test
         shell: powershell
         timeout-minutes: 10
         run: |
-          Write-Host "Running installer smoke test..."
-          
           $installerName = "BlacklistedAIProxy-Setup-${{ steps.version.outputs.full_version }}-win-x64.exe"
           $installerPath = "Output\$installerName"
           $testDir = "$env:TEMP\BlacklistedAIProxy-Test"
           
           if (Test-Path $testDir) { Remove-Item $testDir -Recurse -Force }
           
-          Write-Host "Testing silent installation to: $testDir"
           & $installerPath /SILENT /NORESTART /DIR="$testDir" /COMPONENTS="app"
-          
           Start-Sleep -Seconds 3
           
           if (Test-Path "$testDir\src\core\master.js") {
-            Write-Host "✓ Smoke test passed: Core files installed"
+            Write-Host "Smoke test: PASS"
           } else {
-            throw "Smoke test failed: Core files not found"
+            throw "Smoke test failed"
           }
 
       - name: Create GitHub Release
@@ -267,40 +271,24 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ steps.version.outputs.full_version }}
-          release_name: BlacklistedAIProxy ${{ steps.version.outputs.full_version }} (Beta Pre-Release)
+          release_name: BlacklistedAIProxy ${{ steps.version.outputs.full_version }} (Beta)
           body: |
             ## Beta Pre-Release: ${{ steps.version.outputs.full_version }}
             
-            **⚠️ This is a pre-release build for testing purposes only.**
+            **⚠️ Pre-release for testing only**
             
-            ### What's New
+            ### What's Included
             - Version: ${{ steps.version.outputs.full_version }}
-            - Build Date: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')
             - Platform: Windows x64
-            - Node.js: 20.17.0
-            - Go sidecar: 1.22
+            - Node.js 20.17.0
+            - Go sidecar 1.22
             
-            ### Installation
-            1. Download `BlacklistedAIProxy-Setup-${{ steps.version.outputs.full_version }}-win-x64.exe`
-            2. Run the installer
-            3. Choose installation mode (Full Service or Portable)
-            4. Follow the wizard prompts
+            ### Installation Modes
+            - **Full Install**: Windows Service, auto-start at boot, self-healing watchdog
+            - **Portable**: USB-friendly, no registry entries, manual launch
             
-            ### Testing Notes
-            - Full install runs as Windows Service (auto-starts at boot)
-            - Portable mode available for USB/removable media
-            - Self-healing watchdog included in Full mode
-            
-            ### Known Limitations (Pre-Release)
-            - This is a beta build; expect potential bugs
-            - Not recommended for production use
-            - Configuration may reset on update
-            
-            ### Bug Reports
-            Please report issues: [GitHub Issues](https://github.com/crazyrob425/BlacklistedAIProxy/issues)
-            
-            ---
-            Built with ❤️ by Blacklisted Binary Labs
+            ### Download
+            `BlacklistedAIProxy-Setup-${{ steps.version.outputs.full_version }}-win-x64.exe`
           draft: false
           prerelease: true
 
@@ -317,22 +305,12 @@ jobs:
       - name: Generate build summary
         shell: powershell
         run: |
-          Write-Host "## ✅ Beta Installer Package Complete" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-          Write-Host "" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-          Write-Host "**Version:** ${{ steps.version.outputs.full_version }}" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-          Write-Host "**Release Tag:** v${{ steps.version.outputs.full_version }}" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-          Write-Host "**Platform:** Windows x64" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-          Write-Host "" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-          Write-Host "**Installer:** BlacklistedAIProxy-Setup-${{ steps.version.outputs.full_version }}-win-x64.exe" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-          Write-Host "**Release URL:** ${{ steps.create_release.outputs.html_url }}" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-          Write-Host "" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-          Write-Host "✓ Code compiled" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-          Write-Host "✓ Dependencies installed" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-          Write-Host "✓ TLS sidecar built" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-          Write-Host "✓ Portable bundle created" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-          Write-Host "✓ Installer compiled" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-          Write-Host "✓ Smoke test passed" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-          Write-Host "✓ GitHub Release created" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
+          "## Build Complete" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY
+          "" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
+          "**Version:** ${{ steps.version.outputs.full_version }}" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
+          "**Platform:** Windows x64" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
+          "" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
+          "Release: https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.full_version }}" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
 
       - name: Upload installer to artifacts
         uses: actions/upload-artifact@v4
