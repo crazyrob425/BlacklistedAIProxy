@@ -7,9 +7,6 @@ on:
         description: 'Pre-release tag (e.g., beta.1, rc.1, alpha.1)'
         required: true
         default: 'beta.1'
-      version_override:
-        description: 'Version override (leave empty to read from VERSION file)'
-        required: false
 
 concurrency:
   group: windows-packaging
@@ -21,301 +18,109 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: write
-      packages: read
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Read/Calculate version
-        id: version
-        shell: powershell
-        run: |
-          $baseVersion = if ("${{ github.event.inputs.version_override }}") {
-            "${{ github.event.inputs.version_override }}"
-          } else {
-            (Get-Content VERSION | ForEach-Object { $_.Trim() })
-          }
-          
-          $prerelease = "${{ github.event.inputs.prerelease_tag }}"
-          $fullVersion = "$baseVersion-$prerelease"
-          $versionNumeric = $baseVersion -replace '-.*', ''
-          $versionNumeric = "$versionNumeric.$((Get-Date).DayOfYear)"
-          
-          Write-Output "base_version=$baseVersion" >> $env:GITHUB_OUTPUT
-          Write-Output "prerelease=$prerelease" >> $env:GITHUB_OUTPUT
-          Write-Output "full_version=$fullVersion" >> $env:GITHUB_OUTPUT
-          Write-Output "version_numeric=$versionNumeric" >> $env:GITHUB_OUTPUT
-          
-          Write-Host "Base Version: $baseVersion"
-          Write-Host "Pre-release: $prerelease"
-          Write-Host "Full Version: $fullVersion"
-          Write-Host "Numeric Version: $versionNumeric"
 
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-          cache: 'npm'
 
       - name: Setup Go 1.22
         uses: actions/setup-go@v5
         with:
           go-version: '1.22'
-          cache-dependency-path: tls-sidecar/go.sum
 
-      - name: Create build directories
+      - name: Install Inno Setup
         shell: powershell
         run: |
-          New-Item -ItemType Directory -Path "build\nssm" -Force | Out-Null
-          New-Item -ItemType Directory -Path "build\node" -Force | Out-Null
-          New-Item -ItemType Directory -Path "Output" -Force | Out-Null
-
-      - name: Download NSSM (Non-Sucking Service Manager)
-        shell: powershell
-        run: |
-          $nssm_zip = "$env:TEMP\nssm.zip"
-          $urls = @(
-            "https://github.com/nssm-community/nssm/releases/download/2.24-101-g897c7ad/nssm-2.24-101-g897c7ad.zip",
-            "https://nssm.cc/release/nssm-2.24-101-g897c7ad.zip"
-          )
-          
-          $downloaded = $false
-          foreach ($url in $urls) {
-            try {
-              Write-Host "Trying NSSM download from: $url"
-              Invoke-WebRequest -Uri $url -OutFile $nssm_zip -UseBasicParsing -TimeoutSec 30 -ErrorAction Stop
-              $downloaded = $true
-              Write-Host "Download successful"
-              break
-            }
-            catch {
-              Write-Host "Failed: $_"
-            }
-          }
-          
-          if (-not $downloaded) {
-            throw "Failed to download NSSM from all sources"
-          }
-          
-          Write-Host "Extracting NSSM..."
-          Add-Type -AssemblyName System.IO.Compression.FileSystem
-          [System.IO.Compression.ZipFile]::ExtractToDirectory($nssm_zip, "$env:TEMP\nssm-extract", $true)
-          
-          Get-ChildItem "$env:TEMP\nssm-extract" -Recurse -Filter "nssm.exe" | ForEach-Object {
-            Copy-Item $_.FullName "build\nssm\nssm.exe" -Force
-          }
-          
-          Write-Host "NSSM ready at build\nssm\nssm.exe"
-
-      - name: Download Node.js portable
-        shell: powershell
-        run: |
-          $node_url = "https://nodejs.org/dist/v20.17.0/node-v20.17.0-win-x64.zip"
-          $node_zip = "$env:TEMP\node.zip"
-          
-          Write-Host "Downloading Node.js..."
-          Invoke-WebRequest -Uri $node_url -OutFile $node_zip -UseBasicParsing -TimeoutSec 60 -ErrorAction Stop
-          
-          Write-Host "Extracting Node.js..."
-          Add-Type -AssemblyName System.IO.Compression.FileSystem
-          [System.IO.Compression.ZipFile]::ExtractToDirectory($node_zip, "$env:TEMP\node-extract", $true)
-          
-          Copy-Item "$env:TEMP\node-extract\node-v20.17.0-win-x64\*" "build\node\" -Recurse -Force
-          Write-Host "Node.js ready"
-
-      - name: Install npm dependencies
-        shell: powershell
-        run: |
-          npm ci --no-optional
-          Write-Host "Dependencies installed"
-
-      - name: Build tls-sidecar (Go)
-        shell: powershell
-        run: |
-          Push-Location tls-sidecar
-          
-          Write-Host "Downloading Go dependencies..."
-          go mod download
-          
-          Write-Host "Building tls-sidecar.exe..."
-          $env:CGO_ENABLED = "0"
-          $env:GOOS = "windows"
-          $env:GOARCH = "amd64"
-          go build -ldflags="-s -w" -o tls-sidecar.exe .
-          
-          if (-not (Test-Path "tls-sidecar.exe")) {
-            throw "Build failed: tls-sidecar.exe not found"
-          }
-          
-          Pop-Location
-          Copy-Item "tls-sidecar\tls-sidecar.exe" . -Force
-          Write-Host "tls-sidecar.exe built"
-
-      - name: Validate critical files
-        shell: powershell
-        run: |
-          $required = @(
-            "installer\BlacklistedProxy.iss",
-            "healthcheck.js",
-            "tls-sidecar.exe",
-            "package.json",
-            "src\core\master.js"
-          )
-          
-          foreach ($path in $required) {
-            if (-not (Test-Path $path)) {
-              throw "Required file missing: $path"
-            }
-            Write-Host "OK: $path"
-          }
-
-      - name: Create portable bundle (ZIP)
-        shell: powershell
-        run: |
-          Write-Host "Creating portable bundle..."
-          $portableDir = "$env:TEMP\BlacklistedAIProxy-portable"
-          if (Test-Path $portableDir) { Remove-Item $portableDir -Recurse -Force }
-          New-Item -ItemType Directory -Path $portableDir | Out-Null
-          
-          Copy-Item "src", "configs", "static", "node_modules" -Destination $portableDir -Recurse -Force
-          Copy-Item "package.json", "package-lock.json", "healthcheck.js", "VERSION", "LICENSE", "README.md" -Destination $portableDir -Force
-          
-          New-Item -ItemType Directory -Path "$portableDir\runtime" -Force | Out-Null
-          Copy-Item "build\node\*" -Destination "$portableDir\runtime\" -Recurse -Force
-          
-          New-Item -ItemType Directory -Path "$portableDir\tls-sidecar" -Force | Out-Null
-          Copy-Item "tls-sidecar.exe" -Destination "$portableDir\tls-sidecar\" -Force
-          
-          $zipPath = "build\BlacklistedAIProxy-portable.zip"
-          Add-Type -AssemblyName System.IO.Compression.FileSystem
-          [System.IO.Compression.ZipFile]::CreateFromDirectory($portableDir, $zipPath, [System.IO.Compression.CompressionLevel]::Optimal, $false)
-          
-          $zipSize = [Math]::Round((Get-Item $zipPath).Length / 1MB, 2)
-          Write-Host "Portable bundle created: $zipSize MB"
-
-      - name: Download & setup Inno Setup
-        shell: powershell
-        run: |
-          $inno_url = "https://files.jrsoftware.org/is/6/innosetup-6.3.3.exe"
-          $inno_installer = "$env:TEMP\innosetup.exe"
-          
-          Write-Host "Downloading Inno Setup..."
-          Invoke-WebRequest -Uri $inno_url -OutFile $inno_installer -UseBasicParsing -TimeoutSec 60 -ErrorAction Stop
-          
-          Write-Host "Installing Inno Setup..."
-          & $inno_installer /SILENT /SUPPRESSMSGBOXES /SP- | Out-Null
-          Start-Sleep -Seconds 15
-          
-          $innoPath = "C:\Program Files (x86)\Inno Setup 6\iscc.exe"
-          if (-not (Test-Path $innoPath)) {
-            throw "Inno Setup installation failed"
-          }
-          Write-Host "Inno Setup ready"
-
-      - name: Compile installer with Inno Setup
-        shell: powershell
-        run: |
-          $innoPath = "C:\Program Files (x86)\Inno Setup 6\iscc.exe"
-          $scriptPath = "installer\BlacklistedProxy.iss"
-          
-          Write-Host "Compiling installer..."
-          & $innoPath /D"AppVersion=${{ steps.version.outputs.full_version }}" `
-                      /D"AppVersionNumeric=${{ steps.version.outputs.version_numeric }}" `
-                      $scriptPath
-          
+          choco install -y innosetup --version=6.3.3
           if ($LASTEXITCODE -ne 0) {
-            throw "Compilation failed"
+            Write-Host "Installing Inno Setup via direct download..."
+            Invoke-WebRequest -Uri "https://files.jrsoftware.org/is/6/innosetup-6.3.3.exe" -OutFile "$env:TEMP\innosetup.exe"
+            & "$env:TEMP\innosetup.exe" /SILENT /SUPPRESSMSGBOXES /SP-
+            Start-Sleep -Seconds 15
           }
-          
-          Write-Host "Installer compiled"
 
-      - name: Verify installer output
+      - name: Build with local script
+        shell: cmd
+        run: |
+          REM Read version
+          for /f "delims=" %%A in (VERSION) do set VERSION=%%A
+          set FULL_VERSION=%VERSION%-${{ github.event.inputs.prerelease_tag }}
+          
+          REM Create output directory
+          if not exist Output mkdir Output
+          
+          REM Install npm deps
+          echo Preparing build...
+          call npm ci --no-optional --silent
+          
+          REM Build tls-sidecar
+          echo Building tls-sidecar...
+          cd tls-sidecar
+          call go mod download
+          set CGO_ENABLED=0
+          set GOOS=windows
+          set GOARCH=amd64
+          call go build -ldflags="-s -w" -o tls-sidecar.exe .
+          if errorlevel 1 exit /b 1
+          cd ..
+          copy tls-sidecar\tls-sidecar.exe tls-sidecar.exe
+          
+          REM Compile installer
+          echo Compiling installer...
+          "C:\Program Files (x86)\Inno Setup 6\iscc.exe" /D"AppVersion=%FULL_VERSION%" /D"AppVersionNumeric=%VERSION%.1" installer\BlacklistedProxy.iss
+          if errorlevel 1 exit /b 1
+          
+          set INSTALLER=Output\BlacklistedAIProxy-Setup-%FULL_VERSION%-win-x64.exe
+          if not exist "%INSTALLER%" exit /b 1
+          
+          echo Installer created: %INSTALLER%
+          echo VERSION=%VERSION% >> %GITHUB_OUTPUT%
+          echo FULL_VERSION=%FULL_VERSION% >> %GITHUB_OUTPUT%
+          echo INSTALLER=%INSTALLER% >> %GITHUB_OUTPUT%
+
+      - name: Test installer
         shell: powershell
         run: |
-          $installerName = "BlacklistedAIProxy-Setup-${{ steps.version.outputs.full_version }}-win-x64.exe"
-          $installerPath = "Output\$installerName"
+          $installer = Get-ChildItem "Output\*.exe" | Select-Object -First 1
+          if (-not $installer) { throw "Installer not found" }
           
-          if (-not (Test-Path $installerPath)) {
-            throw "Installer not found"
-          }
-          
-          $size = [Math]::Round((Get-Item $installerPath).Length / 1MB, 2)
-          Write-Host "Installer: $installerName ($size MB)"
-
-      - name: Run installer smoke test
-        shell: powershell
-        timeout-minutes: 10
-        run: |
-          $installerName = "BlacklistedAIProxy-Setup-${{ steps.version.outputs.full_version }}-win-x64.exe"
-          $installerPath = "Output\$installerName"
-          $testDir = "$env:TEMP\BlacklistedAIProxy-Test"
-          
+          $testDir = "$env:TEMP\test-install"
           if (Test-Path $testDir) { Remove-Item $testDir -Recurse -Force }
           
-          & $installerPath /SILENT /NORESTART /DIR="$testDir" /COMPONENTS="app"
+          & $installer.FullName /SILENT /NORESTART /DIR="$testDir" /COMPONENTS="app"
           Start-Sleep -Seconds 3
           
           if (Test-Path "$testDir\src\core\master.js") {
-            Write-Host "Smoke test: PASS"
+            Write-Host "✓ Smoke test passed"
           } else {
             throw "Smoke test failed"
           }
 
-      - name: Create GitHub Release
-        id: create_release
+      - name: Create Release
+        id: release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ steps.version.outputs.full_version }}
-          release_name: BlacklistedAIProxy ${{ steps.version.outputs.full_version }} (Beta)
+          tag_name: v${{ github.event.inputs.prerelease_tag }}
+          release_name: BlacklistedAIProxy ${{ github.event.inputs.prerelease_tag }}
           body: |
-            ## Beta Pre-Release: ${{ steps.version.outputs.full_version }}
-            
-            **⚠️ Pre-release for testing only**
-            
-            ### What's Included
-            - Version: ${{ steps.version.outputs.full_version }}
-            - Platform: Windows x64
-            - Node.js 20.17.0
-            - Go sidecar 1.22
-            
-            ### Installation Modes
-            - **Full Install**: Windows Service, auto-start at boot, self-healing watchdog
-            - **Portable**: USB-friendly, no registry entries, manual launch
-            
-            ### Download
-            `BlacklistedAIProxy-Setup-${{ steps.version.outputs.full_version }}-win-x64.exe`
+            ## Pre-Release Build
+            Beta installer for testing. See GitHub for installation instructions.
           draft: false
           prerelease: true
 
-      - name: Upload installer to release
+      - name: Upload Installer
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: Output/BlacklistedAIProxy-Setup-${{ steps.version.outputs.full_version }}-win-x64.exe
-          asset_name: BlacklistedAIProxy-Setup-${{ steps.version.outputs.full_version }}-win-x64.exe
+          upload_url: ${{ steps.release.outputs.upload_url }}
+          asset_path: Output/BlacklistedAIProxy-Setup-*-win-x64.exe
+          asset_name: BlacklistedAIProxy-Setup-beta-win-x64.exe
           asset_content_type: application/vnd.microsoft.portable-executable
-
-      - name: Generate build summary
-        shell: powershell
-        run: |
-          "## Build Complete" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY
-          "" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-          "**Version:** ${{ steps.version.outputs.full_version }}" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-          "**Platform:** Windows x64" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-          "" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-          "Release: https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.full_version }}" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-
-      - name: Upload installer to artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: BlacklistedAIProxy-Beta-Installer
-          path: Output/BlacklistedAIProxy-Setup-${{ steps.version.outputs.full_version }}-win-x64.exe
-          retention-days: 30
-          compression-level: 0
