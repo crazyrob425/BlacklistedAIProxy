@@ -122,6 +122,8 @@ Source: "..\LICENSE";                  DestDir: "{app}";            Components: 
 Source: "..\README.md";                DestDir: "{app}";            Components: app
 Source: "..\healthcheck.js";           DestDir: "{app}";            Components: app
 Source: "..\docs\*";                   DestDir: "{app}\docs";       Flags: recursesubdirs createallsubdirs; Components: app
+Source: "legal\TOS.txt";               DestDir: "{app}\docs\legal"; Components: app
+Source: "legal\HoldHarmless.txt";      DestDir: "{app}\docs\legal"; Components: app
 
 ; ── Config examples (only installed if target doesn't already exist) ─────────
 Source: "..\configs\config.json.example";          DestDir: "{app}\configs"; Flags: onlyifdoesntexist; Components: app
@@ -237,6 +239,7 @@ Filename: "{app}\tools\nssm.exe"; Parameters: "remove {#ServiceName} confirm"; F
 
 // ── State variables ───────────────────────────────────────────────────────────
 var
+  LegalDocsPage:        TInputOptionWizardPage;  // Must-accept legal confirmations
   InstallTypePage:      TInputOptionWizardPage;  // Full vs Portable selection
   CreditsPage:          TWizardPage;             // Credits & acknowledgements
   CreditsViewer:        TMemo;
@@ -292,11 +295,34 @@ begin
   DeleteFile(TempFile);
 end;
 
+// ── Create legal confirmation page (TOS + hold harmless + terms) ───────────────
+procedure CreateLegalDocsPage;
+begin
+  LegalDocsPage := CreateInputOptionPage(
+    wpLicense,
+    'Legal Agreement Confirmation',
+    'Confirm required legal documents before installation',
+    'To continue, you must review and agree to every required legal document:' + #13#10 +
+    #13#10 +
+    '  • Terms of Service (TOS)' + #13#10 +
+    '  • Hold Harmless & Limitation of Liability' + #13#10 +
+    '  • Full legal terms shown on the previous page' + #13#10 +
+    #13#10 +
+    'The documents are installed to {app}\docs\legal for future reference.',
+    False,  // allow multiple selections
+    False
+  );
+
+  LegalDocsPage.Add('I have read and agree to the Terms of Service (TOS).');
+  LegalDocsPage.Add('I have read and agree to the Hold Harmless & Limitation of Liability agreement.');
+  LegalDocsPage.Add('I have read and agree to the full license and legal terms required for installation.');
+end;
+
 // ── Create the install-type selection page ─────────────────────────────────────
 procedure CreateInstallTypePage;
 begin
   InstallTypePage := CreateInputOptionPage(
-    wpLicense,
+    LegalDocsPage.ID,
     'Installation Mode',
     'Choose how to install BlacklistedAIProxy',
     'Select the installation mode that best fits your needs:',
@@ -322,8 +348,7 @@ begin
     '   • Safe to run from any PC without leaving traces'
   );
 
-  InstallTypePage.Values[0] := True;  // Default: Full Install
-  InstallTypeChosen := 0;
+  InstallTypeChosen := -1;
 end;
 
 // ── Create the credits page ───────────────────────────────────────────────────
@@ -478,10 +503,11 @@ end;
 // ── InitializeWizard: create custom pages on startup ─────────────────────────
 procedure InitializeWizard;
 begin
-  InstallTypeChosen := 0;
+  InstallTypeChosen := -1;
   LicenseScrolled   := False;
   PortableDefaultDir := FindFirstRemovableDrive;
 
+  CreateLegalDocsPage;
   CreateInstallTypePage;
   CreateCreditsPage;
 end;
@@ -499,8 +525,32 @@ var
 begin
   Result := True;
 
+  // On legal confirmation page: require all legal confirmations
+  if CurPageID = LegalDocsPage.ID then begin
+    if (not LegalDocsPage.Values[0]) or
+       (not LegalDocsPage.Values[1]) or
+       (not LegalDocsPage.Values[2]) then begin
+      MsgBox(
+        'You must agree to all legal documents (TOS, Hold Harmless, and Full Legal Terms) to continue installation.',
+        mbError, MB_OK
+      );
+      Result := False;
+      Exit;
+    end;
+  end;
+
   // On install-type page: capture selection and update default dir
   if CurPageID = InstallTypePage.ID then begin
+    if (not InstallTypePage.Values[0]) and (not InstallTypePage.Values[1]) then begin
+      MsgBox(
+        'Please choose an installation mode:' + #13#10 +
+        'Full Install (service auto-start at boot, no login required) or Portable Mode (no service).',
+        mbError, MB_OK
+      );
+      Result := False;
+      Exit;
+    end;
+
     InstallTypeChosen := 0;
     if InstallTypePage.Values[1] then
       InstallTypeChosen := 1;

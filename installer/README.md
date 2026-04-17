@@ -11,7 +11,9 @@ This directory contains everything needed to build the Windows installer for
 installer/
 ├── BlacklistedProxy.iss        # Main Inno Setup script — compile this
 ├── legal/
-│   └── FullLegalTerms.rtf     # Complete legal agreement (RTF)
+│   ├── FullLegalTerms.rtf     # Complete legal agreement (RTF)
+│   ├── TOS.txt                # Supplemental Terms of Service text
+│   └── HoldHarmless.txt       # Supplemental hold harmless agreement text
 ├── scripts/
 │   ├── watchdog.js             # Self-healing watchdog service (Node.js)
 │   ├── service-setup.js        # Service install/remove helper (Node.js)
@@ -133,6 +135,11 @@ git push origin v2.13.7-beta.1
 
 The installer's License wizard page displays this document. Users must scroll
 through the entire document and click "I Agree" to proceed with installation.
+
+After the License page, the installer also requires explicit checkbox agreement to:
+- Terms of Service (TOS)
+- Hold Harmless & Limitation of Liability
+- Full legal terms acceptance
 
 ---
 

@@ -19,7 +19,8 @@ import {
 } from './file-upload.js';
 
 import { 
-    initNavigation 
+    initNavigation,
+    switchToSection
 } from './navigation.js';
 
 import {
@@ -130,6 +131,7 @@ function initApp() {
     initTutorialManager(); // 初始化教程管理功能
     initWorkspaceManager(); // 初始化融合工作台与向导
     initMobileMenu(); // 初始化移动端菜单
+    applyInitialSectionFromUrl();
     loadInitialData();
     
     // 显示欢迎消息
@@ -158,6 +160,30 @@ function initApp() {
         }
     }, REFRESH_INTERVALS.SYSTEM_INFO);
 
+}
+
+/**
+ * 从 URL 参数或哈希切换到指定 section（用于桌面封装和深链）
+ */
+function applyInitialSectionFromUrl() {
+    const search = new URLSearchParams(window.location.search);
+    const sectionFromQuery = search.get('section');
+    const sectionFromHash = window.location.hash ? window.location.hash.replace('#', '') : '';
+    const requested = sectionFromQuery || sectionFromHash;
+
+    if (!requested) return;
+
+    const allowedSections = new Set([
+        'dashboard', 'guide', 'tutorial', 'workspace', 'config',
+        'upload-config', 'providers', 'usage', 'logs', 'plugins'
+    ]);
+
+    if (!allowedSections.has(requested)) {
+        console.warn('Unknown section request:', requested);
+        return;
+    }
+
+    setTimeout(() => switchToSection(requested), 50);
 }
 
 /**

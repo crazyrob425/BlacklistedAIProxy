@@ -405,6 +405,7 @@ docker pull crazyrob425/blacklisted-api:2.13.7
 - [📦 Dependency Register](./docs/DEPENDENCY-REGISTER.md) — Third-party inventory
 - [🗺️ Governance Roadmap](./docs/GOVERNANCE.md) — What's coming next
 - [🪟 Windows Beta Blueprint](./docs/WINDOWS_BETA_PRE_RELEASE.md) — Beta scope, QA gates, and go/no-go checklist
+- [🚘 WRB Tauri Desktop App](./desktop/wrb-dashboard-tauri/README.md) — Native Windows tabbed dashboard shell
 
 ---
 

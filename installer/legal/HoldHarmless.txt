@@ -1,0 +1,14 @@
+Hold Harmless and Limitation of Liability
+=========================================
+
+By installing this software, you acknowledge and agree:
+
+1) The software is provided "AS IS", without warranties of any kind.
+2) You assume all risk for operation, configuration, and downstream usage.
+3) You are solely responsible for compliance with laws, regulations, and provider agreements.
+4) The authors, contributors, and distributors are not liable for direct, indirect, incidental,
+   consequential, or special damages arising from use, misuse, or inability to use the software.
+5) You agree to indemnify and hold harmless the authors, contributors, and distributors from claims,
+   losses, or costs resulting from your use or deployment of the software.
+
+If you do not agree, do not install this software.
