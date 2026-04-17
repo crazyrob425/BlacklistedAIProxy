@@ -76,17 +76,60 @@ jobs:
       - name: Download NSSM (Non-Sucking Service Manager)
         shell: powershell
         run: |
-          $nssm_url = "https://nssm.cc/release/nssm-2.24-101-g897c7ad.zip"
           $nssm_zip = "$env:TEMP\nssm.zip"
+          $nssm_extract = "$env:TEMP\nssm-extract"
+          $downloaded = $false
+          $nssm_urls = @(
+            "https://nssm.cc/release/nssm-2.24.zip",
+            "https://nssm.cc/release/nssm-2.24-101-g897c7ad.zip"
+          )
           
-          Write-Host "Downloading NSSM from $nssm_url..."
-          Invoke-WebRequest -Uri $nssm_url -OutFile $nssm_zip -ErrorAction Stop
+          foreach ($nssm_url in $nssm_urls) {
+            for ($attempt = 1; $attempt -le 3; $attempt++) {
+              try {
+                Write-Host "Downloading NSSM from $nssm_url (attempt $attempt/3)..."
+                Invoke-WebRequest -Uri $nssm_url -OutFile $nssm_zip -ErrorAction Stop
+                $downloaded = $true
+                break
+              } catch {
+                Write-Warning "NSSM download failed: $($_.Exception.Message)"
+                if ($attempt -lt 3) {
+                  Start-Sleep -Seconds (2 * $attempt)
+                }
+              }
+            }
+            if ($downloaded) { break }
+          }
+
+          if ($downloaded) {
+            Write-Host "Extracting NSSM archive..."
+            if (Test-Path $nssm_extract) { Remove-Item $nssm_extract -Recurse -Force }
+            Add-Type -AssemblyName System.IO.Compression.FileSystem
+            [System.IO.Compression.ZipFile]::ExtractToDirectory($nssm_zip, $nssm_extract)
+
+            $nssmExe = Get-ChildItem -Path $nssm_extract -Filter "nssm.exe" -Recurse |
+              Where-Object { $_.FullName -match "win64" } |
+              Select-Object -First 1
+            if (-not $nssmExe) {
+              $nssmExe = Get-ChildItem -Path $nssm_extract -Filter "nssm.exe" -Recurse | Select-Object -First 1
+            }
+            if (-not $nssmExe) {
+              throw "NSSM archive downloaded but nssm.exe not found"
+            }
+            Copy-Item $nssmExe.FullName "build\nssm\nssm.exe" -Force
+          } else {
+            Write-Warning "NSSM archive download failed after retries. Falling back to Chocolatey package."
+            choco install nssm --no-progress -y
+            $chocoNssm = (Get-Command nssm -ErrorAction SilentlyContinue).Source
+            if (-not $chocoNssm -or -not (Test-Path $chocoNssm)) {
+              $chocoNssm = "C:\ProgramData\chocolatey\bin\nssm.exe"
+            }
+            if (-not (Test-Path $chocoNssm)) {
+              throw "Unable to obtain nssm.exe from download or Chocolatey fallback"
+            }
+            Copy-Item $chocoNssm "build\nssm\nssm.exe" -Force
+          }
           
-          Write-Host "Extracting NSSM..."
-          Add-Type -AssemblyName System.IO.Compression.FileSystem
-          [System.IO.Compression.ZipFile]::ExtractToDirectory($nssm_zip, "$env:TEMP\nssm-extract")
-          
-          Copy-Item "$env:TEMP\nssm-extract\nssm-2.24-101-g897c7ad\win64\nssm.exe" "build\nssm\nssm.exe" -Force
           Write-Host "NSSM copied to build\nssm\nssm.exe"
 
       - name: Download Node.js portable
