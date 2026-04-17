@@ -244,7 +244,7 @@ var
   CreditsPage:          TWizardPage;             // Credits & acknowledgements
   CreditsViewer:        TMemo;
   PortableDefaultDir:   String;
-  InstallTypeChosen:    Integer;                 // 0=Full, 1=Portable
+  InstallTypeChosen:    Integer;                 // -1=None selected yet, 0=Full, 1=Portable
   LicenseScrolled:      Boolean;                 // true once user scrolls to bottom
 
 // ── Helper: is this a portable install? ──────────────────────────────────────
