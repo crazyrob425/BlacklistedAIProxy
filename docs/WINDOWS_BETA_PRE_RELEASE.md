@@ -122,7 +122,7 @@ Compare the output hash with the published `.sha256` asset value.
   - Acknowledge: ≤ 48 hours
   - Initial triage: ≤ 7 days
   - Fix/mitigation target: ≤ 30 days
-- Hotfix cadence: as-needed patch releases using semantic beta tags (for example: `vX.Y.Z-beta.N`).
+- Hotfix cadence: as-needed patch releases using semantic beta tags (e.g., `vX.Y.Z-beta.N`).
 
 ---
 

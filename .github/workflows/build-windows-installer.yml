@@ -52,7 +52,14 @@ jobs:
           if (-not ($numeric -match '^\d+\.\d+\.\d+$')) {
             throw "VERSION must start with semver (x.y.z). Got: $ver"
           }
-          $versionInfo = "$numeric.1"
+          $build = 1
+          if ($ver -match '(?:alpha|beta|rc)\.(\d+)$') {
+            $build = [int]$Matches[1]
+          }
+          if ($build -lt 0) {
+            throw "Invalid prerelease build number in VERSION: $ver"
+          }
+          $versionInfo = "$numeric.$build"
 
           if ("${{ github.event_name }}" -eq "push") {
             $tag = "${{ github.ref_name }}"

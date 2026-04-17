@@ -13,7 +13,7 @@
 - Internet connectivity for configured upstream providers
 
 ### Installation modes
-- **Full Install**: Windows service + watchdog + boot autostart
+- **Full Install**: Windows service + watchdog + boot auto-start
 - **Portable**: no service install, no autorun
 
 ### Known limitations (beta)
