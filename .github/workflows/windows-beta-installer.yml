@@ -78,6 +78,7 @@ jobs:
         run: |
           $nssm_zip = "$env:TEMP\nssm.zip"
           $nssm_extract = "$env:TEMP\nssm-extract"
+          $retry_backoff_seconds = 2
           $downloaded = $false
           $nssm_urls = @(
             "https://nssm.cc/release/nssm-2.24.zip",
@@ -94,7 +95,7 @@ jobs:
               } catch {
                 Write-Warning "NSSM download failed: $($_.Exception.Message)"
                 if ($attempt -lt 3) {
-                  Start-Sleep -Seconds (2 * $attempt)
+                  Start-Sleep -Seconds ($retry_backoff_seconds * $attempt)
                 }
               }
             }
