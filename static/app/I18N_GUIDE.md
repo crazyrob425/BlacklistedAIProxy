@@ -1,73 +1,69 @@
-# 多语言支持使用指南
+# Localization Guide
 
-## 概述
+## Overview
 
-本项目已实现中英文双语支持，可以通过页面右上角的语言切换按钮在简体中文和英文之间切换。
+This project supports localization through a centralized translation system. If you plan to add or maintain localized text, use the guidance below to keep translations consistent and maintainable.
 
-## 文件结构
+## File Structure
 
 ```
 static/app/
-├── i18n.js                 # 多语言配置文件（包含所有翻译）
-├── language-switcher.js    # 语言切换组件
-└── I18N_GUIDE.md          # 本指南
+├── i18n.js                 # Localization configuration (all translation strings)
+├── language-switcher.js    # Language switcher component
+└── I18N_GUIDE.md           # This guide
 ```
 
-## 如何使用
+## How to Use
 
-### 1. 在 HTML 中添加多语言支持
+### 1. Add localization hooks in HTML
 
-使用 `data-i18n` 属性标记需要翻译的元素：
+Mark translatable elements with `data-i18n`:
 
 ```html
-<!-- 文本内容 -->
-<h1 data-i18n="header.title">BlacklistedAPI 管理控制台</h1>
+<!-- Text content -->
+<h1 data-i18n="header.title">BlacklistedAPI Admin Console</h1>
 
-<!-- 按钮文本 -->
-<button data-i18n="common.save">保存</button>
+<!-- Button text -->
+<button data-i18n="common.save">Save</button>
 
-<!-- 输入框占位符 -->
-<input type="text" data-i18n="config.apiKeyPlaceholder" placeholder="请输入API密钥">
+<!-- Input placeholder -->
+<input type="text" data-i18n="config.apiKeyPlaceholder" placeholder="Please enter API key">
 
-<!-- 带参数的翻译 -->
-<span data-i18n="upload.count" data-i18n-params='{"count": "10"}'>共 10 个配置文件</span>
+<!-- Parameterized translation -->
+<span data-i18n="upload.count" data-i18n-params='{"count": "10"}'>10 config files</span>
 ```
 
-### 2. 在 JavaScript 中使用翻译
+### 2. Use translations in JavaScript
 
 ```javascript
 import { t } from './i18n.js';
 
-// 简单翻译
+// Simple translation
 const title = t('header.title');
 
-// 带参数的翻译
+// Parameterized translation
 const message = t('upload.count', { count: 10 });
 
-// 在 showToast 中使用
+// Use in toast
 showToast(t('common.success'), t('config.saved'), 'success');
 ```
 
-### 3. 添加新的翻译
+### 3. Add new translation keys
 
-在 `i18n.js` 文件中的 `translations` 对象中添加：
+Add keys under `translations` in `i18n.js`:
 
 ```javascript
 const translations = {
-    'zh-CN': {
-        'your.key': '你的中文翻译',
-        // ...
-    },
     'en-US': {
-        'your.key': 'Your English translation',
+        'your.key': 'Your English translation'
         // ...
     }
 };
 ```
 
-### 4. 动态内容的翻译
+### 4. Translate dynamic content
 
-对于动态生成的内容，在创建 DOM 元素时添加 `data-i18n` 属性：
+For dynamic DOM content, apply `data-i18n` and call `t()` when creating elements:
 
 ```javascript
 const element = document.createElement('div');
@@ -75,83 +71,80 @@ element.setAttribute('data-i18n', 'your.translation.key');
 element.textContent = t('your.translation.key');
 ```
 
-## 翻译键命名规范
+## Translation Key Naming
 
-使用点号分隔的层级结构：
+Use dot-separated hierarchical keys:
 
-- `header.*` - 页头相关
-- `nav.*` - 导航相关
-- `dashboard.*` - 仪表盘相关
-- `config.*` - 配置相关
-- `providers.*` - 提供商相关
-- `upload.*` - 上传配置相关
-- `usage.*` - 用量查询相关
-- `logs.*` - 日志相关
-- `common.*` - 通用文本
+- `header.*` - Header
+- `nav.*` - Navigation
+- `dashboard.*` - Dashboard
+- `config.*` - Configuration
+- `providers.*` - Providers
+- `upload.*` - Upload configuration
+- `usage.*` - Usage
+- `logs.*` - Logs
+- `common.*` - Shared/common text
 
-## 已实现的功能
+## Implemented Capabilities
 
-✅ 自动检测并保存用户语言偏好
-✅ 页面刷新后保持语言选择
-✅ 动态添加的元素自动翻译
-✅ 支持带参数的翻译
-✅ 语言切换时实时更新所有文本
+- Automatically detect and persist user language preference
+- Preserve language selection after page refresh
+- Auto-translate dynamically added elements
+- Support parameterized translations
+- Refresh page text in real time when language changes
 
-## 待完善的部分
+## Areas That Typically Need Additional Coverage
 
-由于页面内容较多，以下部分需要继续添加 `data-i18n` 属性：
+In larger pages, confirm these areas consistently include `data-i18n` keys:
 
-1. 配置管理页面的表单标签和提示
-2. 提供商池管理的详细信息
-3. 配置管理的列表项
-4. 用量查询的统计信息
-5. 实时日志的控制按钮
+1. Form labels and hints in configuration pages
+2. Detailed provider-pool metadata
+3. Configuration list row fields
+4. Usage statistics details
+5. Real-time log control buttons
 
-## 示例：完整的多语言表单
+## Example: Fully Localized Form
 
 ```html
 <div class="form-group">
-    <label data-i18n="config.apiKey">API密钥</label>
-    <input 
-        type="password" 
-        id="apiKey" 
-        class="form-control" 
+    <label data-i18n="config.apiKey">API Key</label>
+    <input
+        type="password"
+        id="apiKey"
+        class="form-control"
         data-i18n="config.apiKeyPlaceholder"
-        placeholder="请输入API密钥"
+        placeholder="Please enter API key"
     >
 </div>
 ```
 
-对应的翻译配置：
+Matching translation keys:
 
 ```javascript
-'zh-CN': {
-    'config.apiKey': 'API密钥',
-    'config.apiKeyPlaceholder': '请输入API密钥'
-},
 'en-US': {
     'config.apiKey': 'API Key',
     'config.apiKeyPlaceholder': 'Please enter API key'
 }
 ```
 
-## 注意事项
+## Notes
 
-1. 所有翻译键必须在两种语言中都存在
-2. 参数化翻译使用 `{paramName}` 格式
-3. HTML 内容使用 `data-i18n-html` 属性
-4. 语言切换会触发 `languageChanged` 事件
-5. 新添加的 DOM 元素会自动被翻译系统检测
+1. Every translation key should exist in each supported language pack.
+2. Parameterized translations use `{paramName}` placeholders.
+3. For rich HTML content, use `data-i18n-html`.
+4. Language switching triggers the `languageChanged` event.
+5. Newly inserted DOM nodes should be processed by the translation system.
 
-## 调试
+## Debugging
 
-在浏览器控制台中：
+In the browser console:
 
 ```javascript
-// 获取当前语言
+// Get current language
 import { getCurrentLanguage } from './app/i18n.js';
 console.log(getCurrentLanguage());
 
-// 手动切换语言
+// Switch language manually
 import { setLanguage } from './app/i18n.js';
 setLanguage('en-US');
+```

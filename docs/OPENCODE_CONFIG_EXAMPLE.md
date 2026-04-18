@@ -1,8 +1,8 @@
-# OpenCode 配置示例及重点解释
+# OpenCode Configuration Example and Key Notes
 
-本文档提供了一个典型的 `opencode` 配置文件示例，并对其中的关键配置项进行了详细解释，帮助您快速理解如何配置不同的 AI 服务提供商。
+This document provides a typical `opencode` configuration file example and explains the most important fields so you can quickly configure multiple AI service providers.
 
-## 配置示例 (`config.json`)
+## Configuration Example (`config.json`)
 
 ```json
 {
@@ -33,7 +33,7 @@
             },
             "models": {
                 "qwen3-coder-plus": {
-                    "name": "Qwen3 Coder Plus Openai "
+                    "name": "Qwen3 Coder Plus OpenAI"
                 }
             }
         },
@@ -80,32 +80,35 @@
 }
 ```
 
-## 配置重点解释
+## Key Configuration Details
 
-### 1. `provider` (服务提供商配置)
-这是配置的核心部分，每个键（如 `kiro`, `qwen`, `gemini-cli`）代表一个独立的服务提供商实例。
+### 1. `provider` (Service Provider Configuration)
+This is the core section of the configuration. Each key (for example, `kiro`, `qwen`, `gemini-cli`) represents an independent provider instance.
 
-*   **`npm` (SDK 适配器)**:
-    *   指定底层使用的 AI SDK。例如：
-        *   `@ai-sdk/anthropic`: 用于 Anthropic (Claude) 系列模型。
-        *   `@ai-sdk/openai-compatible`: 用于兼容 OpenAI 接口标准的模型（如通义千问 Qwen）。
-        *   `@ai-sdk/google`: 用于 Google Gemini 系列模型。
-    *   **重点**: 必须确保 `npm` 字段与您要使用的模型协议匹配，否则会导致连接失败。
+- **`npm` (SDK adapter)**
+  - Specifies the underlying AI SDK. For example:
+    - `@ai-sdk/anthropic`: Anthropic (Claude) models.
+    - `@ai-sdk/openai-compatible`: OpenAI-compatible models (such as Qwen).
+    - `@ai-sdk/google`: Google Gemini models.
+  - **Important:** The `npm` adapter must match the provider protocol, or requests may fail.
 
-*   **`options` (连接参数)**:
-    *   **`baseURL`**: API 的访问地址。在示例中，许多是内网或中转地址（如 `http://localhost:3000/...`）。
-    *   **`apiKey`**: 访问 API 所需的身份验证密钥。
+- **`options` (Connection parameters)**
+  - **`baseURL`**: The API endpoint.
+  - **`apiKey`**: The authentication key required by the endpoint.
 
-*   **`models` (模型映射)**:
-    *   定义该提供商下可用的模型列表。
-    *   **键名 (ID)**: 实际调用时使用的模型 ID（例如 `claude-opus-4-5`）。
-    *   **`name`**: 在 UI 界面上显示的友好名称。
-    *   **重点**: 这里的键名必须与服务端实际支持的模型标识符一致。
+- **`models` (Model mapping)**
+  - Defines available models for this provider.
+  - **Key (ID):** The model ID used in requests (for example, `claude-opus-4-5`).
+  - **`name`:** The user-friendly name shown in the UI.
+  - **Important:** Model IDs must match what the backend gateway actually supports.
 
-### 2. 区分同类型的不同实例
-在示例中，有两个 `gemini` 相关的配置：`gemini-antigravity` 和 `gemini-cli`。
-*   它们虽然都使用 `@ai-sdk/google`，但通过不同的 `baseURL` 区分。
-*   这允许您在同一配置中接入来自不同网关或环境的同类模型，并通过自定义的 `name`（如 `gemini-2.5-flash-antigravity` vs `gemini-2.5-flash-geminicli`）在前端进行区分。
+### 2. Distinguish Multiple Instances of the Same Provider Type
+In this example, there are two Gemini-related providers: `gemini-antigravity` and `gemini-cli`.
+- Both use `@ai-sdk/google`.
+- They are separated by different `baseURL` values.
+
+This lets you connect similar model families from different gateways or environments in one config and distinguish them by custom model display names.
 
 ### 3. `$schema`
-*   用于提供 JSON 模式验证。在支持的编辑器（如 VS Code）中，它可以为您提供自动补全和实时错误检查。
+- Provides JSON schema validation.
+- In supported editors (such as VS Code), this enables autocomplete and real-time validation feedback.
