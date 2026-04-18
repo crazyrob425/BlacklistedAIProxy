@@ -1,0 +1,46 @@
+<svg width="1600" height="620" viewBox="0 0 1600 620" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="BlacklistedAIProxy branded hero banner">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="620" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#020617"/>
+      <stop offset="0.5" stop-color="#0B1020"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="neon" x1="226" y1="154" x2="665" y2="447" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#06B6D4"/>
+      <stop offset="1" stop-color="#7C3AED"/>
+    </linearGradient>
+    <linearGradient id="line" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#06B6D4" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#7C3AED" stop-opacity="0.5"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="620" fill="url(#bg)"/>
+
+  <g opacity="0.35">
+    <path d="M0 450C200 360 380 560 560 470C710 394 890 213 1110 265C1320 315 1430 480 1600 430" stroke="url(#line)" stroke-width="2"/>
+    <path d="M0 520C190 420 390 610 580 515C760 425 920 250 1130 310C1310 360 1460 540 1600 500" stroke="url(#line)" stroke-width="2"/>
+    <path d="M0 380C220 300 340 470 520 420C710 367 870 175 1080 205C1320 240 1450 370 1600 330" stroke="url(#line)" stroke-width="2"/>
+  </g>
+
+  <g>
+    <rect x="154" y="124" width="560" height="374" rx="44" fill="#0F172A" stroke="#334155"/>
+    <path d="M226 154H440C542.173 154 625 236.827 625 339C625 441.173 542.173 524 440 524H226V154Z" fill="url(#neon)"/>
+    <path d="M278 206H438C507.588 206 564 262.412 564 332V346C564 415.588 507.588 472 438 472H278V206Z" fill="#0B1020"/>
+    <path d="M325 245H438C486.049 245 525 283.951 525 332V343C525 391.049 486.049 430 438 430H325V245Z" fill="url(#neon)" opacity="0.93"/>
+    <path d="M439 196L639 338L439 480V196Z" fill="#22D3EE" opacity="0.95"/>
+  </g>
+
+  <g fill="#E2E8F0">
+    <text x="780" y="220" font-size="60" font-family="Segoe UI, Inter, Arial, sans-serif" font-weight="700">BlacklistedAIProxy</text>
+    <text x="780" y="276" font-size="28" font-family="Segoe UI, Inter, Arial, sans-serif" fill="#94A3B8">OpenAI-compatible gateway for Gemini, Claude, Grok, Codex, Qwen, and Kimi.</text>
+    <text x="780" y="328" font-size="24" font-family="Segoe UI, Inter, Arial, sans-serif" fill="#22D3EE">Professional Routing • Protocol Conversion • Account Pooling • Observability</text>
+  </g>
+
+  <g>
+    <rect x="780" y="372" width="182" height="52" rx="26" fill="#0EA5E9"/>
+    <text x="817" y="405" font-size="22" font-family="Segoe UI, Inter, Arial, sans-serif" font-weight="700" fill="#F8FAFC">v2.13.7</text>
+    <rect x="978" y="372" width="204" height="52" rx="26" fill="#7C3AED"/>
+    <text x="1019" y="405" font-size="22" font-family="Segoe UI, Inter, Arial, sans-serif" font-weight="700" fill="#F8FAFC">Node ≥ 20</text>
+  </g>
+</svg>

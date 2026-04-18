@@ -1,218 +1,77 @@
 <div align="center">
+  <img src="./static/branding/hero-banner.svg" alt="BlacklistedAIProxy Hero Banner" width="100%" />
+</div>
 
-```
-██████╗ ██╗      █████╗  ██████╗██╗  ██╗██╗     ██╗███████╗████████╗███████╗██████╗      █████╗ ██████╗ ██╗
-██╔══██╗██║     ██╔══██╗██╔════╝██║ ██╔╝██║     ██║██╔════╝╚══██╔══╝██╔════╝██╔══██╗    ██╔══██╗██╔══██╗██║
-██████╔╝██║     ███████║██║     █████╔╝ ██║     ██║███████╗   ██║   █████╗  ██║  ██║    ███████║██████╔╝██║
-██╔══██╗██║     ██╔══██║██║     ██╔═██╗ ██║     ██║╚════██║   ██║   ██╔══╝  ██║  ██║    ██╔══██║██╔═══╝ ██║
-██████╔╝███████╗██║  ██║╚██████╗██║  ██╗███████╗██║███████║   ██║   ███████╗██████╔╝    ██║  ██║██║     ██║
-╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝╚══════╝   ╚═╝   ╚══════╝╚═════╝     ╚═╝  ╚═╝╚═╝     ╚═╝
-```
+<div align="center">
 
-**[ Blacklisted Binary Labs ]** — *We didn't get the memo saying we had to play nice.*
+# BlacklistedAIProxy
+
+**Production-ready OpenAI-compatible gateway for Gemini, Claude/Kiro, Grok, Codex, Qwen, Kimi, and more.**
 
 [![Version](https://img.shields.io/badge/version-2.13.7-red?style=for-the-badge&logo=github)](https://github.com/crazyrob425/BlacklistedAIProxy)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-darkred?style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0)
 [![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A520.0-darkgreen?style=for-the-badge&logo=node.js)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-ready-blue?style=for-the-badge&logo=docker)](https://hub.docker.com/r/crazyrob425/blacklisted-api)
-[![Tests](https://img.shields.io/badge/Tests-passing-brightgreen?style=for-the-badge&logo=jest)](https://github.com/crazyrob425/BlacklistedAIProxy/actions)
+[![Tests](https://img.shields.io/badge/Tests-Jest-green?style=for-the-badge&logo=jest)](https://github.com/crazyrob425/BlacklistedAIProxy/actions)
 
-> *"They said you couldn't use those AI models in your own apps. We said 'hold my root beer.'  
-> — BlacklistedAPI: the proxy that laughs at rate limits."*
+[Quick Start](#quick-start) • [Architecture](#architecture) • [Features](#feature-overview) • [Docs](#documentation)
 
 </div>
 
 ---
 
-## 💀 What Even IS This Thing?
+## Why BlacklistedAIProxy
 
-**BlacklistedAPI** is an **OpenAI-compatible reverse proxy gateway** that jailbreaks the client-only restrictions on the world's most powerful AI models — Gemini CLI, Claude Kiro, Grok, Codex, Qwen Code, and more — and wraps them into a single, clean, standard API endpoint your apps can actually call.
+BlacklistedAIProxy unifies multiple client-bound AI providers behind a single OpenAI-compatible endpoint, so your apps and tooling can integrate once and route anywhere.
 
-> **In plain English:** Big AI companies give you fancy AI tools but won't let you use them in your own software. BlacklistedAPI is the middleman that says "actually, you can." Point your favorite AI-powered IDE, chat app, or automation pipeline at BlacklistedAPI's local endpoint and suddenly every "client-only" model is fair game. Zero code changes on your end. Zero permission slips required.
-
-Built on **Node.js**, hardened with **Go TLS tricks**, secured with **OpenTelemetry observability**, and battle-tested with **Promptfoo red-team suites** — this is not your grandma's proxy.
-
----
-
-## 🩸 Standing on the Shoulders of Giants (Homage Section)
-
-> *"We didn't build from scratch. We stood on the shoulders of legends and then immediately climbed higher."*
-
-BlacklistedAPI is forged from the fusion of two legendary open-source codebases. Without them, this doesn't exist.
-
-| Ancestor | Language | What They Built | What We Took |
-|---|---|---|---|
-| 🔥 **[router-for-me/CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI)** | Go | The original CLI proxy engine — OpenAI/Gemini/Claude/Codex compatible endpoints, multi-account round-robin, OAuth flows for every major provider, reusable Go SDK, and a whole ecosystem of downstream projects built on top of it. The blueprint that proved this was possible. | The core proxy architecture patterns, multi-account load balancing concepts, OAuth flow designs, and provider routing strategy |
-| ⚡ **[justlovemaki/AIClient-2-API](https://github.com/justlovemaki/AIClient-2-API)** | Node.js | The Node.js implementation that brought in the Web UI management console, TLS fingerprint bypass via Go uTLS sidecar, Antigravity/Kiro/Grok protocol support, account pool manager with async refresh queue, and the three-way OpenAI↔Claude↔Gemini protocol conversion engine. | The entire Node.js codebase — protocol engine, provider adapters, account pool manager, Web UI, TLS sidecar, and every OAuth integration |
-
-Mad respect to **[@router-for-me](https://github.com/router-for-me)** for proving the concept and building the original Go engine that spawned an ecosystem.  
-Mad respect to **[@justlovemaki](https://github.com/justlovemaki)** for taking that torch and rebuilding it in Node.js with a full UI, multi-protocol conversion, and enough features to make enterprise engineers nervous.
-
-**BlacklistedAPI** is what happens when you take both of those, slam them together, add Blacklisted Binary Labs energy, and refuse to ask permission.
+### What it solves
+- Normalizes OpenAI, Claude, and Gemini-style payloads with protocol conversion
+- Routes requests across provider/account pools with health-aware failover
+- Supports streaming, tool/function calls, vision, and model-aware dispatch
+- Adds observability (OpenTelemetry + optional Langfuse) and security regression testing (Promptfoo)
+- Provides a Web UI for account management, logs, plugins, and configuration
 
 ---
 
-## 🎯 The Sales Pitch (This Is Where We Try Really Hard)
+## Brand & Visual Identity
 
-### The Problem (A Chart, Because Apparently That Impresses People)
+<div align="center">
+  <img src="./static/branding/logo-mark.svg" alt="BlacklistedAIProxy Logo" width="180" />
+</div>
 
-```
-WITHOUT BlacklistedAPI:                    WITH BlacklistedAPI:
-                                           
-  Your App                                   Your App
-    │                                          │
-    ▼                                          ▼
-  ❌ Can't call Gemini CLI directly          ✅ BlacklistedAPI :3000
-  ❌ Claude Kiro = client-only jail          /        |        \
-  ❌ Codex OAuth = proprietary hell        Gemini   Claude   Grok
-  ❌ Grok = Cloudflare wall                Claude   Codex    Kimi
-  ❌ Five different API formats             Qwen    Kiro     More
-  ❌ Rate limits everywhere                   │
-  ❌ Your wallet, crying                      ▼
-                                          OpenAI-compatible
-                                          Standard Response
-                                          (FREE models edition)
-```
-
-### The Money Shot: What You Get Free
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  MODEL            │  NORMAL PRICE  │  BLACKLISTEDAPI PRICE     │
-├─────────────────────────────────────────────────────────────────┤
-│  Claude Opus 4.5  │  $$$$$         │  🆓 (via Kiro OAuth)      │
-│  Gemini 3 Pro     │  $$$           │  🆓 (via Gemini CLI)      │
-│  Grok 3/4         │  $$            │  🆓 (via xAI SSO)         │
-│  Codex            │  $$$           │  🆓 (via OpenAI OAuth)    │
-│  Qwen3 Coder Plus │  $$            │  🆓 (via Alibaba OAuth)   │
-│  Kimi K2          │  $$            │  🆓 (via Moonshot OAuth)  │
-└─────────────────────────────────────────────────────────────────┘
-  * Free within provider's own usage limits. We're a proxy, not magic.
-    (Well, we're a *little* magic.)
-```
+<div align="center">
+  <img src="./static/branding/feature-grid.svg" alt="BlacklistedAIProxy Feature Grid" width="100%" />
+</div>
 
 ---
 
-## 🚀 Feature Breakdown (Technical + Human Version)
+## Feature Overview
 
-### 🔓 Feature 1: Protocol Jailbreak Engine
-
-**Technical:** Implements OAuth 2.0 PKCE flows, token refresh cycles, and HTTP session simulation to access Gemini CLI, Claude Kiro, xAI Grok, OpenAI Codex, Alibaba Qwen, and Moonshot Kimi through their client-application authentication pathways. Normalizes all responses to OpenAI chat completions format.
-
-**Human Version:** Imagine those AI models are in VIP clubs that only let in their official apps. BlacklistedAPI puts on a fake mustache, walks in through the staff entrance, and sends you everything from the inside. Your app just thinks it's talking to a normal OpenAI endpoint.
-
----
-
-### 🧠 Feature 2: Multi-Protocol Intelligent Conversion
-
-**Technical:** Three-way protocol bridge supporting OpenAI ↔ Anthropic Claude ↔ Google Gemini message format translation. Automatic protocol detection based on incoming request headers + path routing. Handles streaming (SSE), function calling, vision inputs, and system prompt injection.
-
-**Human Version:** Different AI companies invented totally different ways for software to talk to them. It's like some people speak English, some speak Klingon, some speak interpretive dance. BlacklistedAPI is the universal translator. You send English, it figures out who speaks what and translates in real time, then sends you back English.
+| Capability | Status | Details |
+|---|---|---|
+| Provider coverage | ✅ | Gemini CLI, Claude/Kiro, Grok, Codex, Qwen, Kimi (+ existing adapters) |
+| Protocol bridge | ✅ | OpenAI ↔ Claude ↔ Gemini conversion, streaming-aware |
+| Account pool manager | ✅ | Round-robin, token refresh queue, deduping, concurrency control, failover |
+| TLS bypass sidecar | ✅ | Go `uTLS` service for browser-like TLS fingerprints |
+| Web UI + plugin system | ✅ | AI Monitor, Model Usage Stats, API Potluck, Langfuse bridge |
+| Observability | ✅ | OpenTelemetry traces, `X-Trace-Id`, optional Langfuse events |
+| Security quality gates | ✅ | Promptfoo baseline + red-team security suites |
+| Docker deployment | ✅ | Docker run + compose workflows |
+| Desktop shell | ✅ | WRB Tauri dashboard included in `/desktop/wrb-dashboard-tauri` |
 
 ---
 
-### 🏊 Feature 3: Account Pool Management
+## Architecture
 
-**Technical:** Multi-account round-robin scheduler with async token refresh queue, buffer queue deduplication, global concurrency limiter, node warmup period, TTL-based expiry detection, and automatic failover to next healthy credential.
-
-**Human Version:** Got 5 free Gemini accounts? Throw them all in. BlacklistedAPI takes turns using each one so none of them hit the daily limit. If one account gets rate-limited or breaks, it automatically skips it and tries the next one — no downtime, no drama. It's like having 5 employees cover the same shift so nobody burns out.
-
-```
-Account Pool in Action:
-                                          
-  Account 1 ──► [Rate Limited] ──►  SKIP
-  Account 2 ──► [Healthy] ───────►  USE  ◄── Request 1
-  Account 3 ──► [Healthy] ───────►  USE  ◄── Request 2  
-  Account 4 ──► [Token Expired] ─►  REFRESH → USE  ◄── Request 3
-  Account 5 ──► [Healthy] ───────►  USE  ◄── Request 4
-```
+<div align="center">
+  <img src="./static/branding/architecture.svg" alt="BlacklistedAIProxy Architecture" width="100%" />
+</div>
 
 ---
 
-### 🛡️ Feature 4: TLS Fingerprint Bypass (The Go Sidecar)
+## Quick Start
 
-**Technical:** Embedded Go microservice using `uTLS` library to simulate legitimate browser TLS handshake fingerprints (Chrome/Firefox JA3 signatures). Intercepts outbound requests to Cloudflare-protected endpoints (primarily Grok/xAI) and replaces the Node.js TLS fingerprint with a browser-matching one, defeating CF's bot detection heuristics.
-
-**Human Version:** Cloudflare is a bouncer that checks not just your ID, but HOW you knocked on the door. Node.js knocks like a robot (obvious). Browsers knock a specific way. Our Go sidecar teaches BlacklistedAPI to knock like a browser. Cloudflare says "come on in." Problem solved with a tiny Go program running alongside the main server.
-
----
-
-### 📡 Feature 5: OpenTelemetry + Langfuse Observability
-
-**Technical:** Full distributed tracing via OpenTelemetry NodeSDK with OTLP-HTTP export. Every request gets a unique trace ID surfaced in the `X-Trace-Id` response header. Child spans per provider hop (`llm.<provider>`), gateway routing span (`gateway.proxy`), and optional Langfuse generation recording for LLM-specific analytics. All zero-cost when `OTEL_ENABLED` is unset.
-
-**Human Version:** Ever wonder exactly which AI model answered your request, how long it took, whether it went through the account pool, and why that one weird request failed on Tuesday at 3am? OTel gives you a detailed trail of everything. Connect it to a Langfuse dashboard and watch your AI calls in real time like a mission control operator. It's the NSA for your own data — but you're the good guy here.
-
----
-
-### 🔬 Feature 6: Promptfoo Security Red-Teaming
-
-**Technical:** Integrated Promptfoo evaluation suite with baseline protocol conformance tests and adversarial security test suite. CI-enforced `passRateThreshold: 1.0` on the security suite. Tests cover prompt injection, jailbreak resistance, cross-provider protocol compliance, and response format validation.
-
-**Human Version:** We hire a team of virtual hackers to try and break our own proxy before you use it. They throw the nastiest prompts imaginable at it — trying to trick it, confuse it, steal data through it — and if any of those tricks work, the build fails and we fix it. It's like a dress rehearsal for getting attacked.
-
----
-
-### 🌐 Feature 7: Web UI Management Console
-
-**Technical:** Server-side Express.js with dynamically loaded frontend components. Real-time provider health monitoring via REST polling, CRUD API for account pool management, request/response log viewer with filtering, API key management, model alias routing config, and theme switching (dark/light).
-
-**Human Version:** Instead of editing scary JSON files, you get a website dashboard running on your own computer. Click buttons to add accounts, see which models are working, watch live logs of what's happening, and test API calls — all without touching the command line after the first start. It's like a cockpit for your AI empire.
-
----
-
-### 🎰 Feature 8: API Potluck (Community Key Sharing)
-
-**Technical:** Multi-tenant shared credential pool module where authenticated users contribute and consume API keys from a common pool. Rate-limited distribution with per-user quotas, key validation on submission, and encrypted storage. Separate potluck key management interface.
-
-**Human Version:** Community pot-luck dinner, but for AI API keys. You bring a dish (your spare API key), everyone else brings a dish, and we all eat together. Pool your resources with other users, everyone gets more access without anyone paying more. Very communist, very effective, very Blacklisted.
-
----
-
-## 🗺️ Architecture: The Beast Map
-
-```
-                        ┌──────────────────────────────────────────┐
-                        │           BlacklistedAPI Gateway           │
-                        │                                            │
-  Your App ─────────►  │  ┌──────────────┐   ┌─────────────────┐  │
-  (OpenAI format)       │  │  Auth Layer  │   │  Protocol Conv. │  │
-                        │  │  API Keys    │   │  OpenAI↔Claude  │  │
-                        │  │  JWT Tokens  │   │  Claude↔Gemini  │  │
-                        │  └──────┬───────┘   └────────┬────────┘  │
-                        │         │                     │           │
-                        │  ┌──────▼─────────────────────▼────────┐  │
-                        │  │         Hybrid Gateway Router        │  │
-                        │  │  (Path routing + model dispatch)     │  │
-                        │  └──────┬──────────────────────────────┘  │
-                        │         │                                  │
-                        │  ┌──────▼──────────────────────────────┐  │
-                        │  │         Provider Pool Manager         │  │
-                        │  │  ┌──────┐ ┌──────┐ ┌──────┐         │  │
-                        │  │  │ G1   │ │ G2   │ │ G3   │ ...     │  │
-                        │  │  │Gem.  │ │Kiro  │ │Grok  │         │  │
-                        │  │  └──────┘ └──────┘ └──────┘         │  │
-                        │  └──────────────────────────────────────┘  │
-                        │                                            │
-                        │  ┌──────────────┐   ┌─────────────────┐  │
-                        │  │  OTel Traces  │   │  Go TLS Sidecar │  │
-                        │  │  Langfuse     │   │  uTLS Browser   │  │
-                        │  │  Logs         │   │  Fingerprinting │  │
-                        │  └──────────────┘   └─────────────────┘  │
-                        └──────────────────────────────────────────┘
-                                         │
-              ┌──────────────────────────┼──────────────────────────┐
-              ▼                          ▼                          ▼
-        Gemini CLI                 Claude / Kiro               xAI Grok
-        Antigravity              OpenAI Codex               Qwen Code
-        (Google)                 (Anthropic/OAI)            (Alibaba/xAI)
-```
-
----
-
-## ⚡ Quick Start (The Actually Fast Version)
-
-### 🐳 Docker One-Liner (Recommended)
+### Docker (recommended)
 
 ```bash
 docker run -d \
@@ -226,9 +85,9 @@ docker run -d \
   crazyrob425/blacklisted-api
 ```
 
-> Open http://localhost:3000 → Web UI dashboard appears → configure models → done.
+Then open: `http://localhost:3000`
 
-### 🐳 Docker Compose
+### Docker Compose
 
 ```bash
 cd docker
@@ -236,219 +95,115 @@ mkdir -p configs
 docker compose up -d
 ```
 
-### 🖥️ Run Native (Node.js ≥ 20)
+### Native run (Node.js >= 20)
 
-**Linux/macOS:**
+**Linux/macOS**
 ```bash
 chmod +x install-and-run.sh && ./install-and-run.sh
 ```
 
-**Windows:**
-```bash
+**Windows**
+```bat
 install-and-run.bat
 ```
 
-### 🔗 Connect Your Tools
+---
 
-Once running, point any OpenAI-compatible tool at `http://localhost:3000`:
+## Connect OpenAI-Compatible Tools
 
-| Tool | Setting | Value |
+Set base URL to `http://localhost:3000` for:
+- Cherry Studio
+- Continue.dev
+- Cline
+- OpenCode
+- OpenClaw
+- Any OpenAI-compatible SDK
+
+---
+
+## Provider Authorization Matrix
+
+| Provider | Auth Method | Port |
 |---|---|---|
-| Cherry-Studio | API Base URL | `http://localhost:3000` |
-| Continue.dev | API Base URL | `http://localhost:3000` |
-| Cline | API Base URL | `http://localhost:3000` |
-| OpenCode | Base URL | `http://localhost:3000` |
-| OpenClaw | Gateway URL | `http://localhost:3000` |
-| Any OpenAI SDK | baseURL | `http://localhost:3000` |
+| Gemini CLI | OAuth 2.0 PKCE | 8085 |
+| Antigravity | OAuth 2.0 | 8086 |
+| Claude/Kiro | OAuth + Cookie | 19876-19880 |
+| Codex | OpenAI OAuth | 1455 |
+| Grok | xAI SSO Cookie | N/A |
+| Qwen Code | Alibaba OAuth | N/A |
+| Kimi K2 | Moonshot OAuth | N/A |
+
+Primary config path: `configs/config.json`
 
 ---
 
-## 🔐 Authorization Setup (Pick Your Poison)
-
-Each provider uses a different auth method. Here's the breakdown:
-
-| Provider | Auth Method | Port | Notes |
-|---|---|---|---|
-| Gemini CLI | OAuth 2.0 PKCE | 8085 | Auto browser pop-up on first run |
-| Antigravity | OAuth 2.0 | 8086 | Google internal API access |
-| Claude Kiro | OAuth + Cookie | 19876-19880 | 500 free credits on new accounts |
-| Codex | OpenAI OAuth | 1455 | OpenAI Codex subscription required |
-| Grok | xAI SSO Cookie | N/A | Grabbed via browser cookie extraction |
-| Qwen Code | Alibaba OAuth | N/A | Free `qwen3-coder-plus` access |
-| Kimi K2 | Moonshot OAuth | N/A | Moonshot account required |
-
-All auth configs live in `configs/config.json` (or manage via Web UI — the sane option).
-
----
-
-## ⚙️ Advanced Config
-
-### Path Routing (Model Selection)
+## Key Configuration
 
 ```bash
-# Use Gemini
-curl http://localhost:3000/gemini/v1/chat/completions
-
-# Use Claude/Kiro
-curl http://localhost:3000/kiro/v1/chat/completions
-
-# Use Grok
-curl http://localhost:3000/grok/v1/chat/completions
-
-# Auto-detect from model name in request body
-curl http://localhost:3000/v1/chat/completions \
-  -d '{"model": "claude-opus-4-5", ...}'
-```
-
-### Environment Variables
-
-```bash
-MASTER_PORT=3100          # Master process management port
-API_PORT=3000             # Main API port
-OTEL_ENABLED=true         # Enable distributed tracing
-LANGFUSE_PUBLIC_KEY=...   # Langfuse integration
+MASTER_PORT=3100
+API_PORT=3000
+OTEL_ENABLED=true
+LANGFUSE_PUBLIC_KEY=...
 LANGFUSE_SECRET_KEY=...
 PROVIDER_POOLS_FILE_PATH=./configs/provider_pools.json
 ```
 
-### System Prompt Override
+Path examples:
+```bash
+# Gemini
+curl http://localhost:3000/gemini/v1/chat/completions
 
-```json
-// configs/config.json
-{
-  "systemPrompt": {
-    "mode": "override",    // or "append"
-    "content": "You are a helpful assistant deployed via BlacklistedAPI."
-  }
-}
+# Claude/Kiro
+curl http://localhost:3000/kiro/v1/chat/completions
+
+# Grok
+curl http://localhost:3000/grok/v1/chat/completions
+
+# Auto routing
+curl http://localhost:3000/v1/chat/completions -d '{"model":"claude-opus-4-5"}'
 ```
 
 ---
 
-## 🔧 Plugin System
-
-BlacklistedAPI ships with built-in plugins that can be activated from the Web UI:
-
-| Plugin | What It Does |
-|---|---|
-| **AI Monitor** | Sniffs request/response payloads before and after protocol conversion. Perfect for debugging |
-| **Model Usage Stats** | Tracks token consumption per model, per provider, per time period |
-| **API Potluck** | Community key sharing pool |
-| **Langfuse Bridge** | Ships all LLM calls to Langfuse for observability dashboards |
-
----
-
-## 📊 Performance Baseline
-
-```
-Concurrency Load Test Results (8-core dev machine, local network):
-
-Requests/sec  │ ████████████████████████░░░ 2,400 req/s (no pool)
-              │ ████████████████████████████████ 3,800 req/s (5-acct pool)
-              │
-Latency P50   │ 12ms  (gateway overhead only, excl. upstream)
-Latency P99   │ 45ms
-              │
-Uptime        │ 99.9% with auto-failover on 3+ accounts
-Restart time  │ <1.5s (master process watchdog)
-```
-
----
-
-## 🧪 Testing
+## Testing
 
 ```bash
-# Unit tests (fast, no network)
-npm test -- tests/hybrid-gateway.test.js tests/provider-models.unit.test.js tests/security-fixes.unit.test.js --forceExit
-
-# Full test suite
+# full suite
 npm test
 
-# Promptfoo red-team security suite
-npm run test:promptfoo:security
+# unit-focused runner
+npm run test:unit
 
-# Coverage report
+# integration-focused runner
+npm run test:integration
+
+# coverage
 npm run test:coverage
+
+# security red-team suite
+npm run test:promptfoo:security
 ```
 
 ---
 
-## 🚢 Version History (The Good Parts)
+## Documentation
 
-| Version | Date | Highlight |
-|---|---|---|
-| 2.13.7 | Current | BlacklistedAPI fork — OTel, Langfuse, Promptfoo hardening |
-| 2.x | 2026.03 | Grok protocol, multimodal, video gen |
-| 1.x | 2026.01 | Codex OAuth, AI Monitor plugin, async refresh queue |
-| 0.x | 2025.12 | Web UI, Docker Hub, unified config management |
-| Origins | 2025.08 | Account pool management, multi-account failover |
-
----
-
-## 🐳 Docker Hub
-
-```bash
-# Latest stable
-docker pull crazyrob425/blacklisted-api:latest
-
-# Specific version  
-docker pull crazyrob425/blacklisted-api:2.13.7
-```
+- [OpenClaw Config Guide](./docs/OPENCLAW_CONFIG_GUIDE.md)
+- [Provider Adapter Guide](./docs/PROVIDER_ADAPTER_GUIDE.md)
+- [OpenCode Config Example](./docs/OPENCODE_CONFIG_EXAMPLE.md)
+- [Dependency Register](./docs/DEPENDENCY-REGISTER.md)
+- [Governance Roadmap](./docs/GOVERNANCE.md)
+- [Windows Beta Blueprint](./docs/WINDOWS_BETA_PRE_RELEASE.md)
+- [WRB Tauri Desktop App](./desktop/wrb-dashboard-tauri/README.md)
 
 ---
 
-## 📚 Documentation
+## Compliance & Usage
 
-- [📖 OpenClaw Config Guide](./docs/OPENCLAW_CONFIG_GUIDE.md) — Using BlacklistedAPI with OpenClaw
-- [🔌 Provider Adapter Guide](./docs/PROVIDER_ADAPTER_GUIDE.md) — Adding new AI providers
-- [📋 OpenCode Config Example](./docs/OPENCODE_CONFIG_EXAMPLE.md) — OpenCode integration
-- [📦 Dependency Register](./docs/DEPENDENCY-REGISTER.md) — Third-party inventory
-- [🗺️ Governance Roadmap](./docs/GOVERNANCE.md) — What's coming next
-- [🪟 Windows Beta Blueprint](./docs/WINDOWS_BETA_PRE_RELEASE.md) — Beta scope, QA gates, and go/no-go checklist
-- [🚘 WRB Tauri Desktop App](./desktop/wrb-dashboard-tauri/README.md) — Native Windows tabbed dashboard shell
+BlacklistedAIProxy is provided for educational and research use. Ensure your usage follows provider terms, local laws, and responsible security practices.
 
 ---
 
-## 💀 Disclaimer
+## License
 
-> *"With great power comes great responsibility to read the terms of service you're definitely not violating."*
-
-BlacklistedAPI is for **educational and research purposes**. Use it to:
-- Access models you're legitimately subscribed to
-- Build personal tools and projects
-- Study how AI APIs work under the hood
-
-Do **NOT** use it to circumvent paid services without authorization, abuse rate limits in bad faith, or do anything that would get you actually blacklisted (the bad kind).
-
----
-
-## 📄 License
-
-**GNU GPL v3** — Free as in freedom. Fork it, hack it, improve it. Just keep it open.
-
----
-
-## 🙏 Acknowledgements
-
-Standing ovation for the real ones:
-- **[@router-for-me](https://github.com/router-for-me)** — For `CLIProxyAPI`, the original Go-based CLI proxy engine that proved the whole concept worked and spawned an entire ecosystem of projects. The blueprint.
-- **[@justlovemaki](https://github.com/justlovemaki)** — For `AIClient-2-API`, the Node.js reimplementation with full Web UI, TLS bypass, multi-protocol conversion, and a feature set wild enough to make this worth combining. The engine.
-- The open-source legends powering the stack: **OpenTelemetry**, **Langfuse**, **Promptfoo**, **uTLS**
-- Every star, fork, and contributor on both source repos — you built the foundation we're standing on
-
----
-
-<div align="center">
-
-```
-> blacklisted-api --version
-  BlacklistedAPI v2.13.7
-  [ Blacklisted Binary Labs ]
-  "The proxy they didn't want you to have."
-```
-
-**[GitHub](https://github.com/crazyrob425/BlacklistedAIProxy)** · **[Issues](https://github.com/crazyrob425/BlacklistedAIProxy/issues)** · **[Docker](https://hub.docker.com/r/crazyrob425/blacklisted-api)**
-
-*Built with spite, Node.js, and an unhealthy obsession with free AI models.*
-
-</div>
+GPL-3.0 — see [LICENSE](./LICENSE).

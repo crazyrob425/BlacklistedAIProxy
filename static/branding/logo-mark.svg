@@ -1,0 +1,33 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="BlacklistedAIProxy logo mark">
+  <defs>
+    <linearGradient id="bg" x1="64" y1="64" x2="448" y2="448" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B1020"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="113" y1="90" x2="399" y2="422" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#06B6D4"/>
+      <stop offset="1" stop-color="#7C3AED"/>
+    </linearGradient>
+    <filter id="glow" x="78" y="74" width="356" height="364" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect x="32" y="32" width="448" height="448" rx="96" fill="url(#bg)"/>
+  <rect x="56" y="56" width="400" height="400" rx="80" stroke="#334155" stroke-width="2"/>
+
+  <g filter="url(#glow)">
+    <path d="M131 132H286C336.258 132 377 172.742 377 223V289C377 339.258 336.258 380 286 380H131V132Z" fill="url(#accent)"/>
+    <path d="M172 175H282C310.167 175 333 197.833 333 226V286C333 314.167 310.167 337 282 337H172V175Z" fill="#0B1020"/>
+    <path d="M206 209H280C289.941 209 298 217.059 298 227V285C298 294.941 289.941 303 280 303H206V209Z" fill="url(#accent)" opacity="0.92"/>
+    <path d="M250 176L381 248L250 320V176Z" fill="#22D3EE" opacity="0.9"/>
+    <path d="M132 248H381" stroke="#E2E8F0" stroke-opacity="0.25" stroke-width="6" stroke-linecap="round"/>
+  </g>
+
+  <circle cx="393" cy="118" r="11" fill="#22D3EE"/>
+  <circle cx="422" cy="146" r="7" fill="#7C3AED"/>
+</svg>
