@@ -1,4 +1,6 @@
-<svg width="1600" height="620" viewBox="0 0 1600 620" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="BlacklistedAIProxy branded hero banner">
+<svg width="1600" height="620" viewBox="0 0 1600 620" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="BlacklistedAIProxy branded hero banner showing project name, multi-provider OpenAI-compatible gateway messaging, and a visual brand mark.">
+  <title>BlacklistedAIProxy Hero Banner</title>
+  <desc>Branded hero visual for BlacklistedAIProxy with logo motif and summary text describing it as a multi-provider OpenAI-compatible gateway.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="620" gradientUnits="userSpaceOnUse">
       <stop stop-color="#020617"/>
@@ -33,14 +35,9 @@
 
   <g fill="#E2E8F0">
     <text x="780" y="220" font-size="60" font-family="Segoe UI, Inter, Arial, sans-serif" font-weight="700">BlacklistedAIProxy</text>
-    <text x="780" y="276" font-size="28" font-family="Segoe UI, Inter, Arial, sans-serif" fill="#94A3B8">OpenAI-compatible gateway for Gemini, Claude, Grok, Codex, Qwen, and Kimi.</text>
+    <text x="780" y="270" font-size="26" font-family="Segoe UI, Inter, Arial, sans-serif" fill="#94A3B8">OpenAI-compatible gateway for multi-provider model access</text>
+    <text x="780" y="304" font-size="26" font-family="Segoe UI, Inter, Arial, sans-serif" fill="#94A3B8">and protocol translation.</text>
     <text x="780" y="328" font-size="24" font-family="Segoe UI, Inter, Arial, sans-serif" fill="#22D3EE">Professional Routing • Protocol Conversion • Account Pooling • Observability</text>
   </g>
 
-  <g>
-    <rect x="780" y="372" width="182" height="52" rx="26" fill="#0EA5E9"/>
-    <text x="817" y="405" font-size="22" font-family="Segoe UI, Inter, Arial, sans-serif" font-weight="700" fill="#F8FAFC">v2.13.7</text>
-    <rect x="978" y="372" width="204" height="52" rx="26" fill="#7C3AED"/>
-    <text x="1019" y="405" font-size="22" font-family="Segoe UI, Inter, Arial, sans-serif" font-weight="700" fill="#F8FAFC">Node ≥ 20</text>
-  </g>
 </svg>

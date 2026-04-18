@@ -6,7 +6,7 @@
 
 # BlacklistedAIProxy
 
-**Production-ready OpenAI-compatible gateway for Gemini, Claude/Kiro, Grok, Codex, Qwen, Kimi, and more.**
+**OpenAI-compatible gateway for Gemini, Claude (via Kiro adapter), Grok, Codex, Qwen, Kimi, and more.**
 
 [![Version](https://img.shields.io/badge/version-2.13.7-red?style=for-the-badge&logo=github)](https://github.com/crazyrob425/BlacklistedAIProxy)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-darkred?style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0)
@@ -31,6 +31,12 @@ BlacklistedAIProxy unifies multiple client-bound AI providers behind a single Op
 - Adds observability (OpenTelemetry + optional Langfuse) and security regression testing (Promptfoo)
 - Provides a Web UI for account management, logs, plugins, and configuration
 
+### Production readiness
+- Observability: OpenTelemetry tracing with `X-Trace-Id` and optional Langfuse integration
+- Reliability: provider pool failover, token refresh queueing, and concurrency controls
+- Security quality checks: Promptfoo baseline and adversarial security suites
+- Deployment support: Docker runtime, compose flows, and environment-based configuration
+
 ---
 
 ## Brand & Visual Identity
@@ -49,7 +55,7 @@ BlacklistedAIProxy unifies multiple client-bound AI providers behind a single Op
 
 | Capability | Status | Details |
 |---|---|---|
-| Provider coverage | ✅ | Gemini CLI, Claude/Kiro, Grok, Codex, Qwen, Kimi (+ existing adapters) |
+| Provider coverage | ✅ | Gemini CLI, Claude (via Kiro adapter), Grok, Codex, Qwen, Kimi (+ existing adapters) |
 | Protocol bridge | ✅ | OpenAI ↔ Claude ↔ Gemini conversion, streaming-aware |
 | Account pool manager | ✅ | Round-robin, token refresh queue, deduping, concurrency control, failover |
 | TLS bypass sidecar | ✅ | Go `uTLS` service for browser-like TLS fingerprints |
@@ -127,7 +133,7 @@ Set base URL to `http://localhost:3000` for:
 |---|---|---|
 | Gemini CLI | OAuth 2.0 PKCE | 8085 |
 | Antigravity | OAuth 2.0 | 8086 |
-| Claude/Kiro | OAuth + Cookie | 19876-19880 |
+| Claude (via Kiro adapter) | OAuth + Cookie | 19876-19880 |
 | Codex | OpenAI OAuth | 1455 |
 | Grok | xAI SSO Cookie | N/A |
 | Qwen Code | Alibaba OAuth | N/A |
@@ -153,7 +159,7 @@ Path examples:
 # Gemini
 curl http://localhost:3000/gemini/v1/chat/completions
 
-# Claude/Kiro
+# Claude (via Kiro adapter)
 curl http://localhost:3000/kiro/v1/chat/completions
 
 # Grok

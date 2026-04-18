@@ -1,4 +1,6 @@
-<svg width="1400" height="860" viewBox="0 0 1400 860" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="BlacklistedAIProxy feature overview cards">
+<svg width="1400" height="860" viewBox="0 0 1400 860" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Feature overview for BlacklistedAIProxy with six cards: protocol conversion, account pooling, observability, security regression testing, TLS sidecar, and web UI plus plugins.">
+  <title>BlacklistedAIProxy Feature Overview</title>
+  <desc>Grid of six platform highlights covering protocol translation, account pooling, observability, security suites, TLS fingerprint sidecar, and web UI/plugin operations.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1400" y2="860" gradientUnits="userSpaceOnUse">
       <stop stop-color="#020617"/>
@@ -13,21 +15,21 @@
 
   <g font-family="Segoe UI, Inter, Arial, sans-serif" fill="#E2E8F0">
     <text x="70" y="90" font-size="42" font-weight="700">Platform Highlights</text>
-    <text x="70" y="128" font-size="22" fill="#94A3B8">Production-ready capabilities available in BlacklistedAIProxy v2.13.7</text>
+    <text x="70" y="128" font-size="22" fill="#94A3B8">Production-ready capabilities in the current platform architecture</text>
   </g>
 
   <g font-family="Segoe UI, Inter, Arial, sans-serif">
     <rect x="70" y="170" width="390" height="280" rx="22" fill="url(#card)" stroke="#334155"/>
     <text x="100" y="220" font-size="28" font-weight="700" fill="#22D3EE">Protocol Conversion</text>
-    <text x="100" y="258" font-size="20" fill="#CBD5E1">OpenAI ↔ Claude ↔ Gemini translation,</text>
-    <text x="100" y="286" font-size="20" fill="#CBD5E1">streaming support, tools, vision, and</text>
-    <text x="100" y="314" font-size="20" fill="#CBD5E1">model-aware auto-routing.</text>
+    <text x="100" y="258" font-size="20" fill="#CBD5E1">Cross-protocol translation across supported</text>
+    <text x="100" y="286" font-size="20" fill="#CBD5E1">provider formats with streaming/tooling,</text>
+    <text x="100" y="314" font-size="20" fill="#CBD5E1">vision support, and model-aware routing.</text>
 
     <rect x="505" y="170" width="390" height="280" rx="22" fill="url(#card)" stroke="#334155"/>
     <text x="535" y="220" font-size="28" font-weight="700" fill="#A78BFA">Account Pooling</text>
-    <text x="535" y="258" font-size="20" fill="#CBD5E1">Round-robin credentials, refresh queues,</text>
-    <text x="535" y="286" font-size="20" fill="#CBD5E1">concurrency limits, expiry detection, and</text>
-    <text x="535" y="314" font-size="20" fill="#CBD5E1">automatic failover.</text>
+    <text x="535" y="258" font-size="20" fill="#CBD5E1">Credential pooling with refresh scheduling,</text>
+    <text x="535" y="286" font-size="20" fill="#CBD5E1">concurrency governance, expiry detection,</text>
+    <text x="535" y="314" font-size="20" fill="#CBD5E1">and automatic failover.</text>
 
     <rect x="940" y="170" width="390" height="280" rx="22" fill="url(#card)" stroke="#334155"/>
     <text x="970" y="220" font-size="28" font-weight="700" fill="#38BDF8">Observability</text>
@@ -37,20 +39,20 @@
 
     <rect x="70" y="490" width="390" height="280" rx="22" fill="url(#card)" stroke="#334155"/>
     <text x="100" y="540" font-size="28" font-weight="700" fill="#34D399">Security Regression</text>
-    <text x="100" y="578" font-size="20" fill="#CBD5E1">Promptfoo baseline + adversarial suites</text>
-    <text x="100" y="606" font-size="20" fill="#CBD5E1">cover jailbreaks, injection, and</text>
+    <text x="100" y="578" font-size="20" fill="#CBD5E1">Promptfoo baseline and adversarial suites</text>
+    <text x="100" y="606" font-size="20" fill="#CBD5E1">cover jailbreak, injection, and</text>
     <text x="100" y="634" font-size="20" fill="#CBD5E1">protocol hardening checks.</text>
 
     <rect x="505" y="490" width="390" height="280" rx="22" fill="url(#card)" stroke="#334155"/>
     <text x="535" y="540" font-size="28" font-weight="700" fill="#60A5FA">TLS Sidecar (Go)</text>
     <text x="535" y="578" font-size="20" fill="#CBD5E1">uTLS fingerprinting for browser-like</text>
-    <text x="535" y="606" font-size="20" fill="#CBD5E1">handshakes when accessing CF-protected</text>
-    <text x="535" y="634" font-size="20" fill="#CBD5E1">upstreams (notably Grok/xAI).</text>
+    <text x="535" y="606" font-size="20" fill="#CBD5E1">TLS handshakes on protected upstreams</text>
+    <text x="535" y="634" font-size="20" fill="#CBD5E1">through the sidecar runtime.</text>
 
     <rect x="940" y="490" width="390" height="280" rx="22" fill="url(#card)" stroke="#334155"/>
     <text x="970" y="540" font-size="28" font-weight="700" fill="#F59E0B">Web UI + Plugins</text>
     <text x="970" y="578" font-size="20" fill="#CBD5E1">Provider dashboards, key management,</text>
-    <text x="970" y="606" font-size="20" fill="#CBD5E1">AI Monitor, Usage Stats, API Potluck,</text>
-    <text x="970" y="634" font-size="20" fill="#CBD5E1">and theme-aware operations.</text>
+    <text x="970" y="606" font-size="20" fill="#CBD5E1">plugin support, usage analytics,</text>
+    <text x="970" y="634" font-size="20" fill="#CBD5E1">and operations workflows.</text>
   </g>
 </svg>

@@ -1,4 +1,6 @@
-<svg width="1500" height="940" viewBox="0 0 1500 940" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="BlacklistedAIProxy architecture diagram">
+<svg width="1500" height="940" viewBox="0 0 1500 940" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Architecture diagram showing client apps flowing through API layer, protocol conversion, routing, and provider pool manager, with observability and TLS sidecar integrations before provider adapters.">
+  <title>BlacklistedAIProxy Runtime Architecture</title>
+  <desc>Data flow architecture from client apps to OpenAI-compatible layer, protocol conversion, router and pool manager, with OpenTelemetry/Langfuse, Go uTLS sidecar, and provider adapter outputs.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1500" y2="940" gradientUnits="userSpaceOnUse">
       <stop stop-color="#020617"/>
@@ -43,9 +45,9 @@
     <text x="1163" y="512" fill="#94A3B8" font-size="17">Fingerprinting</text>
 
     <rect x="1110" y="640" width="230" height="180" rx="16" fill="url(#box)" stroke="#334155"/>
-    <text x="1176" y="690" fill="#E2E8F0" font-size="22" font-weight="700">Providers</text>
-    <text x="1148" y="726" fill="#CBD5E1" font-size="18">Gemini • Claude • Grok</text>
-    <text x="1145" y="754" fill="#CBD5E1" font-size="18">Codex • Qwen • Kimi</text>
+    <text x="1176" y="690" fill="#E2E8F0" font-size="22" font-weight="700">Provider Adapters</text>
+    <text x="1148" y="726" fill="#CBD5E1" font-size="18">Configured provider integrations</text>
+    <text x="1145" y="754" fill="#CBD5E1" font-size="18">managed by adapter modules</text>
 
     <path d="M400 305H470" stroke="#22D3EE" stroke-width="4" marker-end="url(#arrow)"/>
     <path d="M760 320V350" stroke="#22D3EE" stroke-width="4" marker-end="url(#arrow)"/>
