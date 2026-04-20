@@ -17,7 +17,7 @@
 7. [Plugin Information Form (Template)](#7-plugin-information-form-template)
 8. [Marketplace Catalog Schema Reference](#8-marketplace-catalog-schema-reference)
 9. [Top 5 Recommended Plugin Concepts](#9-top-5-recommended-plugin-concepts)
-10. [#1 Recommended Next Plugin: Smart Model Router](#10-1-recommended-next-plugin-smart-model-router)
+10. [#1 Recommended Next Plugin: Multi-Model Ensemble Synthesizer](#10-1-recommended-next-plugin-multi-model-ensemble-synthesizer)
 11. [Changelog Policy](#11-changelog-policy)
 
 ---
@@ -741,61 +741,113 @@ interface PluginCatalogEntry {
 
 ## 9. Top 5 Recommended Plugin Concepts
 
-The following five plugin concepts were selected by analyzing:
-1. BlacklistedAIProxy's most-requested features
-2. The top 50 AI infrastructure repositories on GitHub by stars
-3. NadirClaw's architecture (token routing, cost optimization)
-4. Common pain points reported in LiteLLM, OpenRouter, and similar proxy issues
-5. Feature gaps in the current plugin ecosystem
+> **Selection Criteria:** Every concept below was evaluated against BlacklistedAIProxy's unique value
+> proposition: **all major commercial LLMs are 100% free to users, and built-in provider routing
+> already selects the best-fit model by request context.** Any plugin that merely duplicates routing
+> logic or frames its value around "cheaper" models is disqualified — "cheaper" is meaningless when
+> everything is free. Concepts are ranked by *net-new capability* they add that is impossible without
+> this proxy architecture.
 
-Each concept combines the best practices from multiple open-source projects.
+The following five plugin concepts were selected by analyzing:
+1. BlacklistedAIProxy's unique free-access-to-all-LLMs architecture
+2. The top 50 AI infrastructure repositories on GitHub by stars
+3. NadirClaw's architecture (prompt caching, token optimization, wizard UX)
+4. Real user pain points reported in LiteLLM, OpenRouter, and similar proxy issue trackers
+5. Feature gaps that **cannot** be solved by existing core features
+
+Each concept combines best practices from multiple open-source projects and adds capability that
+does not exist anywhere else in the current codebase.
 
 ---
 
-### Concept #1 — Smart Model Router ⭐ TOP PICK
+### Concept #1 — Multi-Model Ensemble Synthesizer ⭐ TOP PICK
 
-**Category:** optimization  
-**Priority Slot:** 200  
-**Estimated Impact:** Cost reduction 30–70%, quality improvement 15–25%
+**Category:** ai-enhancement  
+**Priority Slot:** 300  
+**Estimated Impact:** Measurable quality uplift on every request; unique killer feature only possible
+because all models are free
+
+**The Core Insight:**
+Every other AI proxy on the market forces users to pick *one* model per request — because every
+call costs money. BlacklistedAIProxy is the only proxy where sending a prompt to 3 or 4 frontier
+models simultaneously costs the user exactly **$0.00**. This plugin turns that structural advantage
+into a first-class feature: fan out one prompt to N models, collect all responses, synthesize or
+vote on the best answer, and return a single high-confidence reply.
 
 **What it does:**
-Automatically selects the cheapest AI model capable of handling each request's complexity. Simple requests (Q&A, short completions) are routed to cheap fast models (gemini-flash, gpt-4o-mini); complex requests (code generation, long analysis) are routed to premium models.
+1. Intercepts any chat/completion request before it reaches the provider
+2. Fans the prompt out to a configurable set of models in parallel (e.g. GPT-4o + Claude 3.5
+   Sonnet + Gemini 1.5 Pro)
+3. Collects all N responses with latency and quality metadata
+4. Runs a lightweight synthesis step (configurable):
+   - **`vote`** — majority consensus on factual answers (most common answer wins)
+   - **`best`** — return the response that scores highest on a heuristic rubric (length, coherence,
+     format match)
+   - **`merge`** — call a lightweight "judge" model to synthesize all N answers into one refined
+     response
+   - **`all`** — return all responses as a structured JSON array (power-user / comparison mode)
+5. Logs per-model latency and quality score for dashboard visualization
 
 **Key Open-Source References:**
-- NadirClaw (NadirRouter/NadirClaw) — tier-based model routing
-- LiteLLM (BerriAI/litellm) — multi-provider routing, cost-aware dispatch
-- RouteLLM (lm-sys/routellm) — ML-based routing, BERT classifier
-- OpenRouter — quality-based routing heuristics
-- Marvin (prefecthq/marvin) — task classification patterns
+- RouteLLM (lm-sys/routellm) — multi-model dispatch and quality evaluation patterns
+- LiteLLM (BerriAI/litellm) — parallel provider fan-out, response aggregation
+- Chatbot Arena (lm-sys/FastChat) — model comparison and ELO-based quality ranking methodology
+- OpenAI Evals (openai/evals) — rubric-based response scoring patterns
+- LangChain MapReduceDocumentsChain — fan-out / reduce synthesis pattern
+- Guardrails AI (guardrails-ai/guardrails) — structured response validation before synthesis
+- Portkey AI Gateway (Portkey-AI/gateway) — multi-provider parallel request patterns
 
 **Technical Implementation:**
-1. Message complexity classifier (heuristic-based, < 1 ms):
-   - Token count → `light` (< 500) / `medium` (500–2000) / `heavy` (> 2000)
-   - Code detection (backticks, keywords) → `heavy`
-   - Multi-step instruction detection → `medium` or `heavy`
-   - Simple Q&A pattern → `light`
-2. Tier mapping (user-configurable):
-   - `light` → gemini-2.0-flash, gpt-4o-mini, claude-3-haiku
-   - `medium` → gemini-1.5-pro, gpt-4o, claude-3-5-sonnet
-   - `heavy` → gemini-2.5-pro, gpt-4, claude-3-5-opus
-3. Override system: `x-model-tier: heavy` header bypasses routing
-4. Per-request routing log: which tier was assigned and why
-5. Cost tracking: dashboard showing savings vs always-using-premium
+1. **Fan-out middleware** (runs at priority 300, before provider dispatch):
+   - Clones request body N times
+   - Fires N provider calls in parallel using `Promise.allSettled`
+   - Respects existing per-provider auth from config (no duplicate auth setup needed)
+2. **Synthesis engine** (`synthesizer.js`):
+   - `vote`: tokenize each response → extract final answer → find most common → return
+   - `best`: score each response on 4 heuristics (relevance keywords, length normalcy,
+     markdown structure if requested, no refusal markers) → return highest scorer
+   - `merge`: construct a meta-prompt like `"Given these N answers: [...] provide the best
+     combined answer"` and call the fastest available model as judge
+   - `all`: serialize to `{ responses: [{model, text, latencyMs, score}] }` JSON
+3. **Streaming support**: In `best` and `vote` modes, buffer all responses then stream the winner
+   back. In `all` mode, stream a newline-delimited JSON array
+4. **Timeout contract**: each provider call has a hard 15 s timeout; any that exceed it are
+   dropped from synthesis (minimum 1 required to respond)
+5. **Dashboard panel**: `static/ensemble.html`
+   - Model selector checkboxes (which models participate)
+   - Per-model average latency, win rate, agreement rate
+   - Synthesis mode dropdown
+   - Live request log showing fan-out results per request
 
 **Config Schema:**
 ```json
 {
-  "enabled": true,
-  "defaultTier": "auto",
-  "tiers": {
-    "light":  { "models": ["gemini-2.0-flash", "gpt-4o-mini"] },
-    "medium": { "models": ["gemini-1.5-pro", "gpt-4o"] },
-    "heavy":  { "models": ["gemini-2.5-pro", "claude-3-5-sonnet"] }
-  },
-  "thresholds": { "lightMaxTokens": 500, "mediumMaxTokens": 2000 },
-  "allowClientOverride": true
+  "enabled": false,
+  "models": ["gpt-4o", "claude-3-5-sonnet-20241022", "gemini-1.5-pro"],
+  "synthesisMode": "best",
+  "timeoutMs": 15000,
+  "minResponses": 1,
+  "judgeModel": "gemini-2.0-flash",
+  "allowClientOverride": true,
+  "streamingMode": "winner"
 }
 ```
+
+**Why this is the right #1 pick — and why the previous suggestion was wrong:**
+
+The previously suggested "Smart Model Router" was **disqualified on two grounds**:
+1. **Duplicate functionality** — BlacklistedAIProxy's core provider routing system already
+   selects the best-fit LLM based on request context. A plugin that does the same thing adds
+   zero net value.
+2. **Invalid value framing** — routing to "cheaper" models is meaningless when every model is
+   free. The entire premise of cost savings collapses.
+
+The Ensemble Synthesizer is the **exact opposite**:
+- It is only possible *because* all models are free (no one else can afford to call 4 frontier
+  models per request)
+- It adds a capability that does not exist in the core (multi-model fan-out + synthesis)
+- It turns the product's core value proposition into a tangible, demonstrable feature
+- Users can literally see 4 frontier AI responses side-by-side for one query
 
 **Why it's the #1 recommendation:** See Section 10.
 
@@ -805,7 +857,8 @@ Automatically selects the cheapest AI model capable of handling each request's c
 
 **Category:** optimization  
 **Priority Slot:** 60 (runs before token-optimizer)  
-**Estimated Impact:** Cost reduction 40–80% for similar (not identical) queries
+**Estimated Impact:** Latency reduction 80–95% for semantically equivalent repeat queries; measurably
+faster perceived response times for end users asking similar questions
 
 **What it does:**
 Extends the exact-match prompt cache (token-optimizer) with fuzzy similarity matching. Uses sentence embeddings to find cached responses that are semantically equivalent, even when the exact wording differs.
@@ -925,64 +978,73 @@ Extends the single API key model to support multi-user teams with individual acc
 
 ---
 
-## 10. #1 Recommended Next Plugin: Smart Model Router
+## 10. #1 Recommended Next Plugin: Multi-Model Ensemble Synthesizer
 
-**Recommendation: Build the Smart Model Router as the next plugin.**
+**Recommendation: Build the Multi-Model Ensemble Synthesizer as the next plugin.**
 
 ### Why This Plugin Above All Others?
 
-| Criterion                    | Score (1–5) | Notes                                              |
-|------------------------------|-------------|--------------------------------------------------- |
-| Immediate cost impact        | ★★★★★       | Users see dollar savings from the first request   |
-| Implementation complexity    | ★★★★☆       | Heuristic classifier is straightforward; no ML    |
-| User value                   | ★★★★★       | Broadest appeal — relevant to every user          |
-| Infrastructure fit           | ★★★★★       | Integrates cleanly with existing provider pool    |
-| Measurability                | ★★★★★       | Cost saved is directly calculable and displayable |
-| Risk                         | ★★★★★       | Low — graceful degradation (pass original model) |
-| Differentiator               | ★★★★★       | NadirClaw proved this concept; we can exceed it   |
+This plugin exists **only** because of BlacklistedAIProxy's core promise of free access to all major
+LLMs. No paid proxy can offer this — they'd be burning money on every request. Here, sending a
+single prompt to GPT-4o, Claude 3.5 Sonnet, and Gemini 1.5 Pro in parallel costs the user **$0**.
+That structural advantage is leveraged into a flagship quality feature no competitor can replicate.
+
+| Criterion                      | Score (1–5) | Notes                                                      |
+|--------------------------------|-------------|----------------------------------------------------------- |
+| Net-new capability             | ★★★★★       | Nothing in the core or any existing plugin does this      |
+| Unique to this product         | ★★★★★       | Only viable because all models are free                   |
+| User value / wow factor        | ★★★★★       | Returning one best answer from 4 frontier AIs is visceral |
+| Infrastructure fit             | ★★★★★       | Builds directly on existing provider pool architecture    |
+| Implementation complexity      | ★★★★☆       | `Promise.allSettled` fan-out is straightforward           |
+| Risk (graceful degradation)    | ★★★★★       | If N models fail, still returns the 1 that responded      |
+| Differentiator vs competitors  | ★★★★★       | No other proxy product offers free ensemble synthesis     |
 
 **Total Score: 34/35** — highest of all five concepts.
 
 ### Specific Features to Prioritize
 
-1. **Complexity Classifier** — heuristic-based, < 1 ms, no ML required:
-   - Token count thresholds (configurable)
-   - Code detection regex
-   - Multi-step instruction keywords
-   - Simple Q&A patterns
+1. **Fan-out engine** — parallel `Promise.allSettled` across N providers:
+   - Share existing provider-pool connections (no re-auth overhead)
+   - Per-provider hard timeout (default: 15 s)
+   - Drop any provider that times out or errors; never block the response
 
-2. **Tier Configuration** — user-friendly YAML/JSON config:
-   - Map tiers to actual provider model names
-   - Support per-provider-type overrides
+2. **Synthesis modes** (configurable per-request via header or config default):
+   - `best` — heuristic scorer (length, coherence, no-refusal markers) → return winner
+   - `vote` — tokenize last sentence of each response → majority consensus answer
+   - `merge` — construct a judge meta-prompt, call fastest available model as synthesizer
+   - `all` — return structured `{responses: [...]}` JSON array for client-side comparison
 
-3. **Cost Dashboard** — extend token-optimizer.html or create router.html:
-   - Tier distribution pie chart
-   - Cost saved vs always-using premium
-   - Per-tier average response quality score
+3. **Streaming support**:
+   - `best` and `vote`: buffer all responses, stream the winner back to client
+   - `all`: stream as newline-delimited JSON (NDJSON), each model's response as it arrives
 
-4. **Override Mechanisms** — for power users:
-   - `X-Model-Tier` header override
-   - Per-model regex passthrough list (e.g., always route o1 requests directly)
-   - Client-specified model respected if in allowed tier
+4. **Ensemble Dashboard** (`static/ensemble.html`):
+   - Model selector: which models participate in ensemble
+   - Live request log: per-model latency + score for every fanned-out request
+   - Win-rate chart: which model wins most often across synthesis modes
+   - Agreement rate: how often all N models give equivalent answers
 
-5. **Quality Feedback Loop** (v2 feature):
-   - Log response quality signals
-   - Auto-adjust thresholds based on user feedback
+5. **Override header**: `X-Ensemble-Mode: all` / `X-Ensemble-Models: gpt-4o,claude-3-5-sonnet`
+   — lets power users customize ensemble per-request without config changes
 
 ### Key Design Decisions
 
-**Should the router modify the `model` field in the request body?**  
-Yes. The router middleware rewrites `body.model` to the tier-selected model before the provider routing phase. The original requested model is preserved in `config._routerOriginalModel` for logging and audit purposes.
+**Does this conflict with the core provider routing?**  
+No. Core routing selects *which provider account/endpoint* to use for a given model name.
+The ensemble plugin runs *before* that, constructing N separate sub-requests each of which then
+goes through normal provider routing independently.
 
-**What if no provider supports the tier-selected model?**  
-Fallback to the client's originally requested model. Never block a request due to routing failure.
+**What if the user explicitly specifies a model in their request?**  
+In `best`/`vote`/`merge` modes, the requested model is always included in the ensemble and its
+response wins any tie. In `all` mode, the user gets the requested model's response labeled with
+its name alongside others.
 
-**Should it work with streaming?**  
-Yes — the model substitution happens before the provider call, so streaming works transparently.
+**Should it work with non-chat endpoints (completions, embeddings)?**  
+Phase 1: chat completions only (highest-value, easiest to synthesize).
+Phase 2: text completions. Phase 3: embeddings (average all N embedding vectors).
 
-**Priority:** 200 (after token-optimizer's cache check at 50, before security guards at 9000).
-
----
+**Priority slot:** 300 — after token-optimizer (50) and universal-guard (9500), before provider
+dispatch. Streaming fan-out returns through the normal response pipeline.
 
 ## 11. Changelog Policy
 
