@@ -8,7 +8,7 @@
  *  - Regex-based (zero ML deps, < 1 ms per message)
  *  - Each pattern class is independently enabled/disabled
  *  - Action is configurable: 'redact' (replace) or 'flag' (detect only)
- *  - Operates on strings only; array/object content is JSON-serialised first
+ *  - Operates on strings only; non-string content (arrays/objects) is skipped
  *  - Patterns are anchored/bounded to reduce false positives
  *
  * Pattern sources:
@@ -19,6 +19,8 @@
  */
 
 // ── Pattern registry ──────────────────────────────────────────────────────────
+
+import logger from '../../utils/logger.js';
 
 /**
  * Each entry: { pattern: RegExp, label: string, severity: 'high'|'medium'|'low' }

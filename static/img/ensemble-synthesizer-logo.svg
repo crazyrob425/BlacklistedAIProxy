@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Ensemble Synthesizer Plugin Logo">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   style="stop-color:#7c3aed"/>
+      <stop offset="100%" style="stop-color:#a78bfa"/>
+    </linearGradient>
+    <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   style="stop-color:#ffffff;stop-opacity:0.3"/>
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0.9"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="rgba(124,58,237,0.45)"/>
+    </filter>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background card -->
+  <rect x="10" y="10" width="180" height="180" rx="38" ry="38"
+        fill="url(#bgGrad)" filter="url(#shadow)"/>
+
+  <!-- Subtle inner highlight -->
+  <rect x="10" y="10" width="180" height="90" rx="38" ry="38"
+        fill="rgba(255,255,255,0.08)"/>
+
+  <!-- Three input nodes (left column) -->
+  <circle cx="52" cy="72"  r="11" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>
+  <circle cx="52" cy="100" r="11" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>
+  <circle cx="52" cy="128" r="11" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>
+
+  <!-- Convergence lines -->
+  <line x1="63"  y1="72"  x2="110" y2="100" stroke="url(#lineGrad)" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="63"  y1="100" x2="110" y2="100" stroke="url(#lineGrad)" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="63"  y1="128" x2="110" y2="100" stroke="url(#lineGrad)" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Central synthesis node -->
+  <circle cx="120" cy="100" r="20" fill="rgba(255,255,255,0.22)" stroke="rgba(255,255,255,0.95)" stroke-width="2.5" filter="url(#glow)"/>
+  <!-- Star / sparkle inside synthesis node -->
+  <path d="M120 86 L122.5 96 L133 96 L124.5 102.5 L127 113 L120 107 L113 113 L115.5 102.5 L107 96 L117.5 96 Z"
+        fill="rgba(255,255,255,0.9)"/>
+
+  <!-- Output line -->
+  <line x1="140" y1="100" x2="158" y2="100" stroke="rgba(255,255,255,0.9)" stroke-width="3" stroke-linecap="round"/>
+  <!-- Arrowhead -->
+  <polygon points="155,93 163,100 155,107" fill="rgba(255,255,255,0.9)"/>
+
+  <!-- Small model dots inside input circles -->
+  <circle cx="52" cy="72"  r="3.5" fill="rgba(255,255,255,0.9)"/>
+  <circle cx="52" cy="100" r="3.5" fill="rgba(255,255,255,0.9)"/>
+  <circle cx="52" cy="128" r="3.5" fill="rgba(255,255,255,0.9)"/>
+
+  <!-- Label -->
+  <text x="100" y="162" text-anchor="middle" font-family="system-ui,sans-serif"
+        font-size="10" font-weight="700" fill="rgba(255,255,255,0.8)" letter-spacing="1">
+    ENSEMBLE
+  </text>
+</svg>

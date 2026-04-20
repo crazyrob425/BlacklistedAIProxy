@@ -328,6 +328,49 @@ Enables "shared pool" mode where a single API key subscription is distributed am
         ],
         screenshots: [],
     },
+    {
+        id:           'ensemble-synthesizer',
+        name:         'Multi-Model Ensemble Synthesizer',
+        version:      '1.0.0',
+        author:       { name: 'BlacklistedAIProxy', url: 'https://github.com/crazyrob425/BlacklistedAIProxy' },
+        category:     'ai-enhancement',
+        subCategories: ['synthesis', 'quality', 'parallelism'],
+        trustTier:    'official',
+        rating:       { score: 5.0, count: 0 },
+        installs:     0,
+        featured:     true,
+        description:  'Fan-out to N models in parallel, then synthesise responses using vote, best-score, merge, or all modes — powered by a quality-scoring engine inspired by RouteLLM and LiteLLM.',
+        longDescription: `## Multi-Model Ensemble Synthesizer
+
+Intercepts every AI request and simultaneously dispatches it to multiple models using \`Promise.allSettled\`. The responses are then synthesised into a single high-confidence answer using one of four modes:
+
+- **best** — Quality-scores each response on length, refusal detection, coherence, and keyword relevance; returns the winner
+- **vote** — Majority consensus via normalised text comparison; falls back to \`best\` on no majority
+- **merge** — A lightweight judge model (configurable) synthesises all N answers into one definitive response
+- **all** — Returns every model response as a structured JSON object for downstream processing
+
+### Open Source Foundation
+
+- **RouteLLM** (lm-sys/routellm) — quality evaluation and model dispatch patterns
+- **LiteLLM** (BerriAI/litellm) — parallel provider fan-out and response aggregation
+- **Portkey AI Gateway** (Portkey-AI/gateway) — multi-provider parallel routing architecture`,
+        icon:         'fa-layer-group',
+        iconColor:    '#8b5cf6',
+        tags:         ['ensemble', 'multi-model', 'synthesis', 'quality', 'parallel', 'fan-out'],
+        capabilities: ['middleware', 'routes', 'dashboard'],
+        minCoreVersion: '2.0.0',
+        size:         '~35 KB',
+        license:      'GPL-3.0',
+        repository:   'https://github.com/crazyrob425/BlacklistedAIProxy/tree/main/src/plugins/ensemble-synthesizer',
+        documentationUrl: 'docs/plugins/ensemble-synthesizer/README.md',
+        dashboardUrl: '/ensemble-synthesizer.html',
+        configurable: true,
+        restartRequired: false,
+        changelog: [
+            { version: '1.0.0', date: '2025-04-20', notes: 'Initial flagship release. Four synthesis modes, quality scorer, per-model stats, live dashboard.' },
+        ],
+        screenshots: [],
+    },
 ];
 
 /**
@@ -335,11 +378,12 @@ Enables "shared pool" mode where a single API key subscription is distributed am
  * Each category has an id, label, icon (FontAwesome), and color.
  */
 export const MARKETPLACE_CATEGORIES = [
-    { id: 'all',          label: 'All',          icon: 'fa-grid-2',      color: '#6b7280' },
-    { id: 'installed',    label: 'Installed',    icon: 'fa-check-circle', color: '#10b981' },
-    { id: 'security',     label: 'Security',     icon: 'fa-shield',      color: '#ef4444' },
-    { id: 'optimization', label: 'Optimization', icon: 'fa-bolt',        color: '#f59e0b' },
-    { id: 'analytics',    label: 'Analytics',    icon: 'fa-chart-bar',   color: '#3b82f6' },
-    { id: 'utilities',    label: 'Utilities',    icon: 'fa-wrench',      color: '#8b5cf6' },
-    { id: 'featured',     label: 'Featured',     icon: 'fa-star',        color: '#f97316' },
+    { id: 'all',            label: 'All',           icon: 'fa-grid-2',            color: '#6b7280' },
+    { id: 'installed',      label: 'Installed',     icon: 'fa-check-circle',      color: '#10b981' },
+    { id: 'ai-enhancement', label: 'AI Enhancement', icon: 'fa-wand-magic-sparkles', color: '#8b5cf6' },
+    { id: 'security',       label: 'Security',      icon: 'fa-shield',            color: '#ef4444' },
+    { id: 'optimization',   label: 'Optimization',  icon: 'fa-bolt',              color: '#f59e0b' },
+    { id: 'analytics',      label: 'Analytics',     icon: 'fa-chart-bar',         color: '#3b82f6' },
+    { id: 'utilities',      label: 'Utilities',     icon: 'fa-wrench',            color: '#8b5cf6' },
+    { id: 'featured',       label: 'Featured',      icon: 'fa-star',              color: '#f97316' },
 ];

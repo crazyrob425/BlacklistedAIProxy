@@ -2,24 +2,25 @@
  * Universal Guard Plugin
  *
  * A multi-capability security and governance plugin for BlacklistedAIProxy that
- * combines five protection layers into a single, modular, zero-overhead plugin:
+ * combines four protection layers into a single, modular, zero-overhead plugin:
  *
  *  1. Rate Limiter     — Sliding-window per-IP and per-API-key request limits.
- *  2. Budget Guard     — Daily/monthly USD spend limits with configurable
- *                        warn/block thresholds.
- *  3. PII Scrubber     — Regex-based redaction of emails, credit-card numbers,
+ *  2. PII Scrubber     — Regex-based redaction of emails, credit-card numbers,
  *                        SSNs, API keys, GitHub tokens, JWTs, and more.
- *  4. Prompt Policy    — Jailbreak attempt detection + custom keyword blocklist.
- *  5. Incident Alerter — Webhook/Slack notifications on any guard event.
+ *  3. Prompt Policy    — Jailbreak attempt detection + custom keyword blocklist.
+ *  4. Incident Alerter — Webhook/Slack notifications on any guard event.
  *
  * Each capability is independently enabled/disabled via configuration.
  * A single plugin config file (configs/universal-guard.json) controls all modules.
+ *
+ * Note: Budget / spend-tracking is intentionally absent — BlacklistedAIProxy
+ * provides free, unlimited access to all major commercial LLMs, so cost-based
+ * rate limiting would never trigger and is meaningless here.
  *
  * Safety guarantees:
  *  - All guard failures are caught and logged; they NEVER crash the server.
  *  - Rate limiter uses in-memory state only (no I/O in the hot path).
  *  - PII scrubbing and policy scanning complete in < 2 ms for typical messages.
- *  - Budget guard I/O is debounced (written every 5 s, not per request).
  *  - Webhook alerts are fire-and-forget; send failures are silent.
  */
 
@@ -28,7 +29,6 @@ import path from 'path';
 
 import logger from '../../utils/logger.js';
 import { RateLimiter }     from './rate-limiter.js';
-import { BudgetGuard }     from './budget-guard.js';
 import { PiiScrubber }     from './pii-scrubber.js';
 import { PromptPolicy }    from './prompt-policy.js';
 import { Alerting }        from './alerting.js';
@@ -47,13 +47,6 @@ const DEFAULT_CONFIG = {
         enabled:      true,
         perIp:        { reqPerMinute: 60,  reqPerHour: 600  },
         perKey:       { reqPerMinute: 120, reqPerHour: 1200 },
-    },
-    budgetGuard: {
-        enabled:        false,
-        dailyLimitUSD:  0,
-        monthlyLimitUSD: 0,
-        warnAtPercent:  80,
-        blockAtPercent: 100,
     },
     piiScrubber: {
         enabled:       false,
@@ -74,7 +67,7 @@ const DEFAULT_CONFIG = {
     alerting: {
         enabled:    false,
         webhookUrl: '',
-        events:     ['rate_limit_exceeded', 'budget_exceeded', 'policy_violation', 'pii_detected'],
+        events:     ['rate_limit_exceeded', 'policy_violation', 'pii_detected'],
     },
 };
 
@@ -126,14 +119,13 @@ const AI_PATHS = ['/v1/chat/completions', '/v1/responses', '/v1/messages'];
 const universalGuardPlugin = {
     name:        'universal-guard',
     version:     '1.0.0',
-    description: 'Five-in-one security + governance: rate limiting, budget control, PII scrubbing, prompt policy enforcement, and webhook alerting. Dashboard: <a href="universal-guard.html" target="_blank">universal-guard.html</a>',
+    description: 'Four-in-one security layer: rate limiting, PII scrubbing, prompt policy enforcement (jailbreak detection + keyword blocklist), and webhook alerting. Dashboard: <a href="universal-guard.html" target="_blank">universal-guard.html</a>',
     type:        '_builtin',
     _builtin:    true,
-    _priority:   9000, // runs very early, before most middleware (after auth at 9999)
+    _priority:   9000, // high priority number = runs late in the middleware chain; builtin plugins run after non-builtins
 
     // Sub-module instances set in init()
     rateLimiter:  null,
-    budgetGuard:  null,
     piiScrubber:  null,
     promptPolicy: null,
     alerting:     null,
@@ -146,7 +138,6 @@ const universalGuardPlugin = {
         this._cfg = this._loadConfig();
 
         this.rateLimiter  = new RateLimiter(this._cfg.rateLimiter);
-        this.budgetGuard  = new BudgetGuard(this._cfg.budgetGuard);
         this.piiScrubber  = new PiiScrubber(this._cfg.piiScrubber);
         this.promptPolicy = new PromptPolicy(this._cfg.promptPolicy);
         this.alerting     = new Alerting(this._cfg.alerting);
@@ -155,7 +146,6 @@ const universalGuardPlugin = {
 
         const modules = [
             this._cfg.rateLimiter.enabled  ? 'rate-limiter' : null,
-            this._cfg.budgetGuard.enabled  ? 'budget-guard' : null,
             this._cfg.piiScrubber.enabled  ? 'pii-scrubber' : null,
             this._cfg.promptPolicy.enabled ? 'prompt-policy' : null,
             this._cfg.alerting.enabled     ? 'alerting' : null,
@@ -191,31 +181,11 @@ const universalGuardPlugin = {
                 return { handled: true };
             }
 
-            // ── 2. Budget guard ────────────────────────────────────────────────
-            // Body needed for budget + PII + policy checks; read lazily
+            // ── 2. Read body for PII / policy checks ──────────────────────────
             let body = null;
 
-            if (this._cfg.budgetGuard.enabled || this._cfg.piiScrubber.enabled || this._cfg.promptPolicy.enabled) {
+            if (this._cfg.piiScrubber.enabled || this._cfg.promptPolicy.enabled) {
                 body = await readBody(req);
-            }
-
-            if (this._cfg.budgetGuard.enabled && body) {
-                const budgetResult = this.budgetGuard.check(body?.model, body, apiKey);
-                if (!budgetResult.allowed) {
-                    this.alerting.alert('budget_exceeded', {
-                        reason: budgetResult.reason,
-                        spend:  budgetResult.spend,
-                    });
-                    sendJson(res, 429, {
-                        error: {
-                            message: 'Budget limit reached. Request blocked to prevent overspend.',
-                            type:    'budget_exceeded',
-                            code:    budgetResult.reason,
-                        },
-                    });
-                    logger.warn(`[Universal Guard] Budget limit hit: ${budgetResult.reason}`);
-                    return { handled: true };
-                }
             }
 
             if (body?.messages) {
@@ -229,11 +199,11 @@ const universalGuardPlugin = {
                     }
                 }
 
-                // ── 4. Prompt policy ───────────────────────────────────────────
+                // ── 3. Prompt policy ───────────────────────────────────────────
                 if (this._cfg.promptPolicy.enabled) {
                     const totalTokens = body.messages.reduce(
                         (s, m) => s + estimateTokens(m?.content ?? ''), 0);
-                    const { violations, blocked } = this.promptPolicy.scan(body.messages, totalTokens);
+                    const { violations, blocked, sanitizedMessages } = this.promptPolicy.scan(body.messages, totalTokens);
 
                     if (violations.length > 0) {
                         this.alerting.alert('policy_violation', {
@@ -251,6 +221,12 @@ const universalGuardPlugin = {
                         });
                         logger.warn(`[Universal Guard] Policy violation(s): ${violations.map(v => v.type).join(', ')}`);
                         return { handled: true };
+                    }
+
+                    // When action === 'sanitize', apply the stripped messages
+                    if (sanitizedMessages) {
+                        body.messages = sanitizedMessages;
+                        req._rawBody  = Buffer.from(JSON.stringify(body), 'utf8');
                     }
                 }
             }
@@ -277,29 +253,13 @@ const universalGuardPlugin = {
 
     // ── Hooks ─────────────────────────────────────────────────────────────────
 
-    hooks: {
-        async onContentGenerated(ctx) {
-            try {
-                const { originalRequestBody, model, processedRequestBody } = ctx;
-                // Record actual spend using real token counts from the response
-                const usage = ctx.usage;
-                if (usage?.promptTokens && universalGuardPlugin._cfg.budgetGuard.enabled) {
-                    universalGuardPlugin.budgetGuard.recordSpend(
-                        model,
-                        usage.promptTokens   ?? 0,
-                        usage.completionTokens ?? 0,
-                    );
-                }
-            } catch { /* silent */ }
-        },
-    },
+    hooks: {},
 
     // ── Public helpers ────────────────────────────────────────────────────────
 
     getAllStats() {
         return {
             rateLimiter:  this.rateLimiter?.getStats()  ?? {},
-            budgetGuard:  this.budgetGuard?.getStats()  ?? {},
             piiScrubber:  this.piiScrubber?.getStats()  ?? {},
             promptPolicy: this.promptPolicy?.getStats() ?? {},
             alerting:     this.alerting?.getStats()     ?? {},
@@ -314,7 +274,7 @@ const universalGuardPlugin = {
         const next = JSON.parse(JSON.stringify(this._cfg));
 
         // Merge top-level module configs shallowly
-        for (const key of ['rateLimiter', 'budgetGuard', 'piiScrubber', 'promptPolicy', 'alerting']) {
+        for (const key of ['rateLimiter', 'piiScrubber', 'promptPolicy', 'alerting']) {
             if (patch[key] && typeof patch[key] === 'object') {
                 next[key] = { ...next[key], ...patch[key] };
             }
@@ -324,7 +284,6 @@ const universalGuardPlugin = {
 
         // Push updated configs to sub-modules
         this.rateLimiter?.updateConfig(next.rateLimiter);
-        this.budgetGuard?.updateConfig(next.budgetGuard);
         this.piiScrubber?.updateConfig(next.piiScrubber);
         this.promptPolicy?.updateConfig(next.promptPolicy);
         this.alerting?.updateConfig(next.alerting);

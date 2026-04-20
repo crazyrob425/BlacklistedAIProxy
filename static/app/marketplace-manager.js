@@ -25,10 +25,27 @@ function $(id) { return document.getElementById(id); }
 export function initMarketplaceManager() {
     window.addEventListener('componentsLoaded', () => {
         _bind();
-        // Load when user navigates to the marketplace section
+        // Load when user clicks the marketplace sidebar nav item
         const navItem = document.querySelector('[data-section="marketplace"]');
         navItem?.addEventListener('click', _loadIfNeeded);
+
+        // Also load immediately when the page is opened directly to the
+        // marketplace section via ?section=marketplace or #marketplace
+        if (_isMarketplaceSectionActive()) {
+            void _loadIfNeeded();
+        }
+
+        // Handle hash-based navigation (e.g. clicking a direct link)
+        window.addEventListener('hashchange', () => {
+            if (_isMarketplaceSectionActive()) void _loadIfNeeded();
+        });
     });
+}
+
+function _isMarketplaceSectionActive() {
+    const params = new URLSearchParams(window.location.search);
+    const hash   = window.location.hash.replace(/^#/, '');
+    return params.get('section') === 'marketplace' || hash === 'marketplace';
 }
 
 let _loaded = false;

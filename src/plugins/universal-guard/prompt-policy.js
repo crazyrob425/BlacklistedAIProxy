@@ -12,7 +12,7 @@
  * Actions on violation:
  *   'block'     — reject the request with HTTP 400
  *   'flag'      — allow but log the violation (soft mode)
- *   'sanitize'  — strip the offending content and continue
+ *   'sanitize'  — strip offending sentences and continue with cleaned messages
  */
 
 // ── Built-in jailbreak patterns ───────────────────────────────────────────────
@@ -69,12 +69,13 @@ export class PromptPolicy {
      * @param {Array}  messages
      * @param {number} estimatedTokens  - Total estimated input tokens
      * @returns {{
-     *   violations: Array<{type, message, detail}>,
-     *   blocked:    boolean
+     *   violations:        Array<{type, message, detail}>,
+     *   blocked:           boolean,
+     *   sanitizedMessages: Array|null   — non-null only when action === 'sanitize' and violations were found
      * }}
      */
     scan(messages, estimatedTokens = 0) {
-        if (!this._cfg.enabled) return { violations: [], blocked: false };
+        if (!this._cfg.enabled) return { violations: [], blocked: false, sanitizedMessages: null };
 
         const violations = [];
 
@@ -121,8 +122,16 @@ export class PromptPolicy {
 
         this._violations += violations.length;
 
-        const blocked = violations.length > 0 && this._cfg.action === 'block';
-        return { violations, blocked };
+        const action = this._cfg.action;
+        const blocked = violations.length > 0 && action === 'block';
+
+        // ── Sanitize mode: strip violating sentences from messages ────────────
+        let sanitizedMessages = null;
+        if (violations.length > 0 && action === 'sanitize') {
+            sanitizedMessages = this._sanitize(messages);
+        }
+
+        return { violations, blocked, sanitizedMessages };
     }
 
     getStats() {
@@ -139,6 +148,37 @@ export class PromptPolicy {
     }
 
     // ── Private ───────────────────────────────────────────────────────────────
+
+    /**
+     * Strip jailbreak sentences and keyword matches from message content.
+     * Returns a new array of messages with violating content removed.
+     * Messages whose content becomes empty after sanitization are dropped.
+     *
+     * @param {Array} messages
+     * @returns {Array}
+     */
+    _sanitize(messages) {
+        return messages.map(msg => {
+            if (typeof msg.content !== 'string') return msg;
+
+            let text = msg.content;
+
+            // Split into sentences, filter out any that match jailbreak patterns
+            if (this._cfg.enableJailbreakDetection) {
+                const sentences = text.split(/(?<=[.!?])\s+/);
+                const clean = sentences.filter(s => !JAILBREAK_PATTERNS.some(p => p.test(s)));
+                text = clean.join(' ').trim();
+            }
+
+            // Remove keyword occurrences
+            if (this._keywordRegex) {
+                text = text.replace(this._keywordRegex, '[removed]').trim();
+            }
+
+            if (!text) return null; // mark for removal
+            return text === msg.content ? msg : { ...msg, content: text };
+        }).filter(Boolean);
+    }
 
     _rebuildKeywordRegex() {
         const kws = this._cfg?.blockKeywords ?? [];
