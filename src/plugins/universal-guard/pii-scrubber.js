@@ -8,7 +8,7 @@
  *  - Regex-based (zero ML deps, < 1 ms per message)
  *  - Each pattern class is independently enabled/disabled
  *  - Action is configurable: 'redact' (replace) or 'flag' (detect only)
- *  - Operates on strings only; non-string content (arrays/objects) is skipped
+ *  - Operates on string content only; non-string content is skipped
  *  - Patterns are anchored/bounded to reduce false positives
  *
  * Pattern sources:
