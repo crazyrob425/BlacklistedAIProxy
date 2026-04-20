@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ef4444">
+  <title>Universal Guard — BlacklistedAIProxy</title>
+  <link rel="stylesheet" href="app/base.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body{background:var(--bg-secondary);min-height:100vh}
+    .navbar{position:sticky;top:0;z-index:100;background:var(--bg-primary);border-bottom:1px solid var(--border-color);box-shadow:var(--shadow-sm)}
+    .navbar-inner,.main{max-width:1200px;margin:0 auto;padding:0 24px}
+    .navbar-inner{height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .brand-icon{width:40px;height:40px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#ef4444,#f87171);color:#fff;box-shadow:var(--shadow-md)}
+    .brand-title{font-size:18px;font-weight:700;color:var(--text-primary)}
+    .brand-sub{font-size:12px;color:var(--text-secondary)}
+    .nav-actions{display:flex;align-items:center;gap:10px}
+    .nav-btn,.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 14px;border-radius:var(--radius-lg);border:1px solid var(--border-color);background:var(--bg-primary);color:var(--text-primary);text-decoration:none;cursor:pointer;font-size:14px;font-weight:600;transition:var(--transition)}
+    .nav-btn:hover,.btn:hover{border-color:var(--primary-color);box-shadow:var(--shadow-md);transform:translateY(-1px)}
+    .theme-toggle{width:40px;padding:0;color:var(--text-secondary)}
+    .theme-toggle .fa-sun{display:none}
+    [data-theme="dark"] .theme-toggle .fa-sun{display:inline-block}
+    [data-theme="dark"] .theme-toggle .fa-moon{display:none}
+    .main{padding:30px 24px 48px}
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+    .card{background:var(--bg-primary);border:1px solid var(--border-color);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm);padding:20px;position:relative;overflow:hidden;transition:var(--transition)}
+    .card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+    .card:before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+    .card.red:before{background:linear-gradient(90deg,#ef4444,#f87171)}
+    .card.amber:before{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+    .card.blue:before{background:linear-gradient(90deg,#3b82f6,#60a5fa)}
+    .card.purple:before{background:linear-gradient(90deg,#8b5cf6,#a78bfa)}
+    .card.green:before{background:linear-gradient(90deg,#10b981,#34d399)}
+    .card-label{font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary)}
+    .card-value{margin-top:10px;font-size:32px;font-weight:700;line-height:1.1}
+    .card.red    .card-value{color:#ef4444}
+    .card.amber  .card-value{color:#f59e0b}
+    .card.blue   .card-value{color:#3b82f6}
+    .card.purple .card-value{color:#8b5cf6}
+    .card.green  .card-value{color:#10b981}
+    .card-note{margin-top:8px;font-size:12px;color:var(--text-tertiary)}
+    .panel{background:var(--bg-primary);border:1px solid var(--border-color);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm);padding:24px;margin-bottom:24px}
+    .section-title{font-size:16px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:10px;margin:0 0 16px}
+    .cfg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+    .cfg-item{display:flex;flex-direction:column;gap:8px}
+    .cfg-label{font-size:13px;font-weight:600;color:var(--text-secondary)}
+    .cfg-value{font-size:14px;color:var(--text-primary);background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:8px 12px}
+    select.cfg-value,input.cfg-value{cursor:pointer}
+    select.cfg-value:focus,input.cfg-value:focus{outline:none;border-color:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,0.15)}
+    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+    .btn-red{background:linear-gradient(135deg,#ef4444,#f87171);color:#fff;border-color:transparent}
+    .btn-danger{background:#ef4444;color:#fff;border-color:transparent}
+    .btn-secondary{background:var(--bg-secondary);border-color:var(--border-color)}
+    .status{display:none;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--radius-lg);margin-top:16px;font-size:13px;border:1px solid transparent}
+    .status.show{display:flex}
+    .status.success{background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.3);color:#10b981}
+    .status.error{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3);color:#ef4444}
+    .status.info{background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.3);color:#3b82f6}
+    .module-status{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px}
+    .ms-on{background:rgba(16,185,129,0.12);color:#10b981}
+    .ms-off{background:rgba(107,114,128,0.12);color:#6b7280}
+    .budget-bar{height:10px;background:var(--bg-tertiary);border-radius:999px;overflow:hidden;margin-top:8px}
+    .budget-fill{height:100%;border-radius:inherit;transition:width 0.4s}
+    .budget-fill.ok{background:linear-gradient(90deg,#10b981,#34d399)}
+    .budget-fill.warn{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+    .budget-fill.crit{background:linear-gradient(90deg,#ef4444,#f87171)}
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+    .grid-panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+    @media(max-width:760px){.navbar-inner,.main{padding-left:16px;padding-right:16px}.two-col,.grid-panels{grid-template-columns:1fr}}
+    .footer{text-align:center;margin-top:20px;font-size:12px;color:var(--text-tertiary)}
+    textarea.cfg-value{resize:vertical;min-height:80px;font-family:monospace;font-size:12px}
+  </style>
+</head>
+<body>
+  <header class="navbar">
+    <div class="navbar-inner">
+      <div class="brand">
+        <span class="brand-icon"><i class="fas fa-shield-halved"></i></span>
+        <div>
+          <div class="brand-title">Universal Guard</div>
+          <div class="brand-sub">Rate limiting · Budget control · PII scrubbing · Policy enforcement · Alerting</div>
+        </div>
+      </div>
+      <div class="nav-actions">
+        <a class="nav-btn" href="/"><i class="fas fa-arrow-left"></i><span>Admin Console</span></a>
+        <button class="btn nav-btn theme-toggle" id="themeToggle" type="button" aria-label="Toggle theme"><i class="fas fa-moon"></i><i class="fas fa-sun"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <!-- Summary cards -->
+    <section class="stats">
+      <article class="card red">
+        <div class="card-label">Requests Blocked</div>
+        <div class="card-value" id="totalBlocked">–</div>
+        <div class="card-note">Rate limit + policy + budget</div>
+      </article>
+      <article class="card amber">
+        <div class="card-label">Requests Allowed</div>
+        <div class="card-value" id="totalAllowed">–</div>
+        <div class="card-note">Passed all guard checks</div>
+      </article>
+      <article class="card blue">
+        <div class="card-label">PII Detections</div>
+        <div class="card-value" id="piiTotal">–</div>
+        <div class="card-note">PII patterns found</div>
+      </article>
+      <article class="card purple">
+        <div class="card-label">Policy Violations</div>
+        <div class="card-value" id="policyTotal">–</div>
+        <div class="card-note">Jailbreak + keyword</div>
+      </article>
+      <article class="card green">
+        <div class="card-label">Alerts Sent</div>
+        <div class="card-value" id="alertsSent">–</div>
+        <div class="card-note">Webhook notifications</div>
+      </article>
+    </section>
+
+    <!-- Module overview panels -->
+    <div class="grid-panels">
+      <!-- Rate Limiter -->
+      <div class="panel">
+        <h2 class="section-title">
+          <i class="fas fa-tachometer-alt"></i>Rate Limiter
+          <span class="module-status" id="rlStatus">–</span>
+        </h2>
+        <div class="cfg-grid">
+          <div class="cfg-item"><span class="cfg-label">IP: req/min</span>
+            <input class="cfg-value" id="rlIpMin" type="number" min="1" placeholder="60"></div>
+          <div class="cfg-item"><span class="cfg-label">IP: req/hour</span>
+            <input class="cfg-value" id="rlIpHour" type="number" min="1" placeholder="600"></div>
+          <div class="cfg-item"><span class="cfg-label">Key: req/min</span>
+            <input class="cfg-value" id="rlKeyMin" type="number" min="1" placeholder="120"></div>
+          <div class="cfg-item"><span class="cfg-label">Key: req/hour</span>
+            <input class="cfg-value" id="rlKeyHour" type="number" min="1" placeholder="1200"></div>
+          <div class="cfg-item"><span class="cfg-label">Enabled</span>
+            <select class="cfg-value" id="rlEnabled"><option value="true">Yes</option><option value="false">No</option></select></div>
+        </div>
+      </div>
+
+      <!-- Budget Guard -->
+      <div class="panel">
+        <h2 class="section-title">
+          <i class="fas fa-dollar-sign"></i>Budget Guard
+          <span class="module-status" id="bgStatus">–</span>
+        </h2>
+        <div class="cfg-grid">
+          <div class="cfg-item"><span class="cfg-label">Daily Limit (USD)</span>
+            <input class="cfg-value" id="bgDaily" type="number" min="0" step="0.01" placeholder="0 = disabled"></div>
+          <div class="cfg-item"><span class="cfg-label">Monthly Limit (USD)</span>
+            <input class="cfg-value" id="bgMonthly" type="number" min="0" step="0.01" placeholder="0 = disabled"></div>
+          <div class="cfg-item"><span class="cfg-label">Warn at (%)</span>
+            <input class="cfg-value" id="bgWarn" type="number" min="1" max="99" placeholder="80"></div>
+          <div class="cfg-item"><span class="cfg-label">Block at (%)</span>
+            <input class="cfg-value" id="bgBlock" type="number" min="1" max="200" placeholder="100"></div>
+          <div class="cfg-item"><span class="cfg-label">Enabled</span>
+            <select class="cfg-value" id="bgEnabled"><option value="false">No</option><option value="true">Yes</option></select></div>
+        </div>
+        <div id="budgetBars" style="margin-top:12px"></div>
+        <div class="row">
+          <button class="btn btn-secondary" id="resetDailyBtn" type="button"><i class="fas fa-calendar-day"></i> Reset Daily</button>
+          <button class="btn btn-secondary" id="resetMonthlyBtn" type="button"><i class="fas fa-calendar"></i> Reset Monthly</button>
+        </div>
+      </div>
+
+      <!-- PII Scrubber -->
+      <div class="panel">
+        <h2 class="section-title">
+          <i class="fas fa-eye-slash"></i>PII Scrubber
+          <span class="module-status" id="piiStatus">–</span>
+        </h2>
+        <div class="cfg-grid">
+          <div class="cfg-item"><span class="cfg-label">Action</span>
+            <select class="cfg-value" id="piiAction">
+              <option value="redact">redact — Replace with [REDACTED_TYPE]</option>
+              <option value="flag">flag — Detect only (log, don't modify)</option>
+            </select></div>
+          <div class="cfg-item"><span class="cfg-label">Enabled</span>
+            <select class="cfg-value" id="piiEnabled"><option value="false">No</option><option value="true">Yes</option></select></div>
+          <div class="cfg-item" style="grid-column:1/-1"><span class="cfg-label">By Detection Type</span>
+            <div id="piiByType" class="cfg-value" style="font-size:12px;font-family:monospace;min-height:48px">–</div></div>
+        </div>
+      </div>
+
+      <!-- Prompt Policy -->
+      <div class="panel">
+        <h2 class="section-title">
+          <i class="fas fa-ban"></i>Prompt Policy
+          <span class="module-status" id="ppStatus">–</span>
+        </h2>
+        <div class="cfg-grid">
+          <div class="cfg-item"><span class="cfg-label">Action</span>
+            <select class="cfg-value" id="ppAction">
+              <option value="block">block — Reject with HTTP 400</option>
+              <option value="flag">flag — Log only</option>
+              <option value="sanitize">sanitize — Strip and continue</option>
+            </select></div>
+          <div class="cfg-item"><span class="cfg-label">Jailbreak Detection</span>
+            <select class="cfg-value" id="ppJailbreak"><option value="true">Enabled</option><option value="false">Disabled</option></select></div>
+          <div class="cfg-item"><span class="cfg-label">Max Input Tokens (0=off)</span>
+            <input class="cfg-value" id="ppMaxTokens" type="number" min="0" placeholder="0"></div>
+          <div class="cfg-item"><span class="cfg-label">Enabled</span>
+            <select class="cfg-value" id="ppEnabled"><option value="false">No</option><option value="true">Yes</option></select></div>
+          <div class="cfg-item" style="grid-column:1/-1">
+            <label class="cfg-label" for="ppKeywords">Keyword Blocklist (one per line)</label>
+            <textarea class="cfg-value" id="ppKeywords" placeholder="bad-word&#10;another-phrase"></textarea></div>
+        </div>
+      </div>
+
+      <!-- Alerting -->
+      <div class="panel">
+        <h2 class="section-title">
+          <i class="fas fa-bell"></i>Incident Alerting
+          <span class="module-status" id="alStatus">–</span>
+        </h2>
+        <div class="cfg-grid">
+          <div class="cfg-item" style="grid-column:1/-1"><span class="cfg-label">Webhook URL (Slack/Discord/generic)</span>
+            <input class="cfg-value" id="alWebhook" type="url" placeholder="https://hooks.slack.com/services/..."></div>
+          <div class="cfg-item"><span class="cfg-label">Enabled</span>
+            <select class="cfg-value" id="alEnabled"><option value="false">No</option><option value="true">Yes</option></select></div>
+          <div class="cfg-item"><span class="cfg-label">Alerts Sent / Failed</span>
+            <span class="cfg-value" id="alSentFailed">–</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Save + Refresh -->
+    <div class="panel">
+      <div class="row" style="margin-top:0">
+        <button class="btn btn-red" id="saveConfigBtn" type="button"><i class="fas fa-save"></i> Save All Configuration</button>
+        <button class="btn btn-secondary" id="refreshBtn" type="button"><i class="fas fa-rotate-right"></i> Refresh</button>
+      </div>
+      <div class="status" id="configStatus"></div>
+    </div>
+
+    <div class="footer">Universal Guard v1.0.0 · BlacklistedAIProxy Plugin · <a href="/" style="color:var(--primary-color)">Admin Console</a></div>
+  </main>
+
+  <script>
+    (function(){
+      const saved = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', saved);
+    })();
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', cur);
+      localStorage.setItem('theme', cur);
+    });
+
+    function getAuthHeaders() {
+      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || '';
+      return token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+    }
+
+    function showStatus(id, type, msg) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.className = `status ${type} show`;
+      el.innerHTML = `<i class="fas fa-${type==='success'?'check-circle':type==='error'?'exclamation-circle':'info-circle'}"></i><span>${msg}</span>`;
+      setTimeout(() => { el.className = 'status'; }, 4000);
+    }
+
+    function fmt(n) {
+      if (n == null) return '–';
+      if (n >= 1e6) return (n/1e6).toFixed(1)+'M';
+      if (n >= 1e3) return (n/1e3).toFixed(1)+'K';
+      return String(Math.round(n));
+    }
+
+    function setModuleStatus(id, enabled) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.className = 'module-status ' + (enabled ? 'ms-on' : 'ms-off');
+      el.textContent = enabled ? '● Active' : '○ Disabled';
+    }
+
+    async function loadStats() {
+      try {
+        const [statsResp, cfgResp] = await Promise.all([
+          fetch('/api/universal-guard/stats',  { headers: getAuthHeaders() }),
+          fetch('/api/universal-guard/config', { headers: getAuthHeaders() }),
+        ]);
+        const stats = await statsResp.json();
+        const cfg   = await cfgResp.json();
+
+        if (!stats.success) throw new Error(stats.error?.message ?? 'stats failed');
+
+        const d = stats.data;
+
+        // Summary cards
+        document.getElementById('totalBlocked').textContent = fmt((d.rateLimiter?.blocked??0) + (d.promptPolicy?.totalViolations??0));
+        document.getElementById('totalAllowed').textContent = fmt(d.rateLimiter?.allowed ?? 0);
+        document.getElementById('piiTotal').textContent     = fmt(d.piiScrubber?.totalDetections ?? 0);
+        document.getElementById('policyTotal').textContent  = fmt(d.promptPolicy?.totalViolations ?? 0);
+        document.getElementById('alertsSent').textContent   = fmt(d.alerting?.sent ?? 0);
+
+        // Alerting stats
+        document.getElementById('alSentFailed').textContent =
+          `${d.alerting?.sent ?? 0} sent / ${d.alerting?.failures ?? 0} failed`;
+
+        // PII by type
+        const byType = d.piiScrubber?.byType ?? {};
+        document.getElementById('piiByType').textContent =
+          Object.keys(byType).length ? JSON.stringify(byType, null, 1) : 'No detections yet';
+
+        // Config form population
+        if (cfg.success) {
+          const c = cfg.data;
+          // Rate limiter
+          setModuleStatus('rlStatus', c.rateLimiter?.enabled);
+          document.getElementById('rlEnabled').value = String(c.rateLimiter?.enabled !== false);
+          document.getElementById('rlIpMin').value   = c.rateLimiter?.perIp?.reqPerMinute ?? 60;
+          document.getElementById('rlIpHour').value  = c.rateLimiter?.perIp?.reqPerHour  ?? 600;
+          document.getElementById('rlKeyMin').value  = c.rateLimiter?.perKey?.reqPerMinute ?? 120;
+          document.getElementById('rlKeyHour').value = c.rateLimiter?.perKey?.reqPerHour  ?? 1200;
+
+          // Budget
+          setModuleStatus('bgStatus', c.budgetGuard?.enabled);
+          document.getElementById('bgEnabled').value = String(c.budgetGuard?.enabled ?? false);
+          document.getElementById('bgDaily').value   = c.budgetGuard?.dailyLimitUSD   ?? 0;
+          document.getElementById('bgMonthly').value = c.budgetGuard?.monthlyLimitUSD ?? 0;
+          document.getElementById('bgWarn').value    = c.budgetGuard?.warnAtPercent   ?? 80;
+          document.getElementById('bgBlock').value   = c.budgetGuard?.blockAtPercent  ?? 100;
+
+          // Budget bars
+          const bStats = d.budgetGuard ?? {};
+          const bgBars = document.getElementById('budgetBars');
+          if (bStats.dailyLimitUSD > 0 || bStats.monthlyLimitUSD > 0) {
+            const dayPct   = Math.min(100, (bStats.dailyPct   ?? 0));
+            const monthPct = Math.min(100, (bStats.monthlyPct ?? 0));
+            const cls = p => p >= 100 ? 'crit' : p >= 80 ? 'warn' : 'ok';
+            bgBars.innerHTML = `
+              <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px">
+                Daily: $${(bStats.dailySpendUSD??0).toFixed(4)} / $${bStats.dailyLimitUSD??'∞'} (${dayPct.toFixed(1)}%)
+              </div>
+              <div class="budget-bar"><div class="budget-fill ${cls(dayPct)}" style="width:${dayPct}%"></div></div>
+              <div style="font-size:12px;color:var(--text-secondary);margin:8px 0 4px">
+                Monthly: $${(bStats.monthlySpendUSD??0).toFixed(4)} / $${bStats.monthlyLimitUSD??'∞'} (${monthPct.toFixed(1)}%)
+              </div>
+              <div class="budget-bar"><div class="budget-fill ${cls(monthPct)}" style="width:${monthPct}%"></div></div>`;
+          }
+
+          // PII
+          setModuleStatus('piiStatus', c.piiScrubber?.enabled);
+          document.getElementById('piiEnabled').value = String(c.piiScrubber?.enabled ?? false);
+          document.getElementById('piiAction').value  = c.piiScrubber?.action ?? 'redact';
+
+          // Prompt Policy
+          setModuleStatus('ppStatus', c.promptPolicy?.enabled);
+          document.getElementById('ppEnabled').value  = String(c.promptPolicy?.enabled ?? false);
+          document.getElementById('ppAction').value   = c.promptPolicy?.action ?? 'block';
+          document.getElementById('ppJailbreak').value = String(c.promptPolicy?.enableJailbreakDetection !== false);
+          document.getElementById('ppMaxTokens').value = c.promptPolicy?.maxTokens ?? 0;
+          document.getElementById('ppKeywords').value  = (c.promptPolicy?.blockKeywords ?? []).join('\n');
+
+          // Alerting
+          setModuleStatus('alStatus', c.alerting?.enabled);
+          document.getElementById('alEnabled').value  = String(c.alerting?.enabled ?? false);
+          document.getElementById('alWebhook').value  = c.alerting?.webhookUrl ?? '';
+        }
+      } catch (err) {
+        console.error('[Universal Guard] Load error:', err.message);
+      }
+    }
+
+    // Save config
+    document.getElementById('saveConfigBtn').addEventListener('click', async () => {
+      const kws = document.getElementById('ppKeywords').value
+        .split('\n').map(k => k.trim()).filter(Boolean);
+      const body = {
+        rateLimiter: {
+          enabled: document.getElementById('rlEnabled').value === 'true',
+          perIp:   { reqPerMinute: +document.getElementById('rlIpMin').value,  reqPerHour: +document.getElementById('rlIpHour').value  },
+          perKey:  { reqPerMinute: +document.getElementById('rlKeyMin').value, reqPerHour: +document.getElementById('rlKeyHour').value },
+        },
+        budgetGuard: {
+          enabled:         document.getElementById('bgEnabled').value === 'true',
+          dailyLimitUSD:   +document.getElementById('bgDaily').value,
+          monthlyLimitUSD: +document.getElementById('bgMonthly').value,
+          warnAtPercent:   +document.getElementById('bgWarn').value,
+          blockAtPercent:  +document.getElementById('bgBlock').value,
+        },
+        piiScrubber: {
+          enabled: document.getElementById('piiEnabled').value === 'true',
+          action:  document.getElementById('piiAction').value,
+        },
+        promptPolicy: {
+          enabled:                  document.getElementById('ppEnabled').value === 'true',
+          action:                   document.getElementById('ppAction').value,
+          enableJailbreakDetection: document.getElementById('ppJailbreak').value === 'true',
+          maxTokens:                +document.getElementById('ppMaxTokens').value,
+          blockKeywords:            kws,
+        },
+        alerting: {
+          enabled:    document.getElementById('alEnabled').value === 'true',
+          webhookUrl: document.getElementById('alWebhook').value.trim(),
+        },
+      };
+      try {
+        const resp = await fetch('/api/universal-guard/config', {
+          method: 'POST', headers: getAuthHeaders(), body: JSON.stringify(body) });
+        const json = await resp.json();
+        if (json.success) { showStatus('configStatus', 'success', 'Configuration saved!'); loadStats(); }
+        else showStatus('configStatus', 'error', json.error?.message ?? 'Failed');
+      } catch (err) { showStatus('configStatus', 'error', err.message); }
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', loadStats);
+
+    document.getElementById('resetDailyBtn').addEventListener('click', async () => {
+      if (!confirm('Reset daily budget counters to $0.00?')) return;
+      const resp = await fetch('/api/universal-guard/budget/reset-daily', { method: 'POST', headers: getAuthHeaders() });
+      const json = await resp.json();
+      if (json.success) { showStatus('configStatus', 'success', 'Daily budget reset.'); loadStats(); }
+    });
+
+    document.getElementById('resetMonthlyBtn').addEventListener('click', async () => {
+      if (!confirm('Reset monthly budget counters to $0.00?')) return;
+      const resp = await fetch('/api/universal-guard/budget/reset-monthly', { method: 'POST', headers: getAuthHeaders() });
+      const json = await resp.json();
+      if (json.success) { showStatus('configStatus', 'success', 'Monthly budget reset.'); loadStats(); }
+    });
+
+    loadStats();
+    setInterval(loadStats, 30000);
+  </script>
+</body>
+</html>
