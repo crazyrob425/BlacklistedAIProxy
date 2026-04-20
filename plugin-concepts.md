@@ -743,10 +743,12 @@ interface PluginCatalogEntry {
 
 > **Selection Criteria:** Every concept below was evaluated against BlacklistedAIProxy's unique value
 > proposition: **all major commercial LLMs are 100% free to users, and built-in provider routing
-> already selects the best-fit model by request context.** Any plugin that merely duplicates routing
-> logic or frames its value around "cheaper" models is disqualified — "cheaper" is meaningless when
-> everything is free. Concepts are ranked by *net-new capability* they add that is impossible without
-> this proxy architecture.
+> already selects the best-fit model by request context.** A plugin concept is disqualified if it:
+> - Duplicates core routing logic (routing already exists as a built-in feature)
+> - Frames its value around "cheaper" models (meaningless when everything is free)
+> - Introduces quotas, token budgets, or resource rationing (there is nothing to ration — access is unlimited)
+>
+> Concepts are ranked by *net-new capability* they add that does not exist anywhere in the current codebase.
 
 The following five plugin concepts were selected by analyzing:
 1. BlacklistedAIProxy's unique free-access-to-all-LLMs architecture
@@ -950,31 +952,91 @@ Evaluates AI responses for quality issues (hallucinations, harmful content, off-
 
 ---
 
-### Concept #5 — Team Access Control & Multi-Tenancy
+### Concept #5 — RAG / Knowledge Base Injection
 
-**Category:** security  
-**Priority Slot:** 9800 (early, auth-adjacent)  
-**Estimated Impact:** Enables enterprise team deployments with per-user policies
+**Category:** ai-enhancement  
+**Priority Slot:** 150 (after memory-store if present, before provider dispatch)  
+**Estimated Impact:** Every user prompt answered with grounding from their own documents; eliminates
+hallucinations on private/domain knowledge; works with all models simultaneously at zero extra cost
+
+**The Core Insight:**
+Every LLM in the pool answers questions based on its training data — which ends at a cut-off date
+and contains nothing about your private documents, internal wikis, product manuals, or codebase.
+RAG solves this by retrieving the most relevant chunks of *your* content and injecting them as
+context before each request. Because all models are free, every user can get RAG-augmented answers
+from GPT-4o, Claude, and Gemini simultaneously — this is only possible here.
 
 **What it does:**
-Extends the single API key model to support multi-user teams with individual accounts, per-user rate limits, model access control, and audit logging.
+1. Accepts document uploads (PDF, Markdown, plain text, DOCX) via a dashboard panel
+2. Chunks and embeds documents into a local vector store at ingest time
+3. On each request: embeds the user's query → retrieves top-K most relevant chunks
+4. Injects retrieved chunks as a `[CONTEXT]` block in the system message before the provider call
+5. Works transparently with all models (no per-model configuration needed), including the
+   Ensemble Synthesizer — all N models get the same RAG context injected
 
 **Key Open-Source References:**
-- Casdoor (casdoor/casdoor) — open-source IAM
-- Casbin (casbin/casbin) — RBAC/ABAC policy engine
-- Permit.io policy patterns — fine-grained authorization
-- OpenFGA (openfga/openfga) — relationship-based access control
-- OWASP API Security Top 10 — authorization best practices
+- LlamaIndex (run-llama/llama_index) — document ingestion pipeline, node chunking, query engine
+- LangChain (langchain-ai/langchain) — RAG chain patterns, retriever interface
+- Chroma (chroma-core/chroma) — embeddable local vector database, persistent collections
+- Unstructured (Unstructured-IO/unstructured) — PDF/DOCX parsing and chunking strategies
+- HuggingFace Transformers.js (xenova/transformers.js) — browser/Node-compatible embedding models
+- FAISS (facebookresearch/faiss) — high-performance approximate nearest-neighbor search
+- Nomic Embed (nomic-ai/nomic-embed-text) — efficient open-source embedding model
 
 **Technical Implementation:**
-1. User registry: SQLite table (id, username, api_key_hash, role, created_at)
-2. Roles: `admin`, `power_user`, `basic_user`, `read_only`
-3. Per-role policy:
-   - Which models are accessible
-   - Request rate limits (overrides global rate limiter)
-   - Monthly token quota
-4. Audit log: every request logged with (user, model, tokens, timestamp)
-5. Admin panel: user management, key rotation, usage reports
+1. **Ingest pipeline** (`rag-ingest.js`):
+   - Accept file upload via `/api/plugins/rag/upload` (PDF, .md, .txt, .docx)
+   - Parse to plain text (pdfjs-dist for PDF, mammoth for DOCX, native for text/markdown)
+   - Chunk with a sliding window: configurable `chunkSize` (default: 512 tokens) and `chunkOverlap`
+     (default: 64 tokens) to preserve cross-chunk context
+   - Embed each chunk using a local embedding model (Transformers.js, no Python required)
+   - Persist embeddings + raw chunk text in a SQLite-backed vector store (sqlite-vec or better-sqlite3
+     with cosine similarity UDF)
+   - Associate each document with an owner: `global` (all users) or a specific API key
+
+2. **Retrieval middleware** (runs at priority 150):
+   - Extract the last user message from `req.body.messages`
+   - Embed query → nearest-neighbor search → top-K chunks (default K=4)
+   - If similarity of best match < threshold (default: 0.65), skip injection (no irrelevant context)
+   - Inject retrieved chunks as a system message:
+     ```
+     [RETRIEVED CONTEXT — use this to answer the user's question]
+     --- Chunk from: document-name.pdf ---
+     <chunk text>
+     ---
+     ```
+   - Log which document + chunks were injected, similarity scores
+
+3. **Dashboard panel** (`static/rag.html`):
+   - Document library: upload, list, delete, view chunk count per document
+   - Per-document scope toggle: available to all users vs. scoped to specific API key
+   - Query tester: enter a query, see which chunks would be retrieved and their similarity scores
+   - Retrieval stats: which documents are queried most, average similarity score per document
+
+4. **No quota anywhere**: no document count limit, no query limit, no token budget —
+   all models are free, so there is no cost to injecting context into every request
+
+**Config Schema:**
+```json
+{
+  "enabled": false,
+  "chunkSize": 512,
+  "chunkOverlap": 64,
+  "topK": 4,
+  "similarityThreshold": 0.65,
+  "embeddingModel": "Xenova/all-MiniLM-L6-v2",
+  "maxContextTokens": 2000,
+  "injectPosition": "system",
+  "allowUserUploads": true
+}
+```
+
+**Why it fits this product specifically:**
+- Zero cost to inject more context — all models are free, so larger context = better answers at $0
+- Works with the Ensemble Synthesizer — all 4 models get identical RAG context, and their synthesis
+  becomes grounded in your documents rather than hallucinated
+- No vendor lock-in: uses local embeddings (Transformers.js) so no external embedding API is needed
+- Completely additive — no overlap with any existing plugin or core feature
 
 ---
 
