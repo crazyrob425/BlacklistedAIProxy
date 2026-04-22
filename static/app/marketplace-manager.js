@@ -15,6 +15,8 @@ let _activeTab     = 'all';
 let _searchQuery   = '';
 let _sortBy        = 'featured';
 let _selectedId    = null;
+let _loaded        = false;
+let _loadingPromise = null;
 
 // ── DOM refs (resolved after componentsLoaded) ────────────────────────────────
 
@@ -48,12 +50,18 @@ function _isMarketplaceSectionActive() {
     return params.get('section') === 'marketplace' || hash === 'marketplace';
 }
 
-let _loaded = false;
-
 async function _loadIfNeeded() {
     if (_loaded) return;
-    _loaded = true;
-    await loadMarketplace();
+    if (_loadingPromise) return _loadingPromise;
+
+    _loadingPromise = (async () => {
+        const loaded = await loadMarketplace();
+        _loaded = loaded === true;
+    })().finally(() => {
+        _loadingPromise = null;
+    });
+
+    return _loadingPromise;
 }
 
 // ── Data loading ──────────────────────────────────────────────────────────────
@@ -69,6 +77,7 @@ export async function loadMarketplace() {
         _renderCategories(resp.data.stats);
         _renderStats(resp.data.stats);
         _renderGrid();
+        return true;
     } catch (err) {
         console.error('[Marketplace] Load error:', err.message);
         const grid = $('marketplaceGrid');
@@ -79,6 +88,7 @@ export async function loadMarketplace() {
                     <span>Failed to load marketplace: ${err.message}</span>
                 </div>`;
         }
+        return false;
     }
 }
 

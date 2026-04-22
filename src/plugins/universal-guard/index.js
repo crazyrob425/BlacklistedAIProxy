@@ -159,7 +159,7 @@ const universalGuardPlugin = {
     async middleware(req, res, requestUrl, config) {
         try {
             if (req.method !== 'POST') return { handled: false };
-            const isAiPath = AI_PATHS.some(p => requestUrl.pathname.includes(p));
+            const isAiPath = AI_PATHS.some(p => requestUrl.pathname.startsWith(p));
             if (!isAiPath)             return { handled: false };
 
             const ip     = extractClientIp(req);
@@ -188,7 +188,7 @@ const universalGuardPlugin = {
                 body = await readBody(req);
             }
 
-            if (body?.messages) {
+            if (Array.isArray(body?.messages)) {
                 // ── 3. PII scrubber ────────────────────────────────────────────
                 if (this._cfg.piiScrubber.enabled) {
                     const { messages: scrubbed, detections } = this.piiScrubber.scrub(body.messages);

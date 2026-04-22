@@ -82,19 +82,13 @@ export async function handleUniversalGuardRoutes(method, path, req, res, config)
             return true;
         }
 
-        // POST /api/universal-guard/budget/reset-daily
-        if (method === 'POST' && path === '/api/universal-guard/budget/reset-daily') {
-            _plugin.budgetGuard?.resetDaily();
-            logger.info('[Universal Guard] Daily budget counters reset via API');
-            sendJson(res, 200, { success: true, message: 'Daily budget reset' });
-            return true;
-        }
-
-        // POST /api/universal-guard/budget/reset-monthly
-        if (method === 'POST' && path === '/api/universal-guard/budget/reset-monthly') {
-            _plugin.budgetGuard?.resetMonthly();
-            logger.info('[Universal Guard] Monthly budget counters reset via API');
-            sendJson(res, 200, { success: true, message: 'Monthly budget reset' });
+        // Budget endpoints removed — Universal Guard no longer includes budget controls
+        if (method === 'POST' && (path === '/api/universal-guard/budget/reset-daily'
+            || path === '/api/universal-guard/budget/reset-monthly')) {
+            sendJson(res, 410, {
+                success: false,
+                error: { message: 'Budget Guard is no longer part of Universal Guard', code: 'BUDGET_GUARD_REMOVED' },
+            });
             return true;
         }
 

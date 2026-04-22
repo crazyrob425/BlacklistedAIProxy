@@ -112,15 +112,15 @@ Live cost-savings dashboard available at [token-optimizer.html](/token-optimizer
         version:      '1.0.0',
         author:       { name: 'BlacklistedAPI Team', url: 'https://github.com/crazyrob425/BlacklistedAIProxy' },
         category:     'security',
-        subCategories: ['rate-limiting', 'privacy', 'compliance', 'budget'],
+        subCategories: ['rate-limiting', 'privacy', 'compliance'],
         trustTier:    'official',
         rating:       { score: 5.0, count: 0 },
         installs:     0,
         featured:     true,
-        description:  'Five-in-one security layer: rate limiting, budget control, PII scrubbing, jailbreak detection, and webhook alerting.',
+        description:  'Four-in-one security layer: rate limiting, PII scrubbing, jailbreak detection, and webhook alerting.',
         longDescription: `## Universal Guard
 
-A comprehensive, production-hardened security and governance plugin that adds five protection layers to every AI request — all configurable and independently toggleable.
+A comprehensive, production-hardened security and governance plugin that adds four protection layers to every AI request — all configurable and independently toggleable.
 
 ### 1 — Rate Limiter
 Sliding-window rate limiting per IP address and per API key.
@@ -128,33 +128,26 @@ Sliding-window rate limiting per IP address and per API key.
 - ~0.01 ms overhead on the hot path
 - HTTP 429 responses with Retry-After information
 
-### 2 — Budget Guard  
-Prevents runaway API spend with configurable daily and monthly USD limits.
-- Cost estimation per request using the built-in pricing table
-- Warn threshold (default 80%) and block threshold (default 100%)
-- Persistent spend tracking across server restarts
-- Reset controls via REST API
-
-### 3 — PII Scrubber
+### 2 — PII Scrubber
 Detects and redacts sensitive information **before** it reaches the AI provider.
 Patterns: email, credit card, SSN, phone, OpenAI keys, Anthropic keys, Google API keys, AWS access/secret keys, GitHub tokens, Stripe keys, JWTs.
 - Action: \`redact\` (replace) or \`flag\` (detect-only, log and continue)
 - Each pattern class independently enable/disable-able
 
-### 4 — Prompt Policy  
+### 3 — Prompt Policy  
 Protects against misuse with two detection modes:
 - **Jailbreak detection**: 25+ curated regex patterns covering all major DAN, override, and instruction-injection variants
 - **Custom keyword blocklist**: user-defined words/phrases
 - Actions: \`block\` (HTTP 400), \`flag\` (log only), \`sanitize\` (strip content)
 
-### 5 — Incident Alerter
+### 4 — Incident Alerter
 Fire-and-forget webhook notifications on any guard event.
 - Slack, Discord, and generic HTTP webhook support
 - Deduplication: same event type coalesced within 10-second window
 - Non-blocking: never delays API responses`,
         icon:         'fa-shield-halved',
         iconColor:    '#ef4444',
-        tags:         ['security', 'rate-limit', 'pii', 'compliance', 'budget', 'jailbreak'],
+        tags:         ['security', 'rate-limit', 'pii', 'compliance', 'jailbreak'],
         capabilities: ['middleware', 'routes', 'hooks', 'static'],
         minCoreVersion: '2.0.0',
         size:         '~22 KB',
@@ -168,7 +161,7 @@ Fire-and-forget webhook notifications on any guard event.
             {
                 version: '1.0.0',
                 date:    '2026-04-20',
-                notes:   'Initial release. Sliding-window rate limiter, USD budget guard with persistence, regex PII scrubber (12 pattern classes), jailbreak detection (25+ patterns), webhook alerting with dedup.',
+                notes:   'Initial release. Sliding-window rate limiter, regex PII scrubber (12 pattern classes), jailbreak detection (25+ patterns), webhook alerting with dedup.',
             },
         ],
         screenshots: [],

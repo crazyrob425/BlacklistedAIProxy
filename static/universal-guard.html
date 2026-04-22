@@ -80,7 +80,7 @@
         <span class="brand-icon"><i class="fas fa-shield-halved"></i></span>
         <div>
           <div class="brand-title">Universal Guard</div>
-          <div class="brand-sub">Rate limiting · Budget control · PII scrubbing · Policy enforcement · Alerting</div>
+          <div class="brand-sub">Rate limiting · PII scrubbing · Policy enforcement · Alerting</div>
         </div>
       </div>
       <div class="nav-actions">
@@ -96,7 +96,7 @@
       <article class="card red">
         <div class="card-label">Requests Blocked</div>
         <div class="card-value" id="totalBlocked">–</div>
-        <div class="card-note">Rate limit + policy + budget</div>
+        <div class="card-note">Rate limit + policy</div>
       </article>
       <article class="card amber">
         <div class="card-label">Requests Allowed</div>
@@ -145,7 +145,7 @@
       <!-- Budget Guard -->
       <div class="panel">
         <h2 class="section-title">
-          <i class="fas fa-dollar-sign"></i>Budget Guard
+          <i class="fas fa-dollar-sign"></i>Budget Guard (Removed)
           <span class="module-status" id="bgStatus">–</span>
         </h2>
         <div class="cfg-grid">
@@ -318,31 +318,15 @@
           document.getElementById('rlKeyMin').value  = c.rateLimiter?.perKey?.reqPerMinute ?? 120;
           document.getElementById('rlKeyHour').value = c.rateLimiter?.perKey?.reqPerHour  ?? 1200;
 
-          // Budget
-          setModuleStatus('bgStatus', c.budgetGuard?.enabled);
-          document.getElementById('bgEnabled').value = String(c.budgetGuard?.enabled ?? false);
-          document.getElementById('bgDaily').value   = c.budgetGuard?.dailyLimitUSD   ?? 0;
-          document.getElementById('bgMonthly').value = c.budgetGuard?.monthlyLimitUSD ?? 0;
-          document.getElementById('bgWarn').value    = c.budgetGuard?.warnAtPercent   ?? 80;
-          document.getElementById('bgBlock').value   = c.budgetGuard?.blockAtPercent  ?? 100;
-
-          // Budget bars
-          const bStats = d.budgetGuard ?? {};
+          // Budget Guard removed from Universal Guard
+          setModuleStatus('bgStatus', false);
+          document.getElementById('bgEnabled').value = 'false';
+          document.getElementById('bgDaily').value   = 0;
+          document.getElementById('bgMonthly').value = 0;
+          document.getElementById('bgWarn').value    = 80;
+          document.getElementById('bgBlock').value   = 100;
           const bgBars = document.getElementById('budgetBars');
-          if (bStats.dailyLimitUSD > 0 || bStats.monthlyLimitUSD > 0) {
-            const dayPct   = Math.min(100, (bStats.dailyPct   ?? 0));
-            const monthPct = Math.min(100, (bStats.monthlyPct ?? 0));
-            const cls = p => p >= 100 ? 'crit' : p >= 80 ? 'warn' : 'ok';
-            bgBars.innerHTML = `
-              <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px">
-                Daily: $${(bStats.dailySpendUSD??0).toFixed(4)} / $${bStats.dailyLimitUSD??'∞'} (${dayPct.toFixed(1)}%)
-              </div>
-              <div class="budget-bar"><div class="budget-fill ${cls(dayPct)}" style="width:${dayPct}%"></div></div>
-              <div style="font-size:12px;color:var(--text-secondary);margin:8px 0 4px">
-                Monthly: $${(bStats.monthlySpendUSD??0).toFixed(4)} / $${bStats.monthlyLimitUSD??'∞'} (${monthPct.toFixed(1)}%)
-              </div>
-              <div class="budget-bar"><div class="budget-fill ${cls(monthPct)}" style="width:${monthPct}%"></div></div>`;
-          }
+          if (bgBars) bgBars.innerHTML = '<div style="font-size:12px;color:var(--text-secondary)">Budget Guard has been removed from Universal Guard.</div>';
 
           // PII
           setModuleStatus('piiStatus', c.piiScrubber?.enabled);
@@ -377,13 +361,6 @@
           perIp:   { reqPerMinute: +document.getElementById('rlIpMin').value,  reqPerHour: +document.getElementById('rlIpHour').value  },
           perKey:  { reqPerMinute: +document.getElementById('rlKeyMin').value, reqPerHour: +document.getElementById('rlKeyHour').value },
         },
-        budgetGuard: {
-          enabled:         document.getElementById('bgEnabled').value === 'true',
-          dailyLimitUSD:   +document.getElementById('bgDaily').value,
-          monthlyLimitUSD: +document.getElementById('bgMonthly').value,
-          warnAtPercent:   +document.getElementById('bgWarn').value,
-          blockAtPercent:  +document.getElementById('bgBlock').value,
-        },
         piiScrubber: {
           enabled: document.getElementById('piiEnabled').value === 'true',
           action:  document.getElementById('piiAction').value,
@@ -412,17 +389,11 @@
     document.getElementById('refreshBtn').addEventListener('click', loadStats);
 
     document.getElementById('resetDailyBtn').addEventListener('click', async () => {
-      if (!confirm('Reset daily budget counters to $0.00?')) return;
-      const resp = await fetch('/api/universal-guard/budget/reset-daily', { method: 'POST', headers: getAuthHeaders() });
-      const json = await resp.json();
-      if (json.success) { showStatus('configStatus', 'success', 'Daily budget reset.'); loadStats(); }
+      showStatus('configStatus', 'info', 'Budget Guard has been removed from Universal Guard.');
     });
 
     document.getElementById('resetMonthlyBtn').addEventListener('click', async () => {
-      if (!confirm('Reset monthly budget counters to $0.00?')) return;
-      const resp = await fetch('/api/universal-guard/budget/reset-monthly', { method: 'POST', headers: getAuthHeaders() });
-      const json = await resp.json();
-      if (json.success) { showStatus('configStatus', 'success', 'Monthly budget reset.'); loadStats(); }
+      showStatus('configStatus', 'info', 'Budget Guard has been removed from Universal Guard.');
     });
 
     loadStats();
