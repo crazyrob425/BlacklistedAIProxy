@@ -111,7 +111,7 @@ export class PiiScrubber {
      * @param {boolean}  cfg.logDetections   - Whether to log PII detections
      */
     constructor(cfg) {
-        this._cfg        = cfg;
+        this._cfg        = this._normalizeConfig(cfg);
         this._detections = 0;
         this._byType     = {};
     }
@@ -184,6 +184,17 @@ export class PiiScrubber {
     }
 
     updateConfig(cfg) {
-        this._cfg = cfg;
+        this._cfg = this._normalizeConfig(cfg);
+    }
+
+    _normalizeConfig(cfg) {
+        const next = (cfg && typeof cfg === 'object') ? { ...cfg } : {};
+        return {
+            ...next,
+            enabled:       Boolean(next.enabled),
+            action:        next.action === 'flag' ? 'flag' : 'redact',
+            patterns:      Array.isArray(next.patterns) ? next.patterns : [],
+            logDetections: Boolean(next.logDetections),
+        };
     }
 }
