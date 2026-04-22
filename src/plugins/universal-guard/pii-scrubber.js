@@ -193,7 +193,9 @@ export class PiiScrubber {
             ...next,
             enabled:       Boolean(next.enabled),
             action:        next.action === 'flag' ? 'flag' : 'redact',
-            patterns:      Array.isArray(next.patterns) ? next.patterns : [],
+            patterns:      Array.isArray(next.patterns)
+                ? next.patterns.filter(p => typeof p === 'string' && p.trim().length > 0)
+                : [],
             logDetections: Boolean(next.logDetections),
         };
     }

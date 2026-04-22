@@ -35,5 +35,6 @@ describe('PiiScrubber', () => {
 
         const after = scrubber.scrub([{ role: 'user', content: 'x@y.com' }]);
         expect(after.detections).toEqual([]);
+        expect(after.messages[0].content).toBe('x@y.com');
     });
 });
