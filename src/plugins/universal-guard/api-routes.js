@@ -82,16 +82,6 @@ export async function handleUniversalGuardRoutes(method, path, req, res, config)
             return true;
         }
 
-        // Budget endpoints removed — Universal Guard no longer includes budget controls
-        if (method === 'POST' && (path === '/api/universal-guard/budget/reset-daily'
-            || path === '/api/universal-guard/budget/reset-monthly')) {
-            sendJson(res, 410, {
-                success: false,
-                error: { message: 'Budget Guard is no longer part of Universal Guard', code: 'BUDGET_GUARD_REMOVED' },
-            });
-            return true;
-        }
-
         sendJson(res, 404, { success: false, error: { message: `No route for ${method} ${path}` } });
         return true;
 

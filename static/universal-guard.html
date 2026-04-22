@@ -61,11 +61,6 @@
     .module-status{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px}
     .ms-on{background:rgba(16,185,129,0.12);color:#10b981}
     .ms-off{background:rgba(107,114,128,0.12);color:#6b7280}
-    .budget-bar{height:10px;background:var(--bg-tertiary);border-radius:999px;overflow:hidden;margin-top:8px}
-    .budget-fill{height:100%;border-radius:inherit;transition:width 0.4s}
-    .budget-fill.ok{background:linear-gradient(90deg,#10b981,#34d399)}
-    .budget-fill.warn{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
-    .budget-fill.crit{background:linear-gradient(90deg,#ef4444,#f87171)}
     .two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
     .grid-panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
     @media(max-width:760px){.navbar-inner,.main{padding-left:16px;padding-right:16px}.two-col,.grid-panels{grid-template-columns:1fr}}
@@ -139,31 +134,6 @@
             <input class="cfg-value" id="rlKeyHour" type="number" min="1" placeholder="1200"></div>
           <div class="cfg-item"><span class="cfg-label">Enabled</span>
             <select class="cfg-value" id="rlEnabled"><option value="true">Yes</option><option value="false">No</option></select></div>
-        </div>
-      </div>
-
-      <!-- Budget Guard -->
-      <div class="panel">
-        <h2 class="section-title">
-          <i class="fas fa-dollar-sign"></i>Budget Guard (Removed)
-          <span class="module-status" id="bgStatus">–</span>
-        </h2>
-        <div class="cfg-grid">
-          <div class="cfg-item"><span class="cfg-label">Daily Limit (USD)</span>
-            <input class="cfg-value" id="bgDaily" type="number" min="0" step="0.01" placeholder="0 = disabled"></div>
-          <div class="cfg-item"><span class="cfg-label">Monthly Limit (USD)</span>
-            <input class="cfg-value" id="bgMonthly" type="number" min="0" step="0.01" placeholder="0 = disabled"></div>
-          <div class="cfg-item"><span class="cfg-label">Warn at (%)</span>
-            <input class="cfg-value" id="bgWarn" type="number" min="1" max="99" placeholder="80"></div>
-          <div class="cfg-item"><span class="cfg-label">Block at (%)</span>
-            <input class="cfg-value" id="bgBlock" type="number" min="1" max="200" placeholder="100"></div>
-          <div class="cfg-item"><span class="cfg-label">Enabled</span>
-            <select class="cfg-value" id="bgEnabled"><option value="false">No</option><option value="true">Yes</option></select></div>
-        </div>
-        <div id="budgetBars" style="margin-top:12px"></div>
-        <div class="row">
-          <button class="btn btn-secondary" id="resetDailyBtn" type="button"><i class="fas fa-calendar-day"></i> Reset Daily</button>
-          <button class="btn btn-secondary" id="resetMonthlyBtn" type="button"><i class="fas fa-calendar"></i> Reset Monthly</button>
         </div>
       </div>
 
@@ -318,16 +288,6 @@
           document.getElementById('rlKeyMin').value  = c.rateLimiter?.perKey?.reqPerMinute ?? 120;
           document.getElementById('rlKeyHour').value = c.rateLimiter?.perKey?.reqPerHour  ?? 1200;
 
-          // Budget Guard removed from Universal Guard
-          setModuleStatus('bgStatus', false);
-          document.getElementById('bgEnabled').value = 'false';
-          document.getElementById('bgDaily').value   = 0;
-          document.getElementById('bgMonthly').value = 0;
-          document.getElementById('bgWarn').value    = 80;
-          document.getElementById('bgBlock').value   = 100;
-          const bgBars = document.getElementById('budgetBars');
-          if (bgBars) bgBars.innerHTML = '<div style="font-size:12px;color:var(--text-secondary)">Budget Guard has been removed from Universal Guard.</div>';
-
           // PII
           setModuleStatus('piiStatus', c.piiScrubber?.enabled);
           document.getElementById('piiEnabled').value = String(c.piiScrubber?.enabled ?? false);
@@ -387,14 +347,6 @@
     });
 
     document.getElementById('refreshBtn').addEventListener('click', loadStats);
-
-    document.getElementById('resetDailyBtn').addEventListener('click', async () => {
-      showStatus('configStatus', 'info', 'Budget Guard has been removed from Universal Guard.');
-    });
-
-    document.getElementById('resetMonthlyBtn').addEventListener('click', async () => {
-      showStatus('configStatus', 'info', 'Budget Guard has been removed from Universal Guard.');
-    });
 
     loadStats();
     setInterval(loadStats, 30000);
