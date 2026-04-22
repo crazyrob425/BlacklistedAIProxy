@@ -56,7 +56,7 @@ async function _loadIfNeeded() {
 
     _loadingPromise = (async () => {
         const loaded = await loadMarketplace();
-        _loaded = loaded === true;
+        _loaded = loaded;
     })().finally(() => {
         _loadingPromise = null;
     });
