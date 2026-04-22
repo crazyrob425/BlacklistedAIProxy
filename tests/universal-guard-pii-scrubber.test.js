@@ -2,7 +2,7 @@ import { describe, expect, test } from '@jest/globals';
 import { PiiScrubber } from '../src/plugins/universal-guard/pii-scrubber.js';
 
 describe('PiiScrubber', () => {
-    test('does not throw when patterns config is missing or invalid', () => {
+    test('handles null patterns config without throwing', () => {
         const scrubber = new PiiScrubber({
             enabled: true,
             action: 'redact',
