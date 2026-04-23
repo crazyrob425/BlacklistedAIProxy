@@ -1,6 +1,11 @@
 # ── Stage 1: 编译 Go TLS sidecar ──
 FROM golang:1.22-alpine AS sidecar-builder
 
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ENV HTTP_PROXY=$HTTP_PROXY
+ENV HTTPS_PROXY=$HTTPS_PROXY
+
 RUN apk add --no-cache git
 
 WORKDIR /build
@@ -19,6 +24,10 @@ FROM node:20-alpine
 LABEL maintainer="AIClient2API Team"
 LABEL description="Docker image for AIClient2API server"
 
+# 代理参数仅用于构建时，不持久化到最终镜像
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+
 # 安装必要的系统工具（tar 用于更新功能，git 用于版本检查，procps 用于系统监控）
 RUN apk add --no-cache tar git procps
 
@@ -28,10 +37,8 @@ WORKDIR /app
 # 复制package.json和package-lock.json（如果存在）
 COPY package*.json ./
 
-# 安装依赖
-# 使用--production标志只安装生产依赖，减小镜像大小
-# 使用--omit=dev来排除开发依赖
-RUN npm install
+# 构建时代理（如果提供了的话）
+RUN npm install || npm install --ignore-scripts
 
 # 复制源代码
 COPY . .

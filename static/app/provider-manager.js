@@ -267,6 +267,10 @@ function renderProviders(providers, supportedProviders = []) {
     let totalAccounts = 0;
     let totalHealthy = 0;
     
+    // 获取搜索关键词
+    const searchInput = document.getElementById('providerSearchInput');
+    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
     // 按照排序后的提供商类型渲染
     sortedProviderTypes.forEach((providerType) => {
         // 如果配置中明确设置为不显示，则跳过
@@ -275,6 +279,22 @@ function renderProviders(providers, supportedProviders = []) {
         }
 
         const accounts = hasProviders ? providers[providerType] || [] : [];
+
+        // 搜索过滤逻辑
+        if (searchTerm) {
+            const displayName = (configMap[providerType]?.name || providerType).toLowerCase();
+            const matchesType = displayName.includes(searchTerm) || providerType.toLowerCase().includes(searchTerm);
+            const matchesNodes = accounts.some(acc => 
+                (acc.customName || '').toLowerCase().includes(searchTerm) || 
+                (acc.uuid || '').toLowerCase().includes(searchTerm) ||
+                (acc.model || '').toLowerCase().includes(searchTerm)
+            );
+            
+            if (!matchesType && !matchesNodes) {
+                return;
+            }
+        }
+
         const providerDiv = document.createElement('div');
         providerDiv.className = 'provider-item';
         providerDiv.dataset.providerType = providerType;
@@ -429,6 +449,134 @@ function renderProviders(providers, supportedProviders = []) {
     // 更新统计卡片数据
     const activeProviders = hasProviders ? Object.keys(providers).length : 0;
     updateProviderStatsDisplay(activeProviders, totalHealthy, totalAccounts);
+
+    // 渲染仪表盘提供商状态概览
+    renderProviderStatusOverview(providers, configMap, sortedProviderTypes);
+}
+
+/**
+ * 跳转到特定的提供商节点
+ * @param {string} type - 提供商类型
+ * @param {string} uuid - 节点UUID
+ * @param {Event} event - 事件对象
+ */
+window.jumpToProviderNode = function(type, uuid, event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
+    // 切换到提供商页面
+    const providersNav = document.querySelector('[data-section="providers"]');
+    if (providersNav) {
+        providersNav.click();
+        // 延迟执行以确保页面切换完成
+        setTimeout(() => {
+            openProviderManager(type, uuid);
+        }, 100);
+    }
+};
+
+/**
+ * 渲染仪表盘提供商状态概览
+ * @param {Object} providers - 提供商数据
+ * @param {Object} configMap - 提供商配置映射
+ * @param {Array} sortedProviderTypes - 排序后的提供商类型
+ */
+function renderProviderStatusOverview(providers, configMap, sortedProviderTypes) {
+    const grid = document.getElementById('providerStatusGrid');
+    const panel = document.querySelector('.provider-status-panel');
+    if (!grid || !panel) return;
+
+    // 检查是否有任何实际可显示的提供商节点
+    let hasVisibleNodes = false;
+    const validProviderTypes = [];
+
+    sortedProviderTypes.forEach(type => {
+        const accounts = providers[type] || [];
+        if (accounts.length > 0) {
+            hasVisibleNodes = true;
+            validProviderTypes.push(type);
+        }
+    });
+
+    if (!hasVisibleNodes) {
+        panel.style.display = 'none';
+        
+        // 没有数据时，自动展开仪表盘的高级信息（路径路由示例等）
+        const dashboardDetails = document.querySelector('.dashboard-details');
+        if (dashboardDetails) {
+            dashboardDetails.open = true;
+        }
+        return;
+    }
+
+    panel.style.display = 'block';
+    grid.innerHTML = '';
+
+    validProviderTypes.forEach(type => {
+        const accounts = providers[type];
+        const displayName = configMap[type]?.name || type;
+        const card = document.createElement('div');
+        card.className = 'provider-status-card';
+        card.style.cursor = 'pointer';
+        card.addEventListener('click', () => {
+            // 点击跳转到提供商管理页面并打开对应类型的管理弹窗
+            const providersNav = document.querySelector('[data-section="providers"]');
+            if (providersNav) {
+                providersNav.click();
+                setTimeout(() => openProviderManager(type), 100);
+            }
+        });
+
+        const healthyCount = accounts.filter(acc => acc.isHealthy && !acc.isDisabled).length;
+        const totalCount = accounts.length;
+        const disabledCount = accounts.filter(acc => acc.isDisabled).length;
+        const unhealthyCount = totalCount - healthyCount - disabledCount;
+
+        const totalUsage = accounts.reduce((sum, acc) => sum + (acc.usageCount || 0), 0);
+        const totalErrors = accounts.reduce((sum, acc) => sum + (acc.errorCount || 0), 0);
+
+        card.innerHTML = `
+            <div class="provider-info">
+                <span class="provider-name" title="${displayName}">${displayName}</span>
+                <span class="provider-count" style="font-size: 0.75rem; color: var(--text-secondary);">${healthyCount}/${totalCount}</span>
+            </div>
+            
+            <div class="provider-nodes-summary">
+                <span style="color: #10b981;"><i class="fas fa-check"></i> ${healthyCount}</span>
+                <span style="color: #ef4444; ${unhealthyCount === 0 ? 'opacity: 0.3;' : ''}"><i class="fas fa-times"></i> ${unhealthyCount}</span>
+                <span style="color: #9ca3af; ${disabledCount === 0 ? 'opacity: 0.3;' : ''}"><i class="fas fa-minus-circle"></i> ${disabledCount}</span>
+            </div>
+
+            <div class="node-dots">
+                ${accounts.map(acc => {
+                    let statusClass = 'healthy';
+                    let statusTitle = acc.customName || acc.uuid;
+                    if (acc.isDisabled) {
+                        statusClass = 'disabled';
+                        statusTitle += ` (${t('modal.provider.status.disabled')})`;
+                    } else if (!acc.isHealthy) {
+                        statusClass = 'unhealthy';
+                        statusTitle += ` (${t('modal.provider.status.unhealthy')})`;
+                    } else {
+                        statusTitle += ` (${t('modal.provider.status.healthy')})`;
+                    }
+                    // 增加提示信息：用量和错误
+                    statusTitle += `\n${t('providers.stat.usageCount')}: ${acc.usageCount || 0}\n${t('providers.stat.errorCount')}: ${acc.errorCount || 0}`;
+                    
+                    // 为圆点创建 HTML 字符串，添加点击跳转事件
+                    return `<span class="node-dot ${statusClass}" title="${statusTitle}" onclick="window.jumpToProviderNode('${type}', '${acc.uuid}', event)"></span>`;
+                }).join('')}
+            </div>
+            <div class="provider-stats-summary">
+                <span><i class="fas fa-paper-plane" style="font-size: 0.7rem; opacity: 0.7;"></i> ${totalUsage}</span>
+                <span><i class="fas fa-exclamation-circle" style="font-size: 0.7rem; opacity: 0.7;"></i> ${totalErrors}</span>
+                <span class="success-rate">${totalUsage > 0 ? ((totalUsage - totalErrors) / totalUsage * 100).toFixed(1) + '%' : '--'}</span>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
 }
 
 /**
@@ -501,11 +649,16 @@ function updateProviderStatsDisplay(activeProviders, healthyProviders, totalAcco
  * 打开提供商管理模态框
  * @param {string} providerType - 提供商类型
  */
-async function openProviderManager(providerType) {
+/**
+ * 打开提供商管理模态框
+ * @param {string} providerType - 提供商类型
+ * @param {string} searchTerm - 初始搜索词
+ */
+async function openProviderManager(providerType, searchTerm = '') {
     try {
         const data = await window.apiClient.get(`/providers/${encodeURIComponent(providerType)}`);
         
-        showProviderManagerModal(data);
+        showProviderManagerModal(data, searchTerm);
     } catch (error) {
         console.error('Failed to load provider details:', error);
         showToast(t('common.error'), t('modal.provider.load.failed'), 'error');
@@ -554,9 +707,7 @@ function showSimplePrompt(title, placeholder, callback) {
     overlay.className = 'modal-overlay';
     overlay.style.display = 'flex';
     overlay.style.zIndex = '3000';
-    overlay.style.background = 'rgba(0, 0, 0, 0.2)';
-    overlay.style.backdropFilter = 'blur(2px)';
-    
+
     overlay.innerHTML = `
         <div class="modal-content" style="max-width: 320px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border: 1px solid var(--border-color); padding: 20px;">
             <div style="margin-bottom: 12px; font-weight: 600; font-size: 14px; color: var(--text-primary);">${title}</div>

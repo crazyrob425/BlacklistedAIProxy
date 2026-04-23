@@ -7,7 +7,8 @@ import {
     recordUnaryUsage,
     resetStats,
     resetTokenStats,
-    setConfigGetter
+    setConfigGetter,
+    syncWriteToFile
 } from './stats-manager.js';
 
 const modelUsageStatsPlugin = {
@@ -23,6 +24,11 @@ const modelUsageStatsPlugin = {
             persistInterval: config.MODEL_USAGE_STATS_PERSIST_INTERVAL || 5000
         }));
         logger.info('[Model Usage Stats] Initialized');
+    },
+
+    async destroy() {
+        syncWriteToFile();
+        logger.info('[Model Usage Stats] Destroyed');
     },
 
     async middleware(req, res, requestUrl, config) {

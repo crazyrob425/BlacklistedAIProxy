@@ -1,5 +1,39 @@
 import { convertData } from '../convert/convert.js';
 import { MODEL_PROVIDER } from '../utils/common.js';
+import { CONFIG } from '../core/config-manager.js';
+
+/**
+ * 获取模型配置元数据
+ * @param {string} modelId - 模型 ID 或别名
+ * @param {string|null} provider - 自定义模型归属的提供商
+ * @returns {Object|null} 模型配置
+ */
+export function getCustomModelConfig(modelId, provider = null) {
+    if (!CONFIG.customModels || !Array.isArray(CONFIG.customModels)) {
+        return null;
+    }
+
+    let targetProvider = provider && provider !== MODEL_PROVIDER.AUTO ? provider : null;
+    let targetModelId = modelId;
+
+    if (typeof modelId === 'string' && modelId.includes(':')) {
+        const [prefix, ...modelParts] = modelId.split(':');
+        targetProvider = prefix;
+        targetModelId = modelParts.join(':');
+    }
+
+    if (!targetProvider) {
+        return CONFIG.customModels.find(m =>
+            !m.provider &&
+            (m.id === targetModelId || m.alias === targetModelId)
+        ) || null;
+    }
+
+    return CONFIG.customModels.find(m =>
+        m.provider === targetProvider &&
+        (m.id === targetModelId || m.alias === targetModelId)
+    ) || null;
+}
 
 /**
  * 各提供商支持的模型列表
@@ -32,6 +66,7 @@ export const PROVIDER_MODELS = {
     'claude-custom': [],
     'claude-kiro-oauth': [
         'claude-haiku-4-5',
+        'claude-opus-4-7',
         'claude-opus-4-6',
         'claude-sonnet-4-6',
         'claude-opus-4-5',
@@ -78,15 +113,7 @@ export const PROVIDER_MODELS = {
         'minimax-m2.5',
     ],
     'openai-codex-oauth': [
-        'gpt-5',
-        'gpt-5-codex',
-        'gpt-5-codex-mini',
-        'gpt-5.1',
-        'gpt-5.1-codex',
-        'gpt-5.1-codex-mini',
-        'gpt-5.1-codex-max',
         'gpt-5.2',
-        'gpt-5.2-codex',
         'gpt-5.3-codex',
         'gpt-5.3-codex-spark',
         'gpt-5.4',
@@ -105,17 +132,6 @@ export const PROVIDER_MODELS = {
         'grok-imagine-1.0-edit',
         'grok-imagine-1.0-fast',
         'grok-imagine-1.0-fast-edit',
-        'grok-4.1-mini-nsfw',
-        'grok-4.1-thinking-nsfw',
-        'grok-4.20-nsfw',
-        'grok-4.20-auto-nsfw',
-        'grok-4.20-fast-nsfw',
-        'grok-4.20-expert-nsfw',
-        'grok-4.20-heavy-nsfw',
-        'grok-imagine-1.0-nsfw',
-        'grok-imagine-1.0-edit-nsfw',
-        'grok-imagine-1.0-fast-nsfw',
-        'grok-imagine-1.0-fast-edit-nsfw'
     ]
 };
 
@@ -142,6 +158,25 @@ export function normalizeModelIds(models = []) {
             .map(model => model.trim())
             .filter(Boolean)
     )].sort((a, b) => a.localeCompare(b));
+}
+
+export function getCustomModelActualProvider(modelConfig) {
+    if (!modelConfig) {
+        return '';
+    }
+    if (Object.prototype.hasOwnProperty.call(modelConfig, 'actualProvider')) {
+        return modelConfig.actualProvider || '';
+    }
+    return modelConfig.provider || '';
+}
+
+export function getCustomModelListProvider(modelConfig) {
+    return modelConfig?.provider || getCustomModelActualProvider(modelConfig);
+}
+
+export function customModelMatchesProvider(modelConfig, providerType) {
+    const listProvider = getCustomModelListProvider(modelConfig);
+    return listProvider === providerType || (listProvider && providerType.startsWith(listProvider + '-'));
 }
 
 function extractModelIdsFromListShape(modelList) {
@@ -204,18 +239,33 @@ export function getConfiguredSupportedModels(providerType, providerConfig = {}) 
  * @returns {Array<string>} 模型列表
  */
 export function getProviderModels(providerType) {
+    let models = [];
     if (PROVIDER_MODELS[providerType]) {
-        return PROVIDER_MODELS[providerType];
-    }
-
-    // 尝试前缀匹配 (例如 openai-custom-1 -> openai-custom)
-    for (const key of Object.keys(PROVIDER_MODELS)) {
-        if (providerType.startsWith(key + '-')) {
-            return PROVIDER_MODELS[key];
+        models = [...PROVIDER_MODELS[providerType]];
+    } else {
+        // 尝试前缀匹配 (例如 openai-custom-1 -> openai-custom)
+        for (const key of Object.keys(PROVIDER_MODELS)) {
+            if (providerType.startsWith(key + '-')) {
+                models = [...PROVIDER_MODELS[key]];
+                break;
+            }
         }
     }
 
-    return [];
+    // 注入自定义模型
+    if (CONFIG.customModels && Array.isArray(CONFIG.customModels)) {
+        CONFIG.customModels.forEach(m => {
+            // 匹配模型列表归属提供商或其后缀分组
+            if (customModelMatchesProvider(m, providerType)) {
+                // 注入 ID
+                if (!models.includes(m.id)) {
+                    models.push(m.id);
+                }
+            }
+        });
+    }
+
+    return normalizeModelIds(models);
 }
 
 /**
@@ -223,5 +273,34 @@ export function getProviderModels(providerType) {
  * @returns {Object} 所有提供商的模型映射
  */
 export function getAllProviderModels() {
-    return PROVIDER_MODELS;
+    // 执行深拷贝，避免修改原始 PROVIDER_MODELS 对象
+    const allModels = {};
+    for (const provider in PROVIDER_MODELS) {
+        allModels[provider] = [...PROVIDER_MODELS[provider]];
+    }
+    
+    // 合并自定义模型到对应的提供商
+    if (CONFIG.customModels && Array.isArray(CONFIG.customModels)) {
+        CONFIG.customModels.forEach(m => {
+            // 如果指定了模型列表归属提供商，注入到该提供商
+            // 如果没有指定（Auto），则注入到特殊的虚拟分组
+            const targetProvider = getCustomModelListProvider(m) || 'custom-auto';
+            
+            if (!allModels[targetProvider]) {
+                allModels[targetProvider] = [];
+            }
+            
+            // 注入 ID
+            if (!allModels[targetProvider].includes(m.id)) {
+                allModels[targetProvider].push(m.id);
+            }
+        });
+    }
+    
+    // 对每个列表进行排序
+    for (const provider in allModels) {
+        allModels[provider] = normalizeModelIds(allModels[provider]);
+    }
+    
+    return allModels;
 }

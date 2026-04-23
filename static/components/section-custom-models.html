@@ -1,0 +1,115 @@
+<section id="custom-models" class="section">
+    <div class="section-header">
+        <h2 data-i18n="customModels.title">自定义模型管理</h2>
+        <button id="addCustomModelBtn" class="btn btn-primary">
+            <i class="fas fa-plus"></i> <span data-i18n="customModels.addModel">添加模型</span>
+        </button>
+    </div>
+    
+    <div class="pool-description">
+        <div class="highlight-note">
+            <i class="fas fa-info-circle"></i>
+            <span data-i18n="customModels.description">自定义模型管理支持三种用法：1. 为已存在模型定义默认参数设置；2. 将一个模型映射到其他提供商或实际模型；3. 新建一个模型并加入模型列表，新建模型后需要重启服务生效。</span>
+        </div>
+    </div>
+
+    <div class="custom-models-container">
+        <div class="table-responsive">
+            <table class="custom-models-table">
+                <thead>
+                    <tr>
+                        <th data-i18n="customModels.table.id">模型 ID / 别名</th>
+                        <th data-i18n="customModels.table.name">显示名称</th>
+                        <th data-i18n="customModels.table.provider">列表提供商</th>
+                        <th data-i18n="customModels.table.actualRoute">实际路由</th>
+                        <th data-i18n="customModels.table.params">参数</th>
+                        <th data-i18n="customModels.table.actions">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="customModelsTableBody">
+                    <!-- Data will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<!-- 弹窗：使用标准的 modal-overlay 类 -->
+<div id="customModelModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="customModelModalTitle"><i class="fas fa-cube"></i> <span data-i18n="customModels.addModel">添加模型</span></h3>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="customModelForm" class="form-container">
+                <input type="hidden" id="editModelOriginalId">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label data-i18n="customModels.form.id">模型 ID</label>
+                        <input type="text" id="modelId" class="form-control" required placeholder="my-custom-gpt4">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="customModels.form.name">显示名称</label>
+                        <input type="text" id="modelName" class="form-control" placeholder="我的模型">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label data-i18n="customModels.form.alias">调用别名</label>
+                        <input type="text" id="modelAlias" class="form-control" placeholder="gpt-4">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="customModels.form.provider">模型列表提供商</label>
+                        <select id="customModelProvider" class="form-control" required></select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="customModels.form.actualProvider">实际路由提供商</label>
+                    <select id="customModelActualProvider" class="form-control" required></select>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="customModels.form.actualModel">下游实际模型 ID</label>
+                    <input type="text" id="actualModel" class="form-control" placeholder="gpt-4-0613">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label data-i18n="customModels.form.contextLength">上下文长度</label>
+                        <input type="number" id="contextLength" class="form-control" placeholder="8192">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="customModels.form.maxTokens">最大 Token</label>
+                        <input type="number" id="maxTokens" class="form-control" placeholder="4096">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label data-i18n="customModels.form.temperature">温度 (Temp)</label>
+                        <input type="number" id="temperature" class="form-control" step="0.1" placeholder="0.7">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="customModels.form.topP">Top P</label>
+                        <input type="number" id="topP" class="form-control" step="0.01" placeholder="1.0">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="customModels.form.description">描述</label>
+                    <textarea id="modelDescription" class="form-control" rows="2"></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary close-modal" data-i18n="common.cancel">取消</button>
+            <button type="button" id="saveCustomModelBtn" class="btn btn-primary">
+                <i class="fas fa-save"></i> <span data-i18n="common.save">保存配置</span>
+            </button>
+        </div>
+    </div>
+</div>
