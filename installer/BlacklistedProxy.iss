@@ -61,10 +61,10 @@ DisableWelcomePage=no
 ; Output settings
 OutputDir=Output
 OutputBaseFilename=BlacklistedAIProxy-Setup-{#AppVersion}-win-x64
-SetupIconFile=assets\SetupIcon.ico
-UninstallDisplayIcon={app}\assets\SetupIcon.ico
-WizardImageFile=assets\WizardImage.bmp
-WizardSmallImageFile=assets\WizardSmallImage.bmp
+; SetupIconFile=assets\SetupIcon.ico
+; UninstallDisplayIcon={app}\assets\SetupIcon.ico
+; WizardImageFile=assets\WizardImage.bmp
+; WizardSmallImageFile=assets\WizardSmallImage.bmp
 WizardStyle=modern
 WizardSizePercent=120
 
@@ -148,7 +148,7 @@ Source: "portable\launcher.ps1";       DestDir: "{app}";            Components: 
 Source: "portable\launcher.bat";       DestDir: "{app}";            DestName: "Launch BlacklistedAIProxy.bat"; Components: app; Check: IsPortableInstall
 
 ; ── Assets ───────────────────────────────────────────────────────────────────
-Source: "assets\SetupIcon.ico";        DestDir: "{app}\assets";     Flags: ignoreversion; Components: app
+; Source: "assets\SetupIcon.ico";        DestDir: "{app}\assets";     Flags: ignoreversion; Components: app
 
 ; ── TLS sidecar (pre-compiled) ───────────────────────────────────────────────
 Source: "..\tls-sidecar\tls-sidecar.exe"; DestDir: "{app}\tls-sidecar"; Flags: ignoreversion skipifsourcedoesntexist; Components: app
@@ -158,15 +158,15 @@ Source: "..\tls-sidecar\tls-sidecar.exe"; DestDir: "{app}\tls-sidecar"; Flags: i
 ; ==============================================================================
 [Icons]
 ; Full install
-Name: "{group}\{#AppName} — Open Web UI";    Filename: "{app}\runtime\node.exe"; Parameters: """{app}\src\core\master.js"""; WorkingDir: "{app}"; IconFilename: "{app}\assets\SetupIcon.ico"; Comment: "Launch the BlacklistedAIProxy proxy server and open the Web UI"; Components: shortcuts
-Name: "{group}\{#AppName} — Report a Bug";   Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\bug-reporter.ps1"""; IconFilename: "{app}\assets\SetupIcon.ico"; Comment: "Report a bug directly to the GitHub issue tracker"; Components: bugreport
+Name: "{group}\{#AppName} — Open Web UI";    Filename: "{app}\runtime\node.exe"; Parameters: """{app}\src\core\master.js"""; WorkingDir: "{app}"; Comment: "Launch the BlacklistedAIProxy proxy server and open the Web UI"; Components: shortcuts
+Name: "{group}\{#AppName} — Report a Bug";   Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\bug-reporter.ps1"""; Comment: "Report a bug directly to the GitHub issue tracker"; Components: bugreport
 Name: "{group}\{#AppName} — Uninstall";      Filename: "{uninstallexe}"; Components: shortcuts
 Name: "{group}\README & Documentation";      Filename: "{app}\README.md"; Components: shortcuts
-Name: "{commondesktop}\{#AppName}";          Filename: "{app}\runtime\node.exe"; Parameters: """{app}\src\core\master.js"""; WorkingDir: "{app}"; IconFilename: "{app}\assets\SetupIcon.ico"; Tasks: desktopicon; Components: shortcuts
+Name: "{commondesktop}\{#AppName}";          Filename: "{app}\runtime\node.exe"; Parameters: """{app}\src\core\master.js"""; WorkingDir: "{app}"; Tasks: desktopicon; Components: shortcuts
 
 ; Portable install
-Name: "{group}\{#AppName} Portable — Launch"; Filename: "{app}\Launch BlacklistedAIProxy.bat"; WorkingDir: "{app}"; IconFilename: "{app}\assets\SetupIcon.ico"; Components: app; Check: IsPortableInstall
-Name: "{group}\{#AppName} — Report a Bug";    Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\bug-reporter.ps1"""; IconFilename: "{app}\assets\SetupIcon.ico"; Components: bugreport; Check: IsPortableInstall
+Name: "{group}\{#AppName} Portable — Launch"; Filename: "{app}\Launch BlacklistedAIProxy.bat"; WorkingDir: "{app}"; Components: app; Check: IsPortableInstall
+Name: "{group}\{#AppName} — Report a Bug";    Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\bug-reporter.ps1"""; Components: bugreport; Check: IsPortableInstall
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a Desktop shortcut"; GroupDescription: "Additional shortcuts:"; Flags: unchecked
@@ -260,14 +260,15 @@ begin
 end;
 
 // ── Detect USB drives for portable default directory ─────────────────────────
+function GetDriveType(nDrive: String): Integer; external 'GetDriveTypeA@kernel32.dll stdcall';
 function FindFirstRemovableDrive: String;
 var
   Drive:  String;
-  Letter: Char;
+  LetterCode: Integer;
 begin
   Result := '';
-  for Letter := 'D' to 'Z' do begin
-    Drive := Letter + ':\';
+  for LetterCode := 68 to 90 do begin
+    Drive := Chr(LetterCode) + ':\';
     // DriveType 2 = DRIVE_REMOVABLE (USB)
     if GetDriveType(Drive) = 2 then begin
       Result := Drive + 'BlacklistedAIProxy';
@@ -303,11 +304,11 @@ begin
     'Legal Agreement Confirmation',
     'Confirm required legal documents before installation',
     'To continue, you must review and agree to every required legal document:' + #13#10 +
-    #13#10 +
+    '' + #13#10 +
     '  • Terms of Service (TOS)' + #13#10 +
     '  • Hold Harmless & Limitation of Liability' + #13#10 +
     '  • Full legal terms shown on the previous page' + #13#10 +
-    #13#10 +
+    '' + #13#10 +
     'The documents are installed to {app}\docs\legal for future reference.',
     False,  // allow multiple selections
     False
@@ -358,7 +359,7 @@ var
   SubTitle:     TLabel;
 begin
   CreditsPage := CreateCustomPage(
-    wpFinished,
+    wpInstalling,
     'Credits & Acknowledgements',
     'Thank you to the developers and open-source projects that made this possible.'
   );
