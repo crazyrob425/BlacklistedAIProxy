@@ -1365,13 +1365,26 @@ function _applyCustomModelParameters(requestBody, customConfig, provider) {
 
     // 处理嵌套路径 (例如 generationConfig.temperature)
     const setNestedProperty = (obj, path, value) => {
+        const blockedKeys = new Set(['__proto__', 'prototype', 'constructor']);
         const parts = path.split('.');
         let curr = obj;
         for (let i = 0; i < parts.length - 1; i++) {
-            if (!curr[parts[i]]) curr[parts[i]] = {};
-            curr = curr[parts[i]];
+            const part = parts[i];
+            if (blockedKeys.has(part)) {
+                logger.warn(`[Custom Model] Skipping unsafe nested parameter path: ${path}`);
+                return;
+            }
+            if (!Object.prototype.hasOwnProperty.call(curr, part) || typeof curr[part] !== 'object' || curr[part] === null) {
+                curr[part] = {};
+            }
+            curr = curr[part];
         }
-        curr[parts[parts.length - 1]] = value;
+        const lastPart = parts[parts.length - 1];
+        if (blockedKeys.has(lastPart)) {
+            logger.warn(`[Custom Model] Skipping unsafe nested parameter path: ${path}`);
+            return;
+        }
+        curr[lastPart] = value;
         logger.debug(`[Custom Model] Applied nested parameter ${path}=${value}`);
     };
 

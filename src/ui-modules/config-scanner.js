@@ -202,12 +202,20 @@ export async function analyzeOAuthFile(filePath, usedPaths, currentConfig, provi
                         }
                         
                         if (jsonData.base_url || jsonData.endpoint) {
-                            const baseUrl = (jsonData.base_url || jsonData.endpoint).toLowerCase();
-                            if (baseUrl.includes('openai.com')) {
+                            const rawBaseUrl = String(jsonData.base_url || jsonData.endpoint || '');
+                            let host = '';
+                            try {
+                                host = new URL(rawBaseUrl).hostname.toLowerCase();
+                            } catch {
+                                host = '';
+                            }
+
+                            const hostMatches = (domain) => host === domain || host.endsWith(`.${domain}`);
+                            if (hostMatches('openai.com')) {
                                 oauthProvider = 'openai';
-                            } else if (baseUrl.includes('anthropic.com')) {
+                            } else if (hostMatches('anthropic.com')) {
                                 oauthProvider = 'claude';
-                            } else if (baseUrl.includes('googleapis.com')) {
+                            } else if (hostMatches('googleapis.com')) {
                                 oauthProvider = 'gemini';
                             }
                         }
