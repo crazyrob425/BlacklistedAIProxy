@@ -1363,28 +1363,23 @@ function _applyCustomModelParameters(requestBody, customConfig, provider) {
         }
     };
 
-    // 处理嵌套路径 (例如 generationConfig.temperature)
+    // 处理受控嵌套路径（仅允许已知安全字段）
     const setNestedProperty = (obj, path, value) => {
-        const blockedKeys = new Set(['__proto__', 'prototype', 'constructor']);
-        const parts = path.split('.');
-        let curr = obj;
-        for (let i = 0; i < parts.length - 1; i++) {
-            const part = parts[i];
-            if (blockedKeys.has(part)) {
-                logger.warn(`[Custom Model] Skipping unsafe nested parameter path: ${path}`);
-                return;
-            }
-            if (!Object.prototype.hasOwnProperty.call(curr, part) || typeof curr[part] !== 'object' || curr[part] === null) {
-                curr[part] = {};
-            }
-            curr = curr[part];
-        }
-        const lastPart = parts[parts.length - 1];
-        if (blockedKeys.has(lastPart)) {
-            logger.warn(`[Custom Model] Skipping unsafe nested parameter path: ${path}`);
+        if (
+            path !== 'generationConfig.temperature' &&
+            path !== 'generationConfig.maxOutputTokens' &&
+            path !== 'generationConfig.topP'
+        ) {
+            logger.warn(`[Custom Model] Skipping unsupported nested parameter path: ${path}`);
             return;
         }
-        curr[lastPart] = value;
+
+        if (!Object.prototype.hasOwnProperty.call(obj, 'generationConfig') || typeof obj.generationConfig !== 'object' || obj.generationConfig === null) {
+            obj.generationConfig = {};
+        }
+
+        const nestedKey = path.split('.')[1];
+        obj.generationConfig[nestedKey] = value;
         logger.debug(`[Custom Model] Applied nested parameter ${path}=${value}`);
     };
 
