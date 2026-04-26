@@ -1,0 +1,87 @@
+<link rel="stylesheet" href="components/section-marketplace.css">
+<!-- Marketplace Section -->
+<section id="marketplace" class="section" aria-labelledby="marketplace-title">
+    <h2 id="marketplace-title">
+        <i class="fas fa-store" aria-hidden="true"></i>
+        Plugin Marketplace
+        <span class="marketplace-beta-badge">BETA</span>
+    </h2>
+
+    <!-- Top Bar: Search + Sort -->
+    <div class="marketplace-topbar">
+        <div class="marketplace-search-wrap">
+            <i class="fas fa-search marketplace-search-icon" aria-hidden="true"></i>
+            <input id="marketplaceSearch"
+                   type="search"
+                   class="marketplace-search"
+                   placeholder="Search plugins…"
+                   aria-label="Search plugins"
+                   autocomplete="off" />
+        </div>
+        <div class="marketplace-sort-wrap">
+            <label for="marketplaceSort" class="sr-only">Sort by</label>
+            <select id="marketplaceSort" class="marketplace-sort">
+                <option value="featured">Featured</option>
+                <option value="name">Name</option>
+                <option value="rating">Rating</option>
+                <option value="installs">Popularity</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Stats bar -->
+    <div id="marketplaceStats" class="marketplace-stats">
+        <span class="mstat"><i class="fas fa-puzzle-piece"></i> <strong id="mstatTotal">–</strong> plugins</span>
+        <span class="mstat mstat-installed"><i class="fas fa-check-circle"></i> <strong id="mstatInstalled">–</strong> installed</span>
+        <span class="mstat mstat-featured"><i class="fas fa-star"></i> <strong id="mstatFeatured">–</strong> featured</span>
+        <span class="mstat mstat-enabled"><i class="fas fa-bolt"></i> <strong id="mstatEnabled">–</strong> active</span>
+    </div>
+
+    <!-- Category Tabs -->
+    <div id="marketplaceTabs" class="marketplace-tabs" role="tablist">
+        <!-- populated by marketplace-manager.js -->
+    </div>
+
+    <!-- Main layout: list + detail panel -->
+    <div class="marketplace-layout">
+        <!-- Plugin Grid -->
+        <div class="marketplace-grid-wrap">
+            <div id="marketplaceGrid" class="marketplace-grid" role="list">
+                <div class="marketplace-loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Loading plugins…</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detail panel (hidden until a plugin is selected) -->
+        <aside id="marketplaceDetail" class="marketplace-detail" aria-label="Plugin Details" hidden>
+            <div class="detail-header">
+                <div class="detail-icon-wrap">
+                    <span id="detailIcon" class="detail-icon"><i class="fas fa-puzzle-piece"></i></span>
+                </div>
+                <div class="detail-meta">
+                    <h3 id="detailName">Plugin Name</h3>
+                    <p id="detailAuthor" class="detail-author"></p>
+                    <div id="detailBadges" class="detail-badges"></div>
+                </div>
+                <button id="detailClose" class="detail-close" aria-label="Close details">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Action buttons -->
+            <div id="detailActions" class="detail-actions"></div>
+
+            <!-- Tabs -->
+            <div class="detail-tabs">
+                <button class="dtab active" data-tab="overview">Overview</button>
+                <button class="dtab" data-tab="changelog">Changelog</button>
+                <button class="dtab" data-tab="settings">Settings</button>
+            </div>
+            <div id="detailContent" class="detail-content">
+                <!-- populated per tab -->
+            </div>
+        </aside>
+    </div>
+</section>

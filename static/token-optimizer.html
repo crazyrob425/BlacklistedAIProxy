@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f59e0b">
+  <title>Token Optimizer — BlacklistedAIProxy</title>
+  <link rel="stylesheet" href="app/base.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body{background:var(--bg-secondary);min-height:100vh}
+    .navbar{position:sticky;top:0;z-index:100;background:var(--bg-primary);border-bottom:1px solid var(--border-color);box-shadow:var(--shadow-sm)}
+    .navbar-inner,.main{max-width:1200px;margin:0 auto;padding:0 24px}
+    .navbar-inner{height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .brand-icon{width:40px;height:40px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#fff;box-shadow:var(--shadow-md)}
+    .brand-title{font-size:18px;font-weight:700;color:var(--text-primary)}
+    .brand-sub{font-size:12px;color:var(--text-secondary)}
+    .nav-actions{display:flex;align-items:center;gap:10px}
+    .nav-btn,.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 14px;border-radius:var(--radius-lg);border:1px solid var(--border-color);background:var(--bg-primary);color:var(--text-primary);text-decoration:none;cursor:pointer;font-size:14px;font-weight:600;transition:var(--transition)}
+    .nav-btn:hover,.btn:hover{border-color:var(--primary-color);box-shadow:var(--shadow-md);transform:translateY(-1px)}
+    .theme-toggle{width:40px;padding:0;color:var(--text-secondary)}
+    .theme-toggle .fa-sun{display:none}
+    [data-theme="dark"] .theme-toggle .fa-sun{display:inline-block}
+    [data-theme="dark"] .theme-toggle .fa-moon{display:none}
+    .main{padding:30px 24px 48px}
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+    .card{background:var(--bg-primary);border:1px solid var(--border-color);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm);padding:20px;position:relative;overflow:hidden;transition:var(--transition)}
+    .card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:var(--primary-30)}
+    .card:before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+    .card.amber:before{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+    .card.green:before{background:linear-gradient(90deg,#10b981,#34d399)}
+    .card.blue:before{background:linear-gradient(90deg,#3b82f6,#60a5fa)}
+    .card.purple:before{background:linear-gradient(90deg,#8b5cf6,#a78bfa)}
+    .card-label{font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary)}
+    .card-value{margin-top:10px;font-size:32px;font-weight:700;color:var(--text-primary);line-height:1.1}
+    .card.amber .card-value{color:#f59e0b}
+    .card.green .card-value{color:#10b981}
+    .card.blue  .card-value{color:#3b82f6}
+    .card.purple .card-value{color:#8b5cf6}
+    .card-note{margin-top:8px;font-size:12px;color:var(--text-tertiary)}
+    .panel{background:var(--bg-primary);border:1px solid var(--border-color);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm);padding:24px;margin-bottom:24px}
+    .section-title{font-size:18px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:10px;margin:0 0 16px}
+    .cfg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+    .cfg-item{display:flex;flex-direction:column;gap:8px}
+    .cfg-label{font-size:13px;font-weight:600;color:var(--text-secondary)}
+    .cfg-value{font-size:14px;color:var(--text-primary);background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:8px 12px}
+    select.cfg-value,input.cfg-value{cursor:pointer}
+    select.cfg-value:focus,input.cfg-value:focus{outline:none;border-color:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,0.15)}
+    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+    .btn-amber{background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#fff;border-color:transparent}
+    .btn-danger{background:#ef4444;color:#fff;border-color:transparent}
+    .btn-secondary{background:var(--bg-secondary);border-color:var(--border-color)}
+    .status{display:none;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--radius-lg);margin-top:16px;font-size:13px;border:1px solid transparent}
+    .status.show{display:flex}
+    .status.success{background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.3);color:#10b981}
+    .status.error{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3);color:#ef4444}
+    .status.info{background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.3);color:#3b82f6}
+    .hit-bar{height:10px;background:var(--bg-tertiary);border-radius:999px;overflow:hidden;margin-top:8px}
+    .hit-fill{height:100%;background:linear-gradient(90deg,#10b981,#34d399);border-radius:inherit;transition:width 0.4s}
+    .footer{text-align:center;margin-top:20px;font-size:12px;color:var(--text-tertiary)}
+    @media(max-width:760px){.navbar-inner,.main{padding-left:16px;padding-right:16px}}
+  </style>
+</head>
+<body>
+  <header class="navbar">
+    <div class="navbar-inner">
+      <div class="brand">
+        <span class="brand-icon"><i class="fas fa-bolt"></i></span>
+        <div>
+          <div class="brand-title">Token Optimizer</div>
+          <div class="brand-sub">Prompt cache &amp; context optimization dashboard</div>
+        </div>
+      </div>
+      <div class="nav-actions">
+        <a class="nav-btn" href="/"><i class="fas fa-arrow-left"></i><span>Admin Console</span></a>
+        <button class="btn nav-btn theme-toggle" id="themeToggle" type="button" aria-label="Toggle theme"><i class="fas fa-moon"></i><i class="fas fa-sun"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <!-- Stats cards -->
+    <section class="stats">
+      <article class="card amber">
+        <div class="card-label">Cache Hit Rate</div>
+        <div class="card-value" id="cacheHitRate">–</div>
+        <div class="hit-bar"><div class="hit-fill" id="hitBarFill" style="width:0%"></div></div>
+        <div class="card-note">Higher is better · target &gt; 40%</div>
+      </article>
+      <article class="card green">
+        <div class="card-label">Cache Entries</div>
+        <div class="card-value" id="cacheEntries">–</div>
+        <div class="card-note">of <span id="cacheMaxSize">–</span> max</div>
+      </article>
+      <article class="card blue">
+        <div class="card-label">Tokens Saved</div>
+        <div class="card-value" id="tokensSaved">–</div>
+        <div class="card-note">Estimated input tokens saved</div>
+      </article>
+      <article class="card purple">
+        <div class="card-label">Cost Saved</div>
+        <div class="card-value" id="costSaved">–</div>
+        <div class="card-note">Estimated USD saved</div>
+      </article>
+    </section>
+
+    <!-- Cache stats -->
+    <div class="panel">
+      <h2 class="section-title"><i class="fas fa-database"></i>Prompt Cache</h2>
+      <div class="cfg-grid">
+        <div class="cfg-item"><span class="cfg-label">Total Lookups</span><span class="cfg-value" id="totalLookups">–</span></div>
+        <div class="cfg-item"><span class="cfg-label">Cache Hits</span><span class="cfg-value" id="cacheHits">–</span></div>
+        <div class="cfg-item"><span class="cfg-label">Cache Misses</span><span class="cfg-value" id="cacheMisses">–</span></div>
+        <div class="cfg-item"><span class="cfg-label">TTL (seconds)</span><span class="cfg-value" id="cacheTtl">–</span></div>
+      </div>
+      <div class="row">
+        <button class="btn btn-danger" id="clearCacheBtn" type="button"><i class="fas fa-trash"></i> Clear Cache</button>
+        <button class="btn btn-secondary" id="refreshBtn" type="button"><i class="fas fa-rotate-right"></i> Refresh</button>
+      </div>
+      <div class="status" id="cacheStatus"></div>
+    </div>
+
+    <!-- Optimization stats -->
+    <div class="panel">
+      <h2 class="section-title"><i class="fas fa-compress-arrows-alt"></i>Context Optimizer</h2>
+      <div class="cfg-grid">
+        <div class="cfg-item"><span class="cfg-label">Optimizations Applied</span><span class="cfg-value" id="totalOptimizations">–</span></div>
+        <div class="cfg-item"><span class="cfg-label">Total Tokens Saved</span><span class="cfg-value" id="optTokensSaved">–</span></div>
+        <div class="cfg-item"><span class="cfg-label">Estimated Cost Saved</span><span class="cfg-value" id="optCostSaved">–</span></div>
+        <div class="cfg-item"><span class="cfg-label">Stream Requests (not cached)</span><span class="cfg-value" id="streamRequests">–</span></div>
+      </div>
+    </div>
+
+    <!-- Configuration -->
+    <div class="panel">
+      <h2 class="section-title"><i class="fas fa-sliders-h"></i>Configuration</h2>
+      <div class="cfg-grid">
+        <div class="cfg-item">
+          <label class="cfg-label" for="cfgOptMode">Optimization Mode</label>
+          <select class="cfg-value" id="cfgOptMode">
+            <option value="off">off — Disabled (pass-through)</option>
+            <option value="safe" selected>safe — Lossless (recommended)</option>
+            <option value="aggressive">aggressive — Lossy (max savings)</option>
+          </select>
+        </div>
+        <div class="cfg-item">
+          <label class="cfg-label" for="cfgCacheEnabled">Prompt Cache</label>
+          <select class="cfg-value" id="cfgCacheEnabled">
+            <option value="true">Enabled</option>
+            <option value="false">Disabled</option>
+          </select>
+        </div>
+        <div class="cfg-item">
+          <label class="cfg-label" for="cfgCacheTtl">Cache TTL (seconds)</label>
+          <input class="cfg-value" id="cfgCacheTtl" type="number" min="0" max="86400" placeholder="3600">
+        </div>
+        <div class="cfg-item">
+          <label class="cfg-label" for="cfgCacheSize">Max Cache Entries</label>
+          <input class="cfg-value" id="cfgCacheSize" type="number" min="1" max="100000" placeholder="500">
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn btn-amber" id="saveConfigBtn" type="button"><i class="fas fa-save"></i> Save Configuration</button>
+      </div>
+      <div class="status" id="configStatus"></div>
+    </div>
+
+    <div class="footer">Token Optimizer v1.0.0 · BlacklistedAIProxy Plugin · <a href="/" style="color:var(--primary-color)">Admin Console</a></div>
+  </main>
+
+  <script>
+    // ── Theme ─────────────────────────────────────────────────────────────────
+    (function(){
+      const saved = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', saved);
+    })();
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', cur);
+      localStorage.setItem('theme', cur);
+    });
+
+    // ── Credential helper ─────────────────────────────────────────────────────
+    function getAuthHeaders() {
+      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || '';
+      return token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+    }
+
+    function showStatus(id, type, msg) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.className = `status ${type} show`;
+      el.innerHTML = `<i class="fas fa-${type==='success'?'check-circle':type==='error'?'exclamation-circle':'info-circle'}"></i><span>${msg}</span>`;
+      setTimeout(() => { el.className = 'status'; }, 4000);
+    }
+
+    function fmt(n) {
+      if (n == null) return '–';
+      if (n >= 1e9) return (n/1e9).toFixed(1) + 'B';
+      if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+      if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+      return String(Math.round(n));
+    }
+
+    // ── Load stats ────────────────────────────────────────────────────────────
+    async function loadStats() {
+      try {
+        const resp = await fetch('/api/token-optimizer/stats', { headers: getAuthHeaders() });
+        if (!resp.ok) { showStatus('cacheStatus', 'error', `HTTP ${resp.status} — are you logged in?`); return; }
+        const json = await resp.json();
+        if (!json.success) throw new Error(json.error?.message);
+
+        const { cache, optimization, config } = json.data;
+
+        // Cache stats
+        const hitRate = cache.hit_rate ? (cache.hit_rate * 100).toFixed(1) + '%' : '0%';
+        document.getElementById('cacheHitRate').textContent   = hitRate;
+        document.getElementById('hitBarFill').style.width     = (cache.hit_rate * 100).toFixed(1) + '%';
+        document.getElementById('cacheEntries').textContent   = fmt(cache.entries);
+        document.getElementById('cacheMaxSize').textContent   = fmt(cache.max_size);
+        document.getElementById('totalLookups').textContent   = fmt(cache.total_lookups);
+        document.getElementById('cacheHits').textContent      = fmt(cache.hits);
+        document.getElementById('cacheMisses').textContent    = fmt(cache.misses);
+        document.getElementById('cacheTtl').textContent       = cache.ttl + 's';
+
+        // Optimization stats
+        document.getElementById('tokensSaved').textContent        = fmt(optimization.totalTokensSaved);
+        document.getElementById('optTokensSaved').textContent     = fmt(optimization.totalTokensSaved);
+        document.getElementById('totalOptimizations').textContent = fmt(optimization.totalOptimizations);
+        document.getElementById('streamRequests').textContent     = fmt(optimization.streamRequests);
+
+        const costSaved = (optimization.totalCostSavedUSD ?? 0).toFixed(4);
+        document.getElementById('costSaved').textContent    = '$' + costSaved;
+        document.getElementById('optCostSaved').textContent = '$' + costSaved;
+
+        // Config form
+        if (config) {
+          document.getElementById('cfgOptMode').value     = config.optimization?.mode ?? 'safe';
+          document.getElementById('cfgCacheEnabled').value = String(config.cache?.enabled !== false);
+          document.getElementById('cfgCacheTtl').value    = config.cache?.ttl ?? 3600;
+          document.getElementById('cfgCacheSize').value   = config.cache?.maxSize ?? 500;
+        }
+      } catch (err) {
+        showStatus('cacheStatus', 'error', err.message);
+      }
+    }
+
+    // ── Clear cache ───────────────────────────────────────────────────────────
+    document.getElementById('clearCacheBtn').addEventListener('click', async () => {
+      try {
+        const resp = await fetch('/api/token-optimizer/cache/clear', { method: 'POST', headers: getAuthHeaders() });
+        const json = await resp.json();
+        if (json.success) { showStatus('cacheStatus', 'success', 'Cache cleared!'); loadStats(); }
+        else showStatus('cacheStatus', 'error', json.error?.message ?? 'Failed');
+      } catch (err) { showStatus('cacheStatus', 'error', err.message); }
+    });
+
+    // ── Refresh ───────────────────────────────────────────────────────────────
+    document.getElementById('refreshBtn').addEventListener('click', loadStats);
+
+    // ── Save config ───────────────────────────────────────────────────────────
+    document.getElementById('saveConfigBtn').addEventListener('click', async () => {
+      const body = {
+        cache: {
+          enabled: document.getElementById('cfgCacheEnabled').value === 'true',
+          ttl:     parseInt(document.getElementById('cfgCacheTtl').value, 10)  || 3600,
+          maxSize: parseInt(document.getElementById('cfgCacheSize').value, 10) || 500,
+        },
+        optimization: {
+          mode: document.getElementById('cfgOptMode').value,
+        },
+      };
+      try {
+        const resp = await fetch('/api/token-optimizer/config', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify(body),
+        });
+        const json = await resp.json();
+        if (json.success) showStatus('configStatus', 'success', 'Configuration saved!');
+        else showStatus('configStatus', 'error', json.error?.message ?? 'Failed');
+      } catch (err) { showStatus('configStatus', 'error', err.message); }
+    });
+
+    // ── Auto-load ─────────────────────────────────────────────────────────────
+    loadStats();
+    setInterval(loadStats, 30000); // auto-refresh every 30 s
+  </script>
+</body>
+</html>

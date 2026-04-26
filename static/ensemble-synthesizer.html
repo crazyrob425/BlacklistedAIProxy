@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#8b5cf6">
+  <title>Ensemble Synthesizer — BlacklistedAIProxy</title>
+  <link rel="stylesheet" href="app/base.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body{background:var(--bg-secondary);min-height:100vh}
+    .navbar{position:sticky;top:0;z-index:100;background:var(--bg-primary);border-bottom:1px solid var(--border-color);box-shadow:var(--shadow-sm)}
+    .navbar-inner,.main{max-width:1200px;margin:0 auto;padding:0 24px}
+    .navbar-inner{height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .brand-icon{width:40px;height:40px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#8b5cf6,#a78bfa);color:#fff;box-shadow:var(--shadow-md)}
+    .brand-title{font-size:18px;font-weight:700;color:var(--text-primary)}
+    .brand-sub{font-size:12px;color:var(--text-secondary)}
+    .nav-actions{display:flex;align-items:center;gap:10px}
+    .nav-btn,.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 14px;border-radius:var(--radius-lg);border:1px solid var(--border-color);background:var(--bg-primary);color:var(--text-primary);text-decoration:none;cursor:pointer;font-size:14px;font-weight:600;transition:var(--transition)}
+    .nav-btn:hover,.btn:hover{border-color:#8b5cf6;box-shadow:var(--shadow-md);transform:translateY(-1px)}
+    .theme-toggle{width:40px;padding:0;color:var(--text-secondary)}
+    .theme-toggle .fa-sun{display:none}
+    [data-theme="dark"] .theme-toggle .fa-sun{display:inline-block}
+    [data-theme="dark"] .theme-toggle .fa-moon{display:none}
+    .main{padding:30px 24px 48px}
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+    .card{background:var(--bg-primary);border:1px solid var(--border-color);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm);padding:20px;position:relative;overflow:hidden;transition:var(--transition)}
+    .card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+    .card:before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+    .card.purple:before{background:linear-gradient(90deg,#8b5cf6,#a78bfa)}
+    .card.blue:before{background:linear-gradient(90deg,#3b82f6,#60a5fa)}
+    .card.green:before{background:linear-gradient(90deg,#10b981,#34d399)}
+    .card.amber:before{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+    .card-label{font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary)}
+    .card-value{margin-top:10px;font-size:32px;font-weight:700;line-height:1.1}
+    .card.purple .card-value{color:#8b5cf6}
+    .card.blue   .card-value{color:#3b82f6}
+    .card.green  .card-value{color:#10b981}
+    .card.amber  .card-value{color:#f59e0b}
+    .card-note{margin-top:8px;font-size:12px;color:var(--text-tertiary)}
+    .panel{background:var(--bg-primary);border:1px solid var(--border-color);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm);padding:24px;margin-bottom:24px}
+    .section-title{font-size:18px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:10px;margin:0 0 16px}
+    .cfg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+    .cfg-item{display:flex;flex-direction:column;gap:8px}
+    .cfg-label{font-size:13px;font-weight:600;color:var(--text-secondary)}
+    .cfg-value{font-size:14px;color:var(--text-primary);background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:8px 12px}
+    select.cfg-value,input.cfg-value{cursor:pointer}
+    select.cfg-value:focus,input.cfg-value:focus{outline:none;border-color:#8b5cf6;box-shadow:0 0 0 3px rgba(139,92,246,0.15)}
+    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+    .btn-purple{background:linear-gradient(135deg,#8b5cf6,#a78bfa);color:#fff;border-color:transparent}
+    .btn-secondary{background:var(--bg-secondary);border-color:var(--border-color)}
+    .btn-danger{background:#ef4444;color:#fff;border-color:transparent}
+    .status{display:none;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--radius-lg);margin-top:16px;font-size:13px;border:1px solid transparent}
+    .status.show{display:flex}
+    .status.success{background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.3);color:#10b981}
+    .status.error{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3);color:#ef4444}
+    .status.info{background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.3);color:#3b82f6}
+    .model-list{display:flex;flex-direction:column;gap:8px}
+    .model-tag{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-md);font-size:13px;font-family:monospace}
+    .model-tag .remove-btn{margin-left:auto;cursor:pointer;color:var(--text-tertiary);border:none;background:none;padding:0;font-size:14px}
+    .model-tag .remove-btn:hover{color:#ef4444}
+    .add-model-row{display:flex;gap:8px;margin-top:8px}
+    .add-model-row input{flex:1;font-size:14px;color:var(--text-primary);background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:8px 12px}
+    .add-model-row input:focus{outline:none;border-color:#8b5cf6}
+    table.recent-table{width:100%;border-collapse:collapse;font-size:13px}
+    table.recent-table th{text-align:left;padding:8px 10px;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--text-secondary);border-bottom:1px solid var(--border-color)}
+    table.recent-table td{padding:8px 10px;border-bottom:1px solid var(--border-color);color:var(--text-primary)}
+    table.recent-table tr:last-child td{border-bottom:none}
+    table.recent-table tr:hover td{background:var(--bg-secondary)}
+    .winner-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;background:rgba(139,92,246,.15);color:#8b5cf6}
+    .model-stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+    .model-stat-card{background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:14px}
+    .model-stat-card .ms-name{font-size:12px;font-family:monospace;font-weight:700;color:var(--text-primary);margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .model-stat-card .ms-rows{display:flex;flex-direction:column;gap:4px}
+    .model-stat-card .ms-row{display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary)}
+    .model-stat-card .ms-row .ms-val{font-weight:700;color:var(--text-primary)}
+    .footer{text-align:center;margin-top:20px;font-size:12px;color:var(--text-tertiary)}
+    @media(max-width:760px){.navbar-inner,.main{padding-left:16px;padding-right:16px}}
+  </style>
+</head>
+<body>
+  <header class="navbar">
+    <div class="navbar-inner">
+      <div class="brand">
+        <span class="brand-icon"><i class="fas fa-layer-group"></i></span>
+        <div>
+          <div class="brand-title">Ensemble Synthesizer</div>
+          <div class="brand-sub">Multi-model parallel fan-out &amp; synthesis dashboard</div>
+        </div>
+      </div>
+      <div class="nav-actions">
+        <a class="nav-btn" href="/"><i class="fas fa-arrow-left"></i><span>Admin Console</span></a>
+        <button class="btn nav-btn theme-toggle" id="themeToggle" type="button" aria-label="Toggle theme">
+          <i class="fas fa-moon"></i><i class="fas fa-sun"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <!-- Stats cards -->
+    <section class="stats">
+      <article class="card purple">
+        <div class="card-label">Total Ensembled</div>
+        <div class="card-value" id="statTotal">–</div>
+        <div class="card-note">All-time ensemble requests</div>
+      </article>
+      <article class="card blue">
+        <div class="card-label">Avg Models / Request</div>
+        <div class="card-value" id="statAvgModels">–</div>
+        <div class="card-note">Mean parallel responses synthesised</div>
+      </article>
+      <article class="card green">
+        <div class="card-label">Avg Latency</div>
+        <div class="card-value" id="statAvgLatency">–</div>
+        <div class="card-note">Wall time incl. slowest model</div>
+      </article>
+      <article class="card amber">
+        <div class="card-label">Errors</div>
+        <div class="card-value" id="statErrors">–</div>
+        <div class="card-note">Requests where all models failed</div>
+      </article>
+    </section>
+
+    <!-- Per-model stats -->
+    <div class="panel">
+      <h2 class="section-title"><i class="fas fa-chart-bar"></i>Per-Model Statistics</h2>
+      <div class="model-stats-grid" id="modelStatsGrid">
+        <div style="color:var(--text-secondary);font-size:13px">No data yet — run some requests first.</div>
+      </div>
+    </div>
+
+    <!-- Recent requests -->
+    <div class="panel">
+      <h2 class="section-title"><i class="fas fa-history"></i>Recent Ensemble Requests</h2>
+      <div style="overflow-x:auto">
+        <table class="recent-table" id="recentTable">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Mode</th>
+              <th>Models</th>
+              <th>Winner</th>
+              <th>Latency</th>
+            </tr>
+          </thead>
+          <tbody id="recentBody">
+            <tr><td colspan="5" style="color:var(--text-secondary)">No recent requests.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="row">
+        <button class="btn btn-danger" id="resetStatsBtn" type="button"><i class="fas fa-trash"></i> Reset Stats</button>
+        <button class="btn btn-secondary" id="refreshBtn" type="button"><i class="fas fa-rotate-right"></i> Refresh</button>
+      </div>
+      <div class="status" id="statsStatus"></div>
+    </div>
+
+    <!-- Configuration -->
+    <div class="panel">
+      <h2 class="section-title"><i class="fas fa-sliders-h"></i>Configuration</h2>
+      <div class="cfg-grid">
+        <div class="cfg-item">
+          <label class="cfg-label" for="cfgEnabled">Plugin Status</label>
+          <select class="cfg-value" id="cfgEnabled">
+            <option value="true">Enabled</option>
+            <option value="false">Disabled</option>
+          </select>
+        </div>
+        <div class="cfg-item">
+          <label class="cfg-label" for="cfgMode">Synthesis Mode</label>
+          <select class="cfg-value" id="cfgMode">
+            <option value="best">best — Highest quality score wins</option>
+            <option value="vote">vote — Majority consensus</option>
+            <option value="merge">merge — Judge model synthesises all</option>
+            <option value="all">all — Return all responses as JSON</option>
+          </select>
+        </div>
+        <div class="cfg-item">
+          <label class="cfg-label" for="cfgTimeout">Per-Model Timeout (ms)</label>
+          <input class="cfg-value" id="cfgTimeout" type="number" min="1000" max="60000" step="500">
+        </div>
+        <div class="cfg-item">
+          <label class="cfg-label" for="cfgJudge">Judge Model (merge mode)</label>
+          <input class="cfg-value" id="cfgJudge" type="text" placeholder="gemini-2.0-flash">
+        </div>
+        <div class="cfg-item">
+          <label class="cfg-label" for="cfgMinResp">Min Successful Responses</label>
+          <input class="cfg-value" id="cfgMinResp" type="number" min="1" max="10">
+        </div>
+        <div class="cfg-item">
+          <label class="cfg-label" for="cfgClientOverride">Allow Client Override</label>
+          <select class="cfg-value" id="cfgClientOverride">
+            <option value="true">Yes — clients may pass _ensemble_models/_ensemble_mode</option>
+            <option value="false">No — use server config only</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Model list -->
+      <div style="margin-top:20px">
+        <div class="cfg-label" style="margin-bottom:8px">Active Models</div>
+        <div class="model-list" id="modelList"></div>
+        <div class="add-model-row">
+          <input id="newModelInput" type="text" placeholder="Add model ID (e.g. gpt-4o-mini)">
+          <button class="btn btn-purple" id="addModelBtn" type="button"><i class="fas fa-plus"></i> Add</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <button class="btn btn-purple" id="saveConfigBtn" type="button"><i class="fas fa-save"></i> Save Configuration</button>
+      </div>
+      <div class="status" id="configStatus"></div>
+    </div>
+
+    <div class="footer">Ensemble Synthesizer v1.0.0 · BlacklistedAIProxy Plugin · <a href="/" style="color:#8b5cf6">Admin Console</a></div>
+  </main>
+
+  <script>
+    // ── Theme ──────────────────────────────────────────────────────────────────
+    (function(){
+      const saved = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', saved);
+    })();
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', cur);
+      localStorage.setItem('theme', cur);
+    });
+
+    // ── Auth helper ────────────────────────────────────────────────────────────
+    function getHeaders() {
+      const tok = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || '';
+      return tok
+        ? { 'Authorization': `Bearer ${tok}`, 'Content-Type': 'application/json' }
+        : { 'Content-Type': 'application/json' };
+    }
+
+    function showStatus(id, type, msg) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.className = `status ${type} show`;
+      el.innerHTML = `<i class="fas fa-${type==='success'?'check-circle':type==='error'?'exclamation-circle':'info-circle'}"></i><span>${msg}</span>`;
+      setTimeout(() => { el.className = 'status'; }, 4000);
+    }
+
+    function fmt(n) {
+      if (n == null || isNaN(n)) return '–';
+      if (n >= 1e6) return (n/1e6).toFixed(1)+'M';
+      if (n >= 1e3) return (n/1e3).toFixed(1)+'K';
+      return String(Math.round(n));
+    }
+
+    function fmtMs(ms) {
+      if (ms == null || isNaN(ms)) return '–';
+      return ms >= 1000 ? (ms/1000).toFixed(1)+'s' : ms+'ms';
+    }
+
+    // ── Current model list state ───────────────────────────────────────────────
+    let _models = [];
+
+    function renderModelList() {
+      const el = document.getElementById('modelList');
+      if (!el) return;
+      if (_models.length === 0) {
+        el.innerHTML = '<div style="color:var(--text-secondary);font-size:13px">No models configured.</div>';
+        return;
+      }
+      el.innerHTML = _models.map((m, i) => `
+        <div class="model-tag">
+          <i class="fas fa-robot" style="color:#8b5cf6;font-size:12px"></i>
+          <span>${m}</span>
+          <button class="remove-btn" data-idx="${i}" title="Remove model"><i class="fas fa-times"></i></button>
+        </div>`).join('');
+      el.querySelectorAll('.remove-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          _models.splice(Number(btn.dataset.idx), 1);
+          renderModelList();
+        });
+      });
+    }
+
+    document.getElementById('addModelBtn').addEventListener('click', () => {
+      const inp = document.getElementById('newModelInput');
+      const val = inp.value.trim();
+      if (val && !_models.includes(val)) { _models.push(val); renderModelList(); }
+      inp.value = '';
+    });
+    document.getElementById('newModelInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('addModelBtn').click();
+    });
+
+    // ── Load stats + config ────────────────────────────────────────────────────
+    async function loadAll() {
+      await Promise.allSettled([loadStats(), loadConfig()]);
+    }
+
+    async function loadStats() {
+      try {
+        const r = await fetch('/api/ensemble-synthesizer/stats', { headers: getHeaders() });
+        if (!r.ok) { showStatus('statsStatus', 'error', `HTTP ${r.status}`); return; }
+        const j = await r.json();
+        if (!j.success) throw new Error(j.error?.message);
+        const s = j.data;
+
+        const avgModels = s.totalEnsembled > 0 ? (s.totalModelsUsed / s.totalEnsembled).toFixed(1) : '–';
+        const avgLat    = s.totalEnsembled > 0 ? fmtMs(Math.round(s.totalLatencyMs / s.totalEnsembled)) : '–';
+
+        document.getElementById('statTotal').textContent     = fmt(s.totalEnsembled);
+        document.getElementById('statAvgModels').textContent = avgModels;
+        document.getElementById('statAvgLatency').textContent = avgLat;
+        document.getElementById('statErrors').textContent    = fmt(s.totalErrors);
+
+        // Per-model stats
+        const grid = document.getElementById('modelStatsGrid');
+        const entries = Object.entries(s.perModel ?? {});
+        if (entries.length === 0) {
+          grid.innerHTML = '<div style="color:var(--text-secondary);font-size:13px">No data yet — run some requests first.</div>';
+        } else {
+          grid.innerHTML = entries.map(([model, ms]) => {
+            const winRate = ms.requests > 0 ? ((ms.wins / ms.requests) * 100).toFixed(0) + '%' : '–';
+            const avgL    = ms.requests > 0 ? fmtMs(Math.round(ms.totalLatencyMs / ms.requests)) : '–';
+            return `<div class="model-stat-card">
+              <div class="ms-name" title="${model}">${model}</div>
+              <div class="ms-rows">
+                <div class="ms-row"><span>Requests</span><span class="ms-val">${fmt(ms.requests)}</span></div>
+                <div class="ms-row"><span>Win rate</span><span class="ms-val">${winRate}</span></div>
+                <div class="ms-row"><span>Avg latency</span><span class="ms-val">${avgL}</span></div>
+                <div class="ms-row"><span>Errors</span><span class="ms-val">${fmt(ms.errors)}</span></div>
+              </div>
+            </div>`;
+          }).join('');
+        }
+
+        // Recent requests
+        const tbody = document.getElementById('recentBody');
+        const recent = s.recentRequests ?? [];
+        if (recent.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-secondary)">No recent requests.</td></tr>';
+        } else {
+          tbody.innerHTML = recent.map(r => `<tr>
+            <td>${new Date(r.ts).toLocaleTimeString()}</td>
+            <td><code>${r.mode ?? '–'}</code></td>
+            <td style="font-size:12px;font-family:monospace">${(r.models ?? []).join(', ')}</td>
+            <td>${r.winner ? `<span class="winner-badge">${r.winner}</span>` : '–'}</td>
+            <td>${fmtMs(r.latencyMs)}</td>
+          </tr>`).join('');
+        }
+      } catch (err) {
+        showStatus('statsStatus', 'error', err.message);
+      }
+    }
+
+    async function loadConfig() {
+      try {
+        const r = await fetch('/api/ensemble-synthesizer/config', { headers: getHeaders() });
+        if (!r.ok) return;
+        const j = await r.json();
+        if (!j.success) return;
+        const c = j.data;
+
+        document.getElementById('cfgEnabled').value       = String(c.enabled !== false);
+        document.getElementById('cfgMode').value          = c.synthesisMode ?? 'best';
+        document.getElementById('cfgTimeout').value       = c.timeoutMs ?? 15000;
+        document.getElementById('cfgJudge').value         = c.judgeModel ?? '';
+        document.getElementById('cfgMinResp').value       = c.minResponses ?? 1;
+        document.getElementById('cfgClientOverride').value = String(c.allowClientOverride !== false);
+
+        _models = Array.isArray(c.models) ? [...c.models] : [];
+        renderModelList();
+      } catch { /* silent */ }
+    }
+
+    // ── Save config ────────────────────────────────────────────────────────────
+    document.getElementById('saveConfigBtn').addEventListener('click', async () => {
+      try {
+        const cfg = {
+          enabled:           document.getElementById('cfgEnabled').value === 'true',
+          synthesisMode:     document.getElementById('cfgMode').value,
+          timeoutMs:         Number(document.getElementById('cfgTimeout').value),
+          judgeModel:        document.getElementById('cfgJudge').value.trim(),
+          minResponses:      Number(document.getElementById('cfgMinResp').value),
+          allowClientOverride: document.getElementById('cfgClientOverride').value === 'true',
+          models:            [..._models],
+        };
+        const r = await fetch('/api/ensemble-synthesizer/config', {
+          method:  'POST',
+          headers: getHeaders(),
+          body:    JSON.stringify(cfg),
+        });
+        const j = await r.json();
+        if (!j.success) throw new Error(j.error?.message);
+        showStatus('configStatus', 'success', 'Configuration saved successfully');
+      } catch (err) {
+        showStatus('configStatus', 'error', err.message);
+      }
+    });
+
+    // ── Reset stats ────────────────────────────────────────────────────────────
+    document.getElementById('resetStatsBtn').addEventListener('click', async () => {
+      if (!confirm('Reset all ensemble statistics?')) return;
+      try {
+        const r = await fetch('/api/ensemble-synthesizer/stats/reset', {
+          method: 'POST', headers: getHeaders(),
+        });
+        const j = await r.json();
+        if (!j.success) throw new Error(j.error?.message);
+        showStatus('statsStatus', 'success', 'Statistics reset');
+        await loadStats();
+      } catch (err) {
+        showStatus('statsStatus', 'error', err.message);
+      }
+    });
+
+    // ── Refresh button ─────────────────────────────────────────────────────────
+    document.getElementById('refreshBtn').addEventListener('click', loadStats);
+
+    // ── Boot ───────────────────────────────────────────────────────────────────
+    loadAll();
+    setInterval(loadStats, 30000); // auto-refresh every 30 s
+  </script>
+</body>
+</html>

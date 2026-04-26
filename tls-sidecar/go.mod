@@ -2,6 +2,8 @@ module tls-sidecar
 
 go 1.22.0
 
+toolchain go1.22.12
+
 require (
 	github.com/refraction-networking/utls v1.6.7
 	golang.org/x/net v0.33.0

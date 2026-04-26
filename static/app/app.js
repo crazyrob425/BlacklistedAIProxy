@@ -92,6 +92,10 @@ import {
     initWorkspaceManager
 } from './workspace-manager.js';
 
+import {
+    initMarketplaceManager
+} from './marketplace-manager.js';
+
 /**
  * 加载初始数据
  */
@@ -130,6 +134,7 @@ function initApp() {
     initPluginManager(); // 初始化插件管理功能
     initTutorialManager(); // 初始化教程管理功能
     initWorkspaceManager(); // 初始化融合工作台与向导
+    initMarketplaceManager(); // Initialize Plugin Marketplace
     initMobileMenu(); // 初始化移动端菜单
     applyInitialSectionFromUrl();
     loadInitialData();
@@ -175,7 +180,7 @@ function applyInitialSectionFromUrl() {
 
     const allowedSections = new Set([
         'dashboard', 'guide', 'tutorial', 'workspace', 'config',
-        'upload-config', 'providers', 'usage', 'logs', 'plugins'
+        'upload-config', 'providers', 'usage', 'logs', 'plugins', 'marketplace'
     ]);
 
     if (!allowedSections.has(requested)) {

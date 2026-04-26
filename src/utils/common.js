@@ -188,6 +188,20 @@ export function getClientIp(req) {
  * @throws {Error} If the request body is not valid JSON.
  */
 export function getRequestBody(req) {
+    // Support pre-buffered body written by plugins (e.g. token-optimizer, universal-guard).
+    // A plugin's middleware may fully read the stream and store the (possibly modified) bytes
+    // in req._rawBody so that downstream consumers can still access the body.
+    if (req._rawBody) {
+        try {
+            const parsed = req._rawBody.length > 0
+                ? JSON.parse(req._rawBody.toString('utf8'))
+                : {};
+            return Promise.resolve(parsed);
+        } catch {
+            return Promise.reject(new Error('Invalid JSON in pre-buffered request body.'));
+        }
+    }
+
     return new Promise((resolve, reject) => {
         let body = '';
         req.on('data', chunk => {

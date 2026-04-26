@@ -12,6 +12,7 @@ import * as systemApi from '../ui-modules/system-api.js';
 import * as updateApi from '../ui-modules/update-api.js';
 import * as oauthApi from '../ui-modules/oauth-api.js';
 import * as eventBroadcast from '../ui-modules/event-broadcast.js';
+import { handleMarketplaceRoutes } from '../ui-modules/marketplace-api.js';
 
 // Re-export from event-broadcast module
 export { broadcastEvent, initializeUIManagement, handleUploadOAuthCredentials, upload } from '../ui-modules/event-broadcast.js';
@@ -361,6 +362,11 @@ export async function handleUIApiRequests(method, pathParam, req, res, currentCo
     if (method === 'POST' && togglePluginMatch) {
         const pluginName = decodeURIComponent(togglePluginMatch[1]);
         return await pluginApi.handleTogglePlugin(req, res, pluginName);
+    }
+
+    // Plugin Marketplace catalog API
+    if (pathParam.startsWith('/api/marketplace')) {
+        return await handleMarketplaceRoutes(method, pathParam, req, res, currentConfig);
     }
 
     return false;
