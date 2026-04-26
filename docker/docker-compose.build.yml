@@ -1,7 +1,7 @@
 services:
   blacklisted-api:
     # Build from Dockerfile locally
-    # Usage: docker compose -f docker-compose.build.yml up -d --build
+    # Usage: docker compose -f docker/docker-compose.build.yml up -d --build
     build:
       context: ..
       dockerfile: Dockerfile
@@ -9,11 +9,11 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
-      - "8085-8087:8085-8087" 
+      - "8085-8087:8085-8087"
       - "1455:1455"
       - "19876-19880:19876-19880"
     volumes:
-      - ./configs:/app/configs
+      - ../configs:/app/configs
     environment:
       - ARGS=
     healthcheck:

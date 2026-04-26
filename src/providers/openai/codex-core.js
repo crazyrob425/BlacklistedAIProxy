@@ -404,11 +404,13 @@ export class CodexApiService {
             service_tier: cleanedBody.service_tier || defaultServiceTier,
             reasoning: {
                 ...cleanedBody.reasoning,
-                effort: isFastModel ? defaultReasoningEffort : cleanedBody.reasoning?.effort
+                effort: isFastModel ? defaultReasoningEffort : (cleanedBody.reasoning?.effort === 'minimal' ? 'none' : (cleanedBody.reasoning?.effort || defaultReasoningEffort))
             },
             stream,
             prompt_cache_key: cache.id
         };
+
+        delete result.messages;
 
         if (result.service_tier !== 'priority') {
             delete result.service_tier;

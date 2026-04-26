@@ -363,3 +363,81 @@ export async function handleDeleteUnboundConfigs(req, res, currentConfig, provid
         return true;
     }
 }
+
+/**
+ * 强制触发凭据关联节点的令牌刷新
+ */
+export async function handleForceExpireConfig(req, res, filePath, currentConfig, providerPoolManager) {
+    try {
+        const fullPath = path.join(process.cwd(), filePath);
+        
+        // 安全检查：确保文件路径在允许的目录内
+        const allowedDirs = ['configs'];
+        const relativePath = path.relative(process.cwd(), fullPath);
+        const isAllowed = allowedDirs.some(dir => relativePath.startsWith(dir + path.sep) || relativePath === dir);
+        
+        if (!isAllowed) {
+            res.writeHead(403, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+                error: {
+                    message: 'Access denied: can only access files in configs directory'
+                }
+            }));
+            return true;
+        }
+        
+        if (!existsSync(fullPath)) {
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+                error: {
+                    message: 'File does not exist'
+                }
+            }));
+            return true;
+        }
+
+        // 触发即时刷新逻辑
+        let refreshCount = 0;
+        if (providerPoolManager) {
+            const configFiles = await scanConfigFiles(currentConfig, providerPoolManager);
+            const targetFile = configFiles.find(f => f.path === relativePath || f.path === filePath);
+            
+            if (targetFile && targetFile.usageInfo && targetFile.usageInfo.isUsed && Array.isArray(targetFile.usageInfo.usageDetails)) {
+                for (const usage of targetFile.usageInfo.usageDetails) {
+                    if (usage.uuid && usage.providerType) {
+                        // 强制触发刷新
+                        const success = await providerPoolManager.refreshNode(usage.providerType, usage.uuid, true);
+                        if (success) refreshCount++;
+                    }
+                }
+            }
+        }
+        
+        // 广播更新事件
+        broadcastEvent('config_update', {
+            action: 'force_refresh',
+            filePath: relativePath,
+            refreshTriggered: refreshCount > 0,
+            refreshCount: refreshCount,
+            timestamp: new Date().toISOString()
+        });
+        
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+            success: true,
+            message: refreshCount > 0 ? `Triggered refresh for ${refreshCount} node(s)` : 'No active nodes found for this credential',
+            filePath: relativePath,
+            refreshTriggered: refreshCount > 0
+        }));
+        return true;
+    } catch (error) {
+        logger.error('[UI API] Failed to force refresh config:', error);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+            error: {
+                message: 'Failed to force refresh config: ' + error.message
+            }
+        }));
+        return true;
+    }
+}

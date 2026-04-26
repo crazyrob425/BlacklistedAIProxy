@@ -9,6 +9,19 @@ import { ProviderStrategyFactory } from './provider-strategies.js';
 import { getPluginManager } from '../core/plugin-manager.js';
 import { MODEL_PROTOCOL_PREFIX, MODEL_PROVIDER } from './constants.js';
 
+// ==================== 时间与时区 ====================
+
+/**
+ * 获取北京时间 (UTC+8) 的日期字符串 (YYYY-MM-DD)
+ * @returns {string} - YYYY-MM-DD 格式的日期字符串
+ */
+export function getBeijingDateString() {
+    const now = new Date();
+    // 强制增加 8 小时偏移来模拟 UTC+8
+    const utc8Time = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+    return utc8Time.toISOString().split('T')[0];
+}
+
 // ==================== 网络错误处理 ====================
 
 /**
@@ -53,7 +66,11 @@ export const API_ACTIONS = {
 
 import {
     usesManagedModelList,
-    getConfiguredSupportedModels
+    getConfiguredSupportedModels,
+    getCustomModelConfig,
+    getCustomModelActualProvider,
+    getCustomModelListProvider,
+    normalizeModelIds
 } from '../providers/provider-models.js';
 
 /**
@@ -71,6 +88,158 @@ function getConfiguredSupportedModelsFromPool(providerPoolManager, providerType)
         providerPoolManager.providerStatus[providerType]
             .flatMap(providerStatus => getConfiguredSupportedModels(providerType, providerStatus.config))
     )].sort((a, b) => a.localeCompare(b));
+}
+
+function getCustomModelEntriesForProvider(config, providerType = null, options = {}) {
+    const customModels = Array.isArray(config?.customModels) ? config.customModels : [];
+    const entries = [];
+
+    customModels.forEach(modelConfig => {
+        if (!modelConfig?.id) {
+            return;
+        }
+
+        const modelProvider = getCustomModelListProvider(modelConfig);
+        const actualProvider = getCustomModelActualProvider(modelConfig);
+        const isMatch = !providerType ||
+            modelProvider === providerType ||
+            (modelProvider && providerType.startsWith(modelProvider + '-'));
+
+        if (!isMatch) {
+            return;
+        }
+
+        const modelId = modelConfig.id;
+        if (!modelId) {
+            return;
+        }
+
+        const responseId = options.prefixProvider && modelProvider
+            ? `${modelProvider}:${modelId}`
+            : modelId;
+
+        entries.push({
+            id: responseId,
+            modelId,
+            provider: modelProvider || providerType || MODEL_PROVIDER.AUTO,
+            actualProvider: actualProvider || modelProvider || providerType || MODEL_PROVIDER.AUTO,
+            config: modelConfig
+        });
+    });
+
+    return entries;
+}
+
+export function resolveCustomModelRouting(model, currentProvider, customModelConfig = getCustomModelConfig(model, currentProvider)) {
+    if (!customModelConfig) {
+        return {
+            isCustomModel: false,
+            model,
+            provider: currentProvider,
+            actualModel: model,
+            actualProvider: currentProvider,
+            config: null
+        };
+    }
+
+    const customActualProvider = getCustomModelActualProvider(customModelConfig);
+    const customActualModel = customModelConfig.actualModel || customModelConfig.id || model;
+
+    return {
+        isCustomModel: true,
+        model: customActualModel,
+        provider: customActualProvider || currentProvider,
+        actualModel: customActualModel,
+        actualProvider: customActualProvider || currentProvider,
+        config: customModelConfig
+    };
+}
+
+function appendCustomModelsToModelList(clientModelList, customEntries, providerType, listEndpointType) {
+    const entries = Array.isArray(customEntries) ? customEntries : [];
+    const hasMetadataValue = (value) => value !== undefined && value !== null;
+
+    if (!entries.length) {
+        return clientModelList;
+    }
+
+    if (listEndpointType === ENDPOINT_TYPE.GEMINI_MODEL_LIST) {
+        const models = Array.isArray(clientModelList?.models) ? clientModelList.models : [];
+
+        entries.forEach(entry => {
+            const existingModel = models.find(model => {
+                const existingId = model?.baseModelId || model?.name;
+                if (!existingId) return false;
+                const normalizedId = existingId.startsWith('models/') ? existingId.substring(7) : existingId;
+                return normalizedId === entry.id;
+            });
+            if (existingModel) {
+                existingModel.displayName = entry.config.name || existingModel.displayName || entry.id;
+                existingModel.description = entry.config.description || existingModel.description || `Model ${entry.modelId} provided by ${entry.provider || providerType}`;
+                if (hasMetadataValue(entry.config.contextLength)) existingModel.inputTokenLimit = entry.config.contextLength;
+                if (hasMetadataValue(entry.config.maxTokens)) existingModel.outputTokenLimit = entry.config.maxTokens;
+                return;
+            }
+
+            const modelResponse = {
+                name: `models/${entry.id}`,
+                baseModelId: entry.id,
+                version: 'v1',
+                displayName: entry.config.name || entry.id,
+                description: entry.config.description || `Model ${entry.modelId} provided by ${entry.provider || providerType}`,
+                supportedGenerationMethods: ['generateContent', 'countTokens']
+            };
+
+            if (hasMetadataValue(entry.config.contextLength)) modelResponse.inputTokenLimit = entry.config.contextLength;
+            if (hasMetadataValue(entry.config.maxTokens)) modelResponse.outputTokenLimit = entry.config.maxTokens;
+
+            models.push(modelResponse);
+        });
+
+        return {
+            ...clientModelList,
+            models
+        };
+    }
+
+    if (listEndpointType === ENDPOINT_TYPE.OPENAI_MODEL_LIST) {
+        const models = Array.isArray(clientModelList?.data) ? clientModelList.data : [];
+
+        entries.forEach(entry => {
+            const existingModel = models.find(model => model?.id === entry.id);
+            if (existingModel) {
+                // 更新现有模型的元数据
+                if (entry.config.name) existingModel.display_name = entry.config.name;
+                if (entry.config.description) existingModel.description = entry.config.description;
+                if (hasMetadataValue(entry.config.contextLength)) existingModel.context_length = entry.config.contextLength;
+                if (hasMetadataValue(entry.config.maxTokens)) existingModel.max_tokens = entry.config.maxTokens;
+                return;
+            }
+
+            // 添加新模型
+            const modelResponse = {
+                id: entry.id,
+                object: 'model',
+                created: Math.floor(Date.now() / 1000),
+                owned_by: entry.provider || providerType || 'custom',
+                display_name: entry.config.name || entry.id
+            };
+
+            if (entry.config.description) modelResponse.description = entry.config.description;
+            if (hasMetadataValue(entry.config.contextLength)) modelResponse.context_length = entry.config.contextLength;
+            if (hasMetadataValue(entry.config.maxTokens)) modelResponse.max_tokens = entry.config.maxTokens;
+
+            models.push(modelResponse);
+        });
+
+        return {
+            ...clientModelList,
+            object: 'list',
+            data: models
+        };
+    }
+
+    return clientModelList;
 }
 
 /**
@@ -844,25 +1013,48 @@ export async function handleModelListRequest(req, res, service, endpointType, CO
             if (listEndpointType === ENDPOINT_TYPE.OPENAI_MODEL_LIST) {
                 return {
                     object: 'list',
-                    data: models.map(model => ({
-                        id: model,
-                        object: 'model',
-                        created: Math.floor(Date.now() / 1000),
-                        owned_by: providerType
-                    }))
+                    data: models.map(modelId => {
+                        const customConfig = getCustomModelConfig(modelId, providerType);
+                        const modelResponse = {
+                            id: modelId,
+                            object: 'model',
+                            created: Math.floor(Date.now() / 1000),
+                            owned_by: providerType
+                        };
+                        
+                        // 注入自定义元数据
+                        if (customConfig) {
+                            if (customConfig.contextLength) modelResponse.context_length = customConfig.contextLength;
+                            if (customConfig.maxTokens) modelResponse.max_tokens = customConfig.maxTokens;
+                            if (customConfig.description) modelResponse.description = customConfig.description;
+                        }
+                        
+                        return modelResponse;
+                    })
                 };
             }
 
             if (listEndpointType === ENDPOINT_TYPE.GEMINI_MODEL_LIST) {
                 return {
-                    models: models.map(model => ({
-                        name: `models/${model}`,
-                        baseModelId: model,
-                        version: 'v1',
-                        displayName: model,
-                        description: `Model ${model} provided by ${providerType}`,
-                        supportedGenerationMethods: ['generateContent', 'countTokens']
-                    }))
+                    models: models.map(modelId => {
+                        const customConfig = getCustomModelConfig(modelId, providerType);
+                        const modelResponse = {
+                            name: `models/${modelId}`,
+                            baseModelId: modelId,
+                            version: 'v1',
+                            displayName: modelId,
+                            description: `Model ${modelId} provided by ${providerType}`,
+                            supportedGenerationMethods: ['generateContent', 'countTokens']
+                        };
+                        
+                        if (customConfig) {
+                            if (customConfig.contextLength) modelResponse.inputTokenLimit = customConfig.contextLength;
+                            if (customConfig.maxTokens) modelResponse.outputTokenLimit = customConfig.maxTokens;
+                            if (customConfig.description) modelResponse.description = customConfig.description;
+                        }
+                        
+                        return modelResponse;
+                    })
                 };
             }
 
@@ -909,6 +1101,14 @@ export async function handleModelListRequest(req, res, service, endpointType, CO
                 logger.info(`[ModelList Convert] Model list format matches. No conversion needed.`);
             }
             }
+
+            const customEntries = getCustomModelEntriesForProvider(CONFIG, toProvider);
+            clientModelList = appendCustomModelsToModelList(clientModelList, customEntries, toProvider, endpointType);
+        }
+
+        if (CONFIG.MODEL_PROVIDER === MODEL_PROVIDER.AUTO) {
+            const customEntries = getCustomModelEntriesForProvider(CONFIG, null, { prefixProvider: true });
+            clientModelList = appendCustomModelsToModelList(clientModelList, customEntries, MODEL_PROVIDER.AUTO, endpointType);
         }
 
         // logger.info(`[ModelList Response] Sending model list to client: ${JSON.stringify(clientModelList)}`);
@@ -966,6 +1166,26 @@ export async function handleContentGenerationRequest(req, res, service, endpoint
     if (!model) {
         throw new Error("Could not determine the model from the request.");
     }
+    
+    // 2.1. 处理自定义模型映射和别名
+    const customModelConfig = getCustomModelConfig(model, CONFIG.MODEL_PROVIDER);
+    CONFIG.customConfig = customModelConfig || null;
+    if (customModelConfig) {
+        const customRouting = resolveCustomModelRouting(model, CONFIG.MODEL_PROVIDER, customModelConfig);
+        logger.info(`[Custom Model] Resolved '${model}' to actual model '${customRouting.actualModel}'`);
+        
+        if (customRouting.actualProvider && customRouting.actualProvider !== CONFIG.MODEL_PROVIDER) {
+            CONFIG.MODEL_PROVIDER = customRouting.actualProvider;
+            toProvider = customRouting.actualProvider;
+            logger.info(`[Custom Model] Switched provider to '${CONFIG.MODEL_PROVIDER}' based on custom model config`);
+        }
+
+        // 映射到实际模型 ID
+        if (customRouting.actualModel) {
+            model = customRouting.actualModel;
+        }
+    }
+
     logger.info(`[Content Generation] Model: ${model}, Stream: ${isStream}`);
 
     let actualCustomName = CONFIG.customName;
@@ -998,7 +1218,9 @@ export async function handleContentGenerationRequest(req, res, service, endpoint
     }
 
     // 1. Convert request body from client format to backend format, if necessary.
-    let processedRequestBody = originalRequestBody;
+    // 使用浅拷贝以避免直接变异 originalRequestBody，保持原始数据的纯净性以供后续钩子使用
+    let processedRequestBody = { ...originalRequestBody };
+
     // 将 _monitorRequestId 注入到 requestBody 中，以便在 service 内部访问
     if (CONFIG._monitorRequestId) {
         processedRequestBody._monitorRequestId = CONFIG._monitorRequestId;
@@ -1012,7 +1234,15 @@ export async function handleContentGenerationRequest(req, res, service, endpoint
     // fs.writeFile('originalRequestBody'+Date.now()+'.json', JSON.stringify(originalRequestBody));
     if (getProtocolPrefix(fromProvider) !== getProtocolPrefix(toProvider)) {
         logger.info(`[Request Convert] Converting request from ${fromProvider} to ${toProvider}`);
-        processedRequestBody = convertData(originalRequestBody, 'request', fromProvider, toProvider);
+        const preConvertBody = processedRequestBody;
+        processedRequestBody = convertData(preConvertBody, 'request', fromProvider, toProvider);
+
+        // 保持以 _ 开头的内部属性（如 _monitorRequestId, _requestBaseUrl）
+        Object.keys(preConvertBody).forEach(key => {
+            if (key.startsWith('_') && processedRequestBody[key] === undefined) {
+                processedRequestBody[key] = preConvertBody[key];
+            }
+        });
     } else {
         logger.info(`[Request Convert] Request format matches backend provider. No conversion needed.`);
     }
@@ -1029,6 +1259,12 @@ export async function handleContentGenerationRequest(req, res, service, endpoint
 
     // 4. Log the incoming prompt (after potential conversion to the backend's format).
     const promptText = extractPromptText(processedRequestBody, toProvider);
+    
+    // 4.1. 应用自定义模型参数 (温度、最大长度等)
+    if (customModelConfig) {
+        _applyCustomModelParameters(processedRequestBody, customModelConfig, toProvider);
+    }
+
     await logConversation('input', promptText, CONFIG.PROMPT_LOG_MODE, PROMPT_LOG_FILENAME);
     
     // 5. Call the appropriate stream or unary handler, passing the provider info.
@@ -1093,6 +1329,79 @@ export function extractResponseText(response, provider) {
 export function extractPromptText(requestBody, provider) {
     const strategy = ProviderStrategyFactory.getStrategy(getProtocolPrefix(provider));
     return strategy.extractPromptText(requestBody);
+}
+
+/**
+ * 应用自定义模型参数到请求体
+ * @param {Object} requestBody - 处理后的请求体
+ * @param {Object} customConfig - 自定义模型配置
+ * @param {string} provider - 目标提供商
+ */
+function _applyCustomModelParameters(requestBody, customConfig, provider) {
+    const protocol = getProtocolPrefix(provider);
+    const hasConfiguredValue = (value) => value !== undefined && value !== null;
+
+    // 参数映射表
+    const mappings = {
+        temperature: {
+            [MODEL_PROTOCOL_PREFIX.OPENAI]: 'temperature',
+            [MODEL_PROTOCOL_PREFIX.OPENAI_RESPONSES]: 'temperature',
+            [MODEL_PROTOCOL_PREFIX.CLAUDE]: 'temperature',
+            [MODEL_PROTOCOL_PREFIX.GEMINI]: 'generationConfig.temperature'
+        },
+        maxTokens: {
+            [MODEL_PROTOCOL_PREFIX.OPENAI]: 'max_tokens',
+            [MODEL_PROTOCOL_PREFIX.OPENAI_RESPONSES]: 'max_output_tokens',
+            [MODEL_PROTOCOL_PREFIX.CLAUDE]: 'max_tokens',
+            [MODEL_PROTOCOL_PREFIX.GEMINI]: 'generationConfig.maxOutputTokens'
+        },
+        topP: {
+            [MODEL_PROTOCOL_PREFIX.OPENAI]: 'top_p',
+            [MODEL_PROTOCOL_PREFIX.OPENAI_RESPONSES]: 'top_p',
+            [MODEL_PROTOCOL_PREFIX.CLAUDE]: 'top_p',
+            [MODEL_PROTOCOL_PREFIX.GEMINI]: 'generationConfig.topP'
+        }
+    };
+
+    // 处理受控嵌套路径（仅允许已知安全字段）
+    const setNestedProperty = (obj, path, value) => {
+        if (
+            path !== 'generationConfig.temperature' &&
+            path !== 'generationConfig.maxOutputTokens' &&
+            path !== 'generationConfig.topP'
+        ) {
+            logger.warn(`[Custom Model] Skipping unsupported nested parameter path: ${path}`);
+            return;
+        }
+
+        if (!Object.prototype.hasOwnProperty.call(obj, 'generationConfig') || typeof obj.generationConfig !== 'object' || obj.generationConfig === null) {
+            obj.generationConfig = {};
+        }
+
+        const nestedKey = path.split('.')[1];
+        obj.generationConfig[nestedKey] = value;
+        logger.debug(`[Custom Model] Applied nested parameter ${path}=${value}`);
+    };
+
+    // 应用配置
+    Object.keys(mappings).forEach(key => {
+        const value = customConfig[key];
+        const targetPath = mappings[key][protocol];
+        
+        if (hasConfiguredValue(value) && targetPath) {
+            if (targetPath.includes('.')) {
+                setNestedProperty(requestBody, targetPath, value);
+            } else {
+                requestBody[targetPath] = value;
+                logger.debug(`[Custom Model] Applied ${key}=${value} to request (${targetPath})`);
+            }
+        }
+    });
+
+    // 处理特殊的 contextLength (通常不直接发给 API，但可能被某些插件使用)
+    // if (hasConfiguredValue(customConfig.contextLength)) {
+    //     requestBody._contextLength = customConfig.contextLength;
+    // }
 }
 
 export function handleError(res, error, provider = null, fromProvider = null, req = null) {

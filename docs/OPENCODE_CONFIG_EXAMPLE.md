@@ -83,12 +83,12 @@
 ## 配置重点解释
 
 ### 1. `provider` (服务提供商配置)
-这是配置的核心部分，每个键（如 `kiro`, `qwen`, `gemini-cli`）代表一个独立的服务提供商实例。
+这是配置的核心部分，每个键（如 `kiro`, `gemini-cli`）代表一个独立的服务提供商实例。
 
 *   **`npm` (SDK 适配器)**:
     *   指定底层使用的 AI SDK。例如：
         *   `@ai-sdk/anthropic`: 用于 Anthropic (Claude) 系列模型。
-        *   `@ai-sdk/openai-compatible`: 用于兼容 OpenAI 接口标准的模型（如通义千问 Qwen）。
+        *   `@ai-sdk/openai-compatible`: 用于兼容 OpenAI 接口标准的模型。
         *   `@ai-sdk/google`: 用于 Google Gemini 系列模型。
     *   **重点**: 必须确保 `npm` 字段与您要使用的模型协议匹配，否则会导致连接失败。
 

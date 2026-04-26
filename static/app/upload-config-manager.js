@@ -109,6 +109,44 @@ function createConfigItemElement(config, index) {
     // 生成关联详情HTML
     const usageInfoHtml = generateUsageInfoHtml(config);
     
+    // 生成过期时间HTML
+    let expirationHtml = '';
+    if (config.expiresAt) {
+        // 优先使用服务端计算的剩余时间，避免客户端时钟不同步导致判断错误
+        const isExpired = config.expiresIn !== undefined && config.expiresIn !== null ? 
+                         config.expiresIn <= 0 : 
+                         (new Date(config.expiresAt) - new Date() <= 0);
+        
+        let timeStr = '';
+        if (isExpired) {
+            timeStr = `<span class="expiration-tag expired">${t('upload.expiration.expired') || '已过期'}</span>`;
+        } else {
+            // 计算剩余秒数
+            const remainingSeconds = config.expiresIn !== undefined && config.expiresIn !== null ? 
+                                   config.expiresIn : 
+                                   Math.floor((new Date(config.expiresAt) - new Date()) / 1000);
+            
+            const days = Math.floor(remainingSeconds / (24 * 3600));
+            const hours = Math.floor((remainingSeconds % (24 * 3600)) / 3600);
+            const minutes = Math.floor((remainingSeconds % 3600) / 60);
+            
+            let duration = '';
+            if (days > 0) duration += `${days}${t('common.date.days') || '天'}`;
+            if (hours > 0 || days > 0) duration += `${hours}${t('common.date.hours') || '小时'}`;
+            duration += `${minutes}${t('common.date.minutes') || '分'}`;
+            
+            timeStr = `<span class="expiration-tag ${remainingSeconds < 3600 * 24 ? 'warning' : 'healthy'}">
+                <i class="fas fa-clock"></i> ${duration} ${t('upload.expiration.remaining') || '后过期'}
+            </span>`;
+        }
+        
+        expirationHtml = `<div class="config-expiration-info">
+            <span class="meta-item" title="${t('upload.detail.expiresAt') || '过期时间'}: ${formatDate(config.expiresAt)}">
+                ${timeStr}
+            </span>
+        </div>`;
+    }
+
     // 获取关联的节点简要信息
     let linkedNodesInfo = '';
     if (config.isUsed && config.usageInfo && config.usageInfo.usageDetails) {
@@ -179,6 +217,13 @@ function createConfigItemElement(config, index) {
             <i class="fas fa-link"></i> ${t('upload.action.quickLink')}
         </button>` : '';
 
+    // 强制刷新按钮
+    const canForceExpire = config.expiresAt && config.path.toLowerCase().endsWith('.json');
+    const forceExpireBtnHtml = canForceExpire ?
+        `<button class="btn-small btn-force-expire" data-path="${config.path}">
+            <i class="fas fa-sync"></i> <span data-i18n="upload.action.forceExpire">${t('upload.action.forceExpire') || '强制刷新'}</span>
+        </button>` : '';
+
     item.innerHTML = `
         <div class="config-item-main-row">
             <div class="config-item-left">
@@ -205,6 +250,7 @@ function createConfigItemElement(config, index) {
                         <i class="fas fa-calendar-alt"></i> ${formatDate(config.modified)}
                     </span>
                 </div>
+                ${expirationHtml}
             </div>
 
             <div class="config-item-right">
@@ -243,6 +289,7 @@ function createConfigItemElement(config, index) {
             </div>
             ${usageInfoHtml}
             <div class="config-item-actions">
+                ${forceExpireBtnHtml}
                 <button class="btn-small btn-view" data-path="${config.path}">
                     <i class="fas fa-eye"></i> <span data-i18n="upload.action.view">${t('upload.action.view')}</span>
                 </button>
@@ -260,6 +307,7 @@ function createConfigItemElement(config, index) {
     const viewBtn = item.querySelector('.btn-view');
     const downloadBtn = item.querySelector('.btn-download');
     const deleteBtn = item.querySelector('.btn-delete-small');
+    const forceExpireBtn = item.querySelector('.btn-force-expire');
     
     if (viewBtn) {
         viewBtn.addEventListener('click', (e) => {
@@ -279,6 +327,13 @@ function createConfigItemElement(config, index) {
         deleteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             deleteConfig(config.path);
+        });
+    }
+
+    if (forceExpireBtn) {
+        forceExpireBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            forceExpireConfig(config.path);
         });
     }
 
@@ -896,6 +951,27 @@ async function performDelete(path) {
     } catch (error) {
         console.error('删除配置失败:', error);
         showToast(t('common.error'), t('upload.action.delete.failed') + ': ' + error.message, 'error');
+    }
+}
+
+/**
+ * 强制配置文件过期
+ * @param {string} path - 文件路径
+ */
+async function forceExpireConfig(path) {
+    if (!confirm(t('upload.forceExpire.confirm') || '确定要强制该凭据过期吗？这将触发系统尝试重新刷新令牌。')) {
+        return;
+    }
+
+    try {
+        const result = await window.apiClient.post(`/upload-configs/force-expire/${encodeURIComponent(path)}`);
+        showToast(t('common.success'), t('upload.forceExpire.success') || '凭据已强制过期', 'success');
+        
+        // 重新加载列表
+        await loadConfigList();
+    } catch (error) {
+        console.error('强制过期失败:', error);
+        showToast(t('common.error'), (t('upload.action.forceExpire.failed') || '强制过期失败') + ': ' + error.message, 'error');
     }
 }
 

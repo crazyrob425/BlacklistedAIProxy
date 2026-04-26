@@ -117,7 +117,8 @@ export class GrokConverter extends BaseConverter {
                 seen_images: new Set(), // 用于去重已输出的图片
                 pending_text_buffer: "", // 用于处理流式输出中被截断的 URL
                 usageAcc: null, // 流式过程中最后一次解析到的上游用量（末包常为合成 isDone 无用量）
-                usageEstimatePayload: null // grok-core 注入的 prompt/tools 文本，用于本地估算
+                usageEstimatePayload: null, // grok-core 注入的 prompt/tools 文本，用于本地估算
+                streamIncludeUsage: false // OpenAI stream_options.include_usage 兼容
             });
         }
         return this.requestStates.get(requestId);
@@ -460,13 +461,13 @@ export class GrokConverter extends BaseConverter {
     convertStreamChunk(chunk, targetProtocol, model, requestId) {
         switch (targetProtocol) {
             case MODEL_PROTOCOL_PREFIX.OPENAI:
-                return this.toOpenAIStreamChunk(chunk, model);
+                return this.toOpenAIStreamChunk(chunk, model, requestId);
             case MODEL_PROTOCOL_PREFIX.GEMINI:
-                return this.toGeminiStreamChunk(chunk, model);
+                return this.toGeminiStreamChunk(chunk, model, requestId);
             case MODEL_PROTOCOL_PREFIX.OPENAI_RESPONSES:
-                return this.toOpenAIResponsesStreamChunk(chunk, model);
+                return this.toOpenAIResponsesStreamChunk(chunk, model, requestId);
             case MODEL_PROTOCOL_PREFIX.CODEX:
-                return this.toCodexStreamChunk(chunk, model);
+                return this.toCodexStreamChunk(chunk, model, requestId);
             case MODEL_PROTOCOL_PREFIX.CLAUDE:
                 return this.toClaudeStreamChunk(chunk, model, requestId);
             default:
@@ -786,13 +787,13 @@ export class GrokConverter extends BaseConverter {
     /**
      * Grok流式响应块 -> OpenAI流式响应块
      */
-    toOpenAIStreamChunk(grokChunk, model) {
+    toOpenAIStreamChunk(grokChunk, model, requestId = null) {
         if (!grokChunk || !grokChunk.result || !grokChunk.result.response) {
             return null;
         }
 
         const resp = grokChunk.result.response;
-        const rawResponseId = resp.responseId || "";
+        const rawResponseId = resp.responseId || (requestId ? `stream-${requestId}` : "");
         const responseId = this._formatResponseId(rawResponseId);
         const state = this._getState(responseId);
         
@@ -818,6 +819,9 @@ export class GrokConverter extends BaseConverter {
         const est = grokChunk.result?._grokUsageEstimatePayload;
         if (est && !state.usageEstimatePayload) {
             state.usageEstimatePayload = est;
+        }
+        if (est?.includeUsage === true) {
+            state.streamIncludeUsage = true;
         }
 
         const chunks = [];
@@ -899,6 +903,18 @@ export class GrokConverter extends BaseConverter {
                         delta: { content: finalContent || null },
                         finish_reason: "stop"
                     }]
+                });
+            }
+
+            if (state.streamIncludeUsage) {
+                chunks.push({
+                    id: responseId,
+                    object: "chat.completion.chunk",
+                    created: Math.floor(Date.now() / 1000),
+                    model: model,
+                    system_fingerprint: state.fingerprint,
+                    choices: [],
+                    usage: terminalUsage
                 });
             }
 
@@ -1121,8 +1137,8 @@ export class GrokConverter extends BaseConverter {
     /**
      * Grok流式响应块 -> Gemini流式响应块
      */
-    toGeminiStreamChunk(grokChunk, model) {
-        const openaiChunks = this.toOpenAIStreamChunk(grokChunk, model);
+    toGeminiStreamChunk(grokChunk, model, requestId = null) {
+        const openaiChunks = this.toOpenAIStreamChunk(grokChunk, model, requestId);
         if (!openaiChunks) return null;
 
         const geminiChunks = [];
@@ -1159,6 +1175,13 @@ export class GrokConverter extends BaseConverter {
                 };
                 if (choice.finish_reason) {
                     gchunk.candidates[0].finishReason = choice.finish_reason === 'length' ? 'MAX_TOKENS' : 'STOP';
+                    if (oachunk.usage) {
+                        gchunk.usageMetadata = {
+                            promptTokenCount: oachunk.usage.prompt_tokens || 0,
+                            candidatesTokenCount: oachunk.usage.completion_tokens || 0,
+                            totalTokenCount: oachunk.usage.total_tokens || 0
+                        };
+                    }
                 }
                 geminiChunks.push(gchunk);
             }
@@ -1224,8 +1247,8 @@ export class GrokConverter extends BaseConverter {
     /**
      * Grok流式响应块 -> OpenAI Responses流式响应块
      */
-    toOpenAIResponsesStreamChunk(grokChunk, model) {
-        const openaiChunks = this.toOpenAIStreamChunk(grokChunk, model);
+    toOpenAIResponsesStreamChunk(grokChunk, model, requestId = null) {
+        const openaiChunks = this.toOpenAIStreamChunk(grokChunk, model, requestId);
         if (!openaiChunks) return null;
 
         const events = [];
@@ -1274,7 +1297,15 @@ export class GrokConverter extends BaseConverter {
             }
 
             if (choice.finish_reason) {
-                events.push({ type: "response.completed", response: { id: oachunk.id, status: "completed" } });
+                const completed = { type: "response.completed", response: { id: oachunk.id, status: "completed" } };
+                if (oachunk.usage) {
+                    completed.response.usage = {
+                        input_tokens: oachunk.usage.prompt_tokens || 0,
+                        output_tokens: oachunk.usage.completion_tokens || 0,
+                        total_tokens: oachunk.usage.total_tokens || 0
+                    };
+                }
+                events.push(completed);
             }
         }
 
@@ -1334,8 +1365,8 @@ export class GrokConverter extends BaseConverter {
     /**
      * Grok流式响应块 -> Codex流式响应块
      */
-    toCodexStreamChunk(grokChunk, model) {
-        const openaiChunks = this.toOpenAIStreamChunk(grokChunk, model);
+    toCodexStreamChunk(grokChunk, model, requestId = null) {
+        const openaiChunks = this.toOpenAIStreamChunk(grokChunk, model, requestId);
         if (!openaiChunks) return null;
 
         const codexChunks = [];
@@ -1385,7 +1416,7 @@ export class GrokConverter extends BaseConverter {
     }
 
     toClaudeStreamChunk(chunk, model, requestId) {
-        const openaiPieces = this.toOpenAIStreamChunk(chunk, model);
+        const openaiPieces = this.toOpenAIStreamChunk(chunk, model, requestId);
         if (!openaiPieces) return null;
 
         const key = requestId || '_';

@@ -47,6 +47,14 @@ function normalizeUsageCandidate(candidate) {
     if (!candidate || typeof candidate !== 'object') {
         return null;
     }
+    if (Array.isArray(candidate)) {
+        return candidate.reduce((usage, item) => mergeUsage(usage, normalizeUsageCandidate(item)), {
+            promptTokens: 0,
+            completionTokens: 0,
+            totalTokens: 0,
+            cachedTokens: 0
+        });
+    }
 
     const usage = candidate.usage || candidate.message?.usage || candidate.usageMetadata || candidate.response?.usage || null;
     const reasoningTokens = toNumber(
@@ -267,13 +275,15 @@ const apiPotluckPlugin = {
                 try {
                     const usage = getPendingUsageForHookContext(hookContext);
 
-                    // 传入提供商和模型信息
+                    // 传入提供商和模型信息，以及请求 ID 用于防重
                     await incrementUsage(
                         hookContext.potluckApiKey, 
                         hookContext.toProvider, 
                         hookContext.model,
-                        usage
+                        usage,
+                        trackedRequestIds[0] || null
                     );
+
                 } catch (e) {
                     // 静默失败，不影响主流程
                     logger.error('[API Potluck Plugin] Failed to record usage:', e.message);

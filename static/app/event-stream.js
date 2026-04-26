@@ -2,6 +2,7 @@
 
 import { eventSource, setEventSource, elements, addLog, autoScroll } from './constants.js';
 import { t } from './i18n.js';
+import { authManager } from './auth.js';
 
 /**
  * Server-Sent Events初始化
@@ -11,7 +12,10 @@ function initEventStream() {
         eventSource.close();
     }
 
-    const newEventSource = new EventSource('/api/events');
+    // 从 AuthManager 获取 token 并作为 URL 参数传递
+    const token = authManager.getToken();
+    const url = token ? `/api/events?token=${encodeURIComponent(token)}` : '/api/events';
+    const newEventSource = new EventSource(url);
     setEventSource(newEventSource);
 
     newEventSource.onopen = () => {

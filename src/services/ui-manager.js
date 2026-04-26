@@ -11,6 +11,7 @@ import * as uploadConfigApi from '../ui-modules/upload-config-api.js';
 import * as systemApi from '../ui-modules/system-api.js';
 import * as updateApi from '../ui-modules/update-api.js';
 import * as oauthApi from '../ui-modules/oauth-api.js';
+import * as customModelsApi from '../ui-modules/custom-models-api.js';
 import * as eventBroadcast from '../ui-modules/event-broadcast.js';
 import { handleMarketplaceRoutes } from '../ui-modules/marketplace-api.js';
 
@@ -64,8 +65,8 @@ export async function handleUIApiRequests(method, pathParam, req, res, currentCo
         return await systemApi.handleHealthCheck(req, res);
     }
     
-    // Handle UI management API requests (需要token验证，除了登录接口、健康检查和Events接口)
-    if (pathParam.startsWith('/api/') && pathParam !== '/api/login' && pathParam !== '/api/health' && pathParam !== '/api/events' && pathParam !== '/api/grok/assets') {
+    // Handle UI management API requests (需要token验证，除了登录接口、健康检查)
+    if (pathParam.startsWith('/api/') && pathParam !== '/api/login' && pathParam !== '/api/health' && pathParam !== '/api/grok/assets') {
         // 检查token验证
         const isAuth = await auth.checkAuth(req);
         if (!isAuth) {
@@ -277,6 +278,13 @@ export async function handleUIApiRequests(method, pathParam, req, res, currentCo
         return await uploadConfigApi.handleDeleteConfigFile(req, res, filePath);
     }
 
+    // Force expire specific configuration file
+    const forceExpireConfigMatch = pathParam.match(/^\/api\/upload-configs\/force-expire\/(.+)$/);
+    if (method === 'POST' && forceExpireConfigMatch) {
+        const filePath = decodeURIComponent(forceExpireConfigMatch[1]);
+        return await uploadConfigApi.handleForceExpireConfig(req, res, filePath, currentConfig, providerPoolManager);
+    }
+
     // Download all configs as zip
     if (method === 'GET' && pathParam === '/api/upload-configs/download-all') {
         return await uploadConfigApi.handleDownloadAllConfigs(req, res);
@@ -367,6 +375,26 @@ export async function handleUIApiRequests(method, pathParam, req, res, currentCo
     // Plugin Marketplace catalog API
     if (pathParam.startsWith('/api/marketplace')) {
         return await handleMarketplaceRoutes(method, pathParam, req, res, currentConfig);
+    }
+
+    // Custom models management
+    if (method === 'GET' && pathParam === '/api/custom-models') {
+        return await customModelsApi.handleGetCustomModels(req, res, currentConfig);
+    }
+
+    if (method === 'POST' && pathParam === '/api/custom-models') {
+        return await customModelsApi.handleAddCustomModel(req, res, currentConfig);
+    }
+
+    const customModelMatch = pathParam.match(/^\/api\/custom-models\/(.+)$/);
+    if (customModelMatch) {
+        const modelId = decodeURIComponent(customModelMatch[1]);
+        if (method === 'PUT') {
+            return await customModelsApi.handleUpdateCustomModel(req, res, currentConfig, modelId);
+        }
+        if (method === 'DELETE') {
+            return await customModelsApi.handleDeleteCustomModel(req, res, currentConfig, modelId);
+        }
     }
 
     return false;
