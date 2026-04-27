@@ -660,11 +660,10 @@ export class CodexApiService {
             for (const line of lines) {
                 const trimmedLine = line.trim();
                 if (!trimmedLine) continue;
+                // skip SSE metadata lines (event:, id:, retry:)
+                if (!trimmedLine.startsWith('data: ')) continue;
 
-                let dataStr = trimmedLine;
-                if (trimmedLine.startsWith('data: ')) {
-                    dataStr = trimmedLine.slice(6).trim();
-                }
+                const dataStr = trimmedLine.slice(6).trim();
 
                 if (dataStr && dataStr !== '[DONE]') {
                     try {
@@ -700,11 +699,8 @@ export class CodexApiService {
 
         // 处理剩余的 buffer
         const finalTrimmed = buffer.trim();
-        if (finalTrimmed) {
-            let dataStr = finalTrimmed;
-            if (finalTrimmed.startsWith('data: ')) {
-                dataStr = finalTrimmed.slice(6).trim();
-            }
+        if (finalTrimmed && finalTrimmed.startsWith('data: ')) {
+            const dataStr = finalTrimmed.slice(6).trim();
 
             if (dataStr && dataStr !== '[DONE]') {
                 try {

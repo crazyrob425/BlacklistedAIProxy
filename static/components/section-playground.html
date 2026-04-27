@@ -1,0 +1,64 @@
+<link rel="stylesheet" href="components/section-playground.css">
+<!-- Playground Section -->
+<section id="playground" class="section" aria-labelledby="playground-title">
+    <h2 id="playground-title"><i class="fas fa-flask" style="margin-right:0.5rem;font-size:1.2rem;"></i><span
+            data-i18n="nav.playground">模型测试</span></h2>
+
+    <div class="playground-layout">
+        <!-- Left: Config Panel -->
+        <div class="playground-config">
+            <div class="playground-config-card">
+                <label><i class="fas fa-network-wired" style="margin-right:0.3rem;"></i><span data-i18n="playground.provider">提供商</span></label>
+                <select id="pg-provider-select" class="playground-select">
+                    <option value="" data-i18n="playground.loading">加载中...</option>
+                </select>
+
+                <label style="margin-top:0.25rem;"><i class="fas fa-cube" style="margin-right:0.3rem;"></i><span data-i18n="playground.model">模型</span></label>
+                <select id="pg-model-select" class="playground-select" disabled>
+                    <option value="" data-i18n="playground.providerFirst">请先选择提供商</option>
+                </select>
+            </div>
+
+            <button class="playground-clear-btn" id="pg-clear-btn">
+                <i class="fas fa-trash-alt"></i> <span data-i18n="playground.clearChat">清空对话</span>
+            </button>
+        </div>
+
+        <!-- Right: Chat Area -->
+        <div class="playground-chat">
+            <div class="playground-messages" id="pg-messages">
+                <div class="playground-empty" id="pg-empty">
+                    <i class="fas fa-comment-dots"></i>
+                    <p data-i18n="playground.emptyHint">选择提供商和模型后开始对话</p>
+                </div>
+            </div>
+
+            <!-- Attachment preview -->
+            <div class="pg-attachments-preview" id="pg-attachments-preview"></div>
+
+            <!-- Input Area -->
+            <div class="playground-input-area">
+                <div class="playground-input-row">
+                    <button class="pg-attach-btn" id="pg-attach-btn" data-i18n-title="playground.attachTitle" title="上传文件（图片/PDF）">
+                        <i class="fas fa-paperclip"></i>
+                    </button>
+                    <textarea
+                        id="pg-input"
+                        class="playground-textarea"
+                        data-i18n-placeholder="playground.inputPlaceholder"
+                        placeholder="输入消息... (Shift+Enter 换行，Enter 发送)"
+                        rows="1"
+                        disabled
+                    ></textarea>
+                    <button class="pg-send-btn" id="pg-send-btn" disabled data-i18n-title="playground.sendBtn" title="发送">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <div class="pg-hint" id="pg-hint" data-i18n="playground.hint">Shift+Enter 换行 · Enter 发送</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden file input -->
+    <input type="file" id="pg-file-input" accept="image/*,.pdf" multiple style="display:none;">
+</section>

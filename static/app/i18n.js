@@ -37,7 +37,8 @@ const translations = {
         'nav.plugins': '插件管理',
         'nav.models': '可用模型',
         'nav.customModels': '自定义模型',
-        
+        'nav.playground': '模型测试',
+
         // Dashboard
         'dashboard.title': '系统概览',
         'dashboard.uptime': '运行时间',
@@ -426,12 +427,6 @@ const translations = {
         'config.advanced.poolSizeLimit': '账号池轮询上限',
         'config.advanced.poolSizeLimitPlaceholder': '默认: 0 (不限制)',
         'config.advanced.poolSizeLimitNote': '每个提供商类型参与轮询的最大健康凭证数量，0 表示不限制，使用所有健康凭证',
-        'config.advanced.credentialSwitchMaxRetries': '坏凭证切换最大重试次数',
-        'config.advanced.credentialSwitchMaxRetriesNote': '认证错误(401/403)后切换凭证的最大重试次数，默认 5 次',
-        'config.advanced.rateLimitCooldownEnabled': '启用 429 短冷却',
-        'config.advanced.rateLimitCooldownTitle': '429 限流保护',
-        'config.advanced.rateLimitCooldownNote': '上游返回 429 时，让当前账号短暂退出账号池，到期后自动恢复。',
-        'config.advanced.rateLimitCooldownMs': '默认冷却时间(毫秒)',
         'config.advanced.fallbackChain': '跨类型 Fallback 链配置',
         'config.advanced.fallbackChainPlaceholder': '例如:\n{\n  "gemini-cli-oauth": ["gemini-antigravity"],\n  "gemini-antigravity": ["gemini-cli-oauth"],\n  "claude-kiro-oauth": ["claude-custom"]\n}',
         'config.advanced.fallbackChainNote': '当某一 Provider Type 所有账号都不健康时，自动切换到配置的 Fallback 类型。JSON 格式，键为主类型，值为 Fallback 类型数组（按优先级排序）',
@@ -796,7 +791,26 @@ const translations = {
         'logs.clear.success.title': '清空成功',
         'logs.clear.success.msg': '前端实时日志和服务器当日日志文件已全部清空',
         'logs.clear.failed': '清空日志失败',
-        
+
+        // Playground
+        'playground.provider': '提供商',
+        'playground.model': '模型',
+        'playground.loading': '加载中...',
+        'playground.selectProvider': '— 选择提供商 —',
+        'playground.selectModel': '— 选择模型 —',
+        'playground.providerFirst': '请先选择提供商',
+        'playground.clearChat': '清空对话',
+        'playground.emptyHint': '选择提供商和模型后开始对话',
+        'playground.inputPlaceholder': '输入消息... (Shift+Enter 换行，Enter 发送)',
+        'playground.hint': 'Shift+Enter 换行 · Enter 发送',
+        'playground.attachTitle': '上传文件（图片/PDF）',
+        'playground.you': '你',
+        'playground.aborted': '(已中断)',
+        'playground.attachPrefix': '[附件: ',
+        'playground.reqFailed': '请求失败',
+        'playground.selectFirst': '← 请先在左侧选择提供商和模型',
+        'playground.generating': '正在生成回复，请稍候...',
+
         // Plugins
         'plugins.title': '插件管理',
         'plugins.description': '插件系统允许您扩展系统功能，启用或禁用插件需要重启服务才能生效',
@@ -1115,6 +1129,7 @@ const translations = {
         'nav.plugins': 'Plugin Management',
         'nav.models': 'Available Models',
         'nav.customModels': 'Custom Models',
+        'nav.playground': 'Playground',
         
         // Dashboard
         'dashboard.title': 'System Overview',
@@ -1491,12 +1506,6 @@ const translations = {
         'config.advanced.promptLogMode.file': 'File',
         'config.advanced.maxRetries': 'Provider Max Retries',
         'config.advanced.baseDelay': 'Base Retry Delay (ms)',
-        'config.advanced.credentialSwitchMaxRetries': 'Credential Switch Max Retries',
-        'config.advanced.credentialSwitchMaxRetriesNote': 'Max retry count for switching credentials after auth errors (401/403), default 5',
-        'config.advanced.rateLimitCooldownEnabled': 'Enable 429 Cooldown',
-        'config.advanced.rateLimitCooldownTitle': '429 Rate Limit Protection',
-        'config.advanced.rateLimitCooldownNote': 'When upstream returns 429, temporarily remove the current account from the pool and recover it automatically.',
-        'config.advanced.rateLimitCooldownMs': 'Default Cooldown (ms)',
         'config.advanced.warmupTarget': 'Warmup Target Nodes',
         'config.advanced.warmupTargetNote': 'Number of nodes to refresh on startup, default 0',
         'config.advanced.refreshConcurrencyPerProvider': 'Refresh Concurrency per Provider',
@@ -1883,7 +1892,26 @@ const translations = {
         'logs.clear.success.title': 'Success',
         'logs.clear.success.msg': 'Both real-time logs and today\'s log file on server have been cleared',
         'logs.clear.failed': 'Failed to clear logs',
-        
+
+        // Playground
+        'playground.provider': 'Provider',
+        'playground.model': 'Model',
+        'playground.loading': 'Loading...',
+        'playground.selectProvider': '— Select Provider —',
+        'playground.selectModel': '— Select Model —',
+        'playground.providerFirst': 'Select a provider first',
+        'playground.clearChat': 'Clear Chat',
+        'playground.emptyHint': 'Select a provider and model to start chatting',
+        'playground.inputPlaceholder': 'Type a message... (Shift+Enter for new line, Enter to send)',
+        'playground.hint': 'Shift+Enter for new line · Enter to send',
+        'playground.attachTitle': 'Upload file (image/PDF)',
+        'playground.you': 'You',
+        'playground.aborted': '(Aborted)',
+        'playground.attachPrefix': '[Attachment: ',
+        'playground.reqFailed': 'Request failed',
+        'playground.selectFirst': '← Please select a provider and model on the left',
+        'playground.generating': 'Generating response, please wait...',
+
         // Plugins
         'plugins.title': 'Plugin Management',
         'plugins.description': 'The plugin system allows you to extend system functionality. Enabling or disabling plugins requires a service restart to take effect.',
@@ -2144,9 +2172,6 @@ const translations = {
         'common.copy.failed': 'Copy failed, please copy manually',
         'common.refresh.success': 'Refresh successful',
         'common.refresh.failed': 'Refresh failed',
-        'common.date.days': 'd ',
-        'common.date.hours': 'h ',
-        'common.date.minutes': 'm',
         'common.date.days': 'd ',
         'common.date.hours': 'h ',
         'common.date.minutes': 'm',

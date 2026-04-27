@@ -97,6 +97,10 @@ import {
     CustomModelsManager
 } from './custom-models-manager.js';
 
+import {
+    initPlaygroundManager
+} from './playground-manager.js';
+
 /**
  * 加载初始数据
  */
@@ -137,6 +141,7 @@ function initApp() {
     initImageZoom(); // 初始化图片放大功能
     initPluginManager(); // 初始化插件管理功能
     initTutorialManager(); // 初始化教程管理功能
+    initPlaygroundManager(); // 初始化 Playground
     
     // 初始化自定义模型管理
     window.customModelsManager = new CustomModelsManager();
