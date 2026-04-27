@@ -63,15 +63,14 @@ function renderProviderOptions(providers) {
 
     sel.innerHTML = `<option value="">${t('playground.selectProvider')}</option>`;
 
-    providers.forEach(p => {
-        const hasNodes = p.totalNodes > 0;
-        const opt = document.createElement('option');
-        opt.value = p.id;
-        opt.textContent = hasNodes ? `● ${p.id} (${p.healthyNodes}/${p.totalNodes})` : `○ ${p.id}`;
-        opt.disabled = !hasNodes;
-        if (!hasNodes) opt.style.color = 'var(--text-secondary)';
-        sel.appendChild(opt);
-    });
+    providers
+        .filter(p => (p.usableNodes || 0) > 0)
+        .forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = `● ${p.id} (${p.usableNodes}/${p.totalNodes})`;
+            sel.appendChild(opt);
+        });
 }
 
 // ── Events ───────────────────────────────────────────────────────────────────

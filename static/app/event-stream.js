@@ -68,10 +68,13 @@ function addLogEntry(logData) {
     const logEntry = document.createElement('div');
     logEntry.className = 'log-entry';
 
-    const time = new Date(logData.timestamp).toLocaleTimeString();
+    const date = new Date(logData.timestamp);
+    const timeStr = date.toLocaleTimeString();
     const levelClass = `log-level-${logData.level}`;
 
     logEntry.innerHTML = `
+        <span class="log-time">[${timeStr}]</span>
+        <span class="${levelClass}">[${logData.level.toUpperCase()}]</span>
         <span class="log-message">${escapeHtml(logData.message)}</span>
     `;
 

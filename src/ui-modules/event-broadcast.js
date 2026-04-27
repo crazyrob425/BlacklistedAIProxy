@@ -89,17 +89,23 @@ export function initializeUIManagement() {
     const originalLog = console.log;
     console.log = function(...args) {
         originalLog.apply(console, args);
+        
+        let message = args.map(arg => {
+            if (typeof arg === 'string') return arg;
+            try {
+                return JSON.stringify(arg);
+            } catch (e) {
+                return String(arg);
+            }
+        }).join(' ');
+
+        // Strip server-side timestamp if present [YYYY-MM-DD HH:MM:SS.mmm]
+        message = message.replace(/^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\]\s*/, '');
+
         const logEntry = {
             timestamp: new Date().toISOString(),
             level: 'info',
-            message: args.map(arg => {
-                if (typeof arg === 'string') return arg;
-                try {
-                    return JSON.stringify(arg);
-                } catch (e) {
-                    return String(arg);
-                }
-            }).join(' ')
+            message: message
         };
         global.logBuffer.push(logEntry);
         if (global.logBuffer.length > 100) {
@@ -112,17 +118,23 @@ export function initializeUIManagement() {
     const originalError = console.error;
     console.error = function(...args) {
         originalError.apply(console, args);
+        
+        let message = args.map(arg => {
+            if (typeof arg === 'string') return arg;
+            try {
+                return JSON.stringify(arg);
+            } catch (e) {
+                return String(arg);
+            }
+        }).join(' ');
+
+        // Strip server-side timestamp if present
+        message = message.replace(/^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\]\s*/, '');
+
         const logEntry = {
             timestamp: new Date().toISOString(),
             level: 'error',
-            message: args.map(arg => {
-                if (typeof arg === 'string') return arg;
-                try {
-                    return JSON.stringify(arg);
-                } catch (e) {
-                    return String(arg);
-                }
-            }).join(' ')
+            message: message
         };
         global.logBuffer.push(logEntry);
         if (global.logBuffer.length > 100) {

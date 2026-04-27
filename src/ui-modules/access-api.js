@@ -60,11 +60,13 @@ function buildProviderSummaries(providerStatus, defaultProviders, registeredProv
         const totalNodes = providers.length;
         const healthyNodes = providers.filter(provider => provider.isHealthy).length;
         const disabledNodes = providers.filter(provider => provider.isDisabled).length;
+        const usableNodes = providers.filter(provider => provider.isHealthy && !provider.isDisabled).length;
 
         return {
             id,
             totalNodes,
             healthyNodes,
+            usableNodes,
             enabledNodes: totalNodes - disabledNodes,
             disabledNodes,
             isDefault: defaultProviders.includes(id)
