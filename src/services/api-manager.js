@@ -173,7 +173,8 @@ async function handleImageGenerationRequest(req, res, currentConfig, providerPoo
                 n,
                 size,
                 response_format,
-                _imageSize: size // 兼容 Codex 内部使用的字段
+                _imageSize: size, // 兼容 Codex 内部使用的字段
+                _monitorRequestId: currentConfig._monitorRequestId // 注入监控 ID
             };
 
             // 预留变量，在获取到 service 确认协议后再转换
@@ -198,12 +199,21 @@ async function handleImageGenerationRequest(req, res, currentConfig, providerPoo
         }
         
         const finalProviderProtocol = getProtocolPrefix(slotProviderType || CONFIG.MODEL_PROVIDER);
+        const fromProvider = MODEL_PROTOCOL_PREFIX.OPENAI;
+        const toProvider = slotProviderType || CONFIG.MODEL_PROVIDER;
 
         // 执行自动转换：OpenAI -> 目标协议
         const fromProtocol = MODEL_PROTOCOL_PREFIX.OPENAI;
         if (fromProtocol !== finalProviderProtocol) {
             logger.info(`[Image Generation] Converting request from ${fromProtocol} to ${finalProviderProtocol}`);
-            codexRequestBody = convertData(codexRequestBody, 'request', fromProtocol, slotProviderType || CONFIG.MODEL_PROVIDER);
+            codexRequestBody = convertData(codexRequestBody, 'request', fromProvider, toProvider, model, currentConfig._monitorRequestId);
+            
+            // 保持以 _ 开头的内部属性
+            Object.keys(virtualOpenAIRequest).forEach(key => {
+                if (key.startsWith('_') && codexRequestBody[key] === undefined) {
+                    codexRequestBody[key] = virtualOpenAIRequest[key];
+                }
+            });
         }
 
         logger.info(`[Image Generation] model=${model}, protocol=${finalProviderProtocol}, n=${n}, response_format=${response_format}${size ? `, size=${size}` : ''}`);
@@ -219,21 +229,52 @@ async function handleImageGenerationRequest(req, res, currentConfig, providerPoo
         }
 
         if (data.length === 0) {
-            const rejectionText = extractRejectionMessage(responses, finalProviderProtocol);
-            if (rejectionText) {
-                logger.warn(`[Image Generation] Content policy rejection: ${rejectionText.slice(0, 100)}`);
+            // 检查是否有拒绝消息
+            const rejection = extractRejectionMessage(responses, finalProviderProtocol);
+            if (rejection) {
                 res.writeHead(400, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: { code: 'content_policy_violation', message: rejectionText, type: 'invalid_request_error' } }));
+                res.end(JSON.stringify({ error: { message: `Image generation rejected: ${rejection}`, type: 'invalid_request_error' } }));
             } else {
-                logger.error('[Image Generation] No image found in response output');
                 res.writeHead(500, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ error: { message: 'Image generation failed: no image in response', type: 'server_error' } }));
             }
             return;
         }
 
+        const clientResponse = { created: Math.floor(Date.now() / 1000), data };
+
+        // 监控钩子：内容生成后与一元响应
+        if (currentConfig._monitorRequestId) {
+            try {
+                const { getPluginManager } = await import('../core/plugin-manager.js');
+                const pluginManager = getPluginManager();
+                if (pluginManager) {
+                    await pluginManager.executeHook('onContentGenerated', {
+                        ...currentConfig,
+                        originalRequestBody: { model, prompt, n, size, response_format },
+                        processedRequestBody: codexRequestBody,
+                        fromProvider,
+                        toProvider,
+                        model,
+                        isStream: false
+                    });
+
+                    await pluginManager.executeHook('onUnaryResponse', {
+                        nativeResponse: responses.length === 1 ? responses[0] : responses,
+                        clientResponse,
+                        fromProvider,
+                        toProvider,
+                        model,
+                        requestId: currentConfig._monitorRequestId
+                    });
+                }
+            } catch (e) {
+                logger.error('[Image Generation] Hook error:', e.message);
+            }
+        }
+
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ created: Math.floor(Date.now() / 1000), data }));
+        res.end(JSON.stringify(clientResponse));
     } catch (error) {
         logger.error('[Image Generation] Error:', error.message);
 
@@ -447,7 +488,8 @@ async function handleImageEditsRequest(req, res, currentConfig, providerPoolMana
             n,
             size,
             response_format,
-            _imageSize: size
+            _imageSize: size,
+            _monitorRequestId: currentConfig._monitorRequestId // 注入监控 ID
         };
 
         const shouldUsePool = !!(providerPoolManager && currentConfig.providerPools);
@@ -466,13 +508,22 @@ async function handleImageEditsRequest(req, res, currentConfig, providerPoolMana
         }
 
         const finalProviderProtocol = getProtocolPrefix(slotProviderType || currentConfig.MODEL_PROVIDER);
+        const fromProvider = MODEL_PROTOCOL_PREFIX.OPENAI;
+        const toProvider = slotProviderType || currentConfig.MODEL_PROVIDER;
 
         // 执行自动转换：OpenAI -> 目标协议
         let codexRequestBody = virtualOpenAIRequest;
         const fromProtocol = MODEL_PROTOCOL_PREFIX.OPENAI;
         if (fromProtocol !== finalProviderProtocol) {
             logger.info(`[Image Edits] Converting request from ${fromProtocol} to ${finalProviderProtocol}`);
-            codexRequestBody = convertData(codexRequestBody, 'request', fromProtocol, slotProviderType || currentConfig.MODEL_PROVIDER);
+            codexRequestBody = convertData(codexRequestBody, 'request', fromProtocol, toProvider, model, currentConfig._monitorRequestId);
+            
+            // 保持以 _ 开头的内部属性
+            Object.keys(virtualOpenAIRequest).forEach(key => {
+                if (key.startsWith('_') && codexRequestBody[key] === undefined) {
+                    codexRequestBody[key] = virtualOpenAIRequest[key];
+                }
+            });
         }
 
         logger.info(`[Image Edits] model=${model}, protocol=${finalProviderProtocol}, n=${n}, response_format=${response_format}, imageSize=${Math.round(buffer.length / 1024)}KB${size ? `, size=${size}` : ''}`);
@@ -481,29 +532,60 @@ async function handleImageEditsRequest(req, res, currentConfig, providerPoolMana
             service.generateContent(model, { ...codexRequestBody })
         );
         const responses = await Promise.all(imageRequests);
-
         const data = [];
-        for (const response of responses) {
-            const extracted = extractImagesFromServiceResponse(response, finalProviderProtocol, response_format);
+
+        for (let i = 0; i < responses.length; i++) {
+            const extracted = extractImagesFromServiceResponse(responses[i], finalProviderProtocol, response_format);
             data.push(...extracted);
         }
 
         if (data.length === 0) {
-            const rejectionText = extractRejectionMessage(responses, finalProviderProtocol);
-            if (rejectionText) {
-                logger.warn(`[Image Edits] Content policy rejection: ${rejectionText.slice(0, 100)}`);
+            // 检查是否有拒绝消息
+            const rejection = extractRejectionMessage(responses, finalProviderProtocol);
+            if (rejection) {
                 res.writeHead(400, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: { code: 'content_policy_violation', message: rejectionText, type: 'invalid_request_error' } }));
+                res.end(JSON.stringify({ error: { message: `Image editing rejected: ${rejection}`, type: 'invalid_request_error' } }));
             } else {
-                logger.error('[Image Edits] No image found in response output');
                 res.writeHead(500, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ error: { message: 'Image editing failed: no image in response', type: 'server_error' } }));
             }
             return;
         }
 
+        const clientResponse = { created: Math.floor(Date.now() / 1000), data };
+
+        // 监控钩子
+        if (currentConfig._monitorRequestId) {
+            try {
+                const { getPluginManager } = await import('../core/plugin-manager.js');
+                const pluginManager = getPluginManager();
+                if (pluginManager) {
+                    await pluginManager.executeHook('onContentGenerated', {
+                        ...currentConfig,
+                        originalRequestBody: { model, prompt, n, size, response_format },
+                        processedRequestBody: codexRequestBody,
+                        fromProvider,
+                        toProvider,
+                        model,
+                        isStream: false
+                    });
+
+                    await pluginManager.executeHook('onUnaryResponse', {
+                        nativeResponse: responses.length === 1 ? responses[0] : responses,
+                        clientResponse,
+                        fromProvider,
+                        toProvider,
+                        model,
+                        requestId: currentConfig._monitorRequestId
+                    });
+                }
+            } catch (e) {
+                logger.error('[Image Edits] Hook error:', e.message);
+            }
+        }
+
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ created: Math.floor(Date.now() / 1000), data }));
+        res.end(JSON.stringify(clientResponse));
     } catch (error) {
         logger.error('[Image Edits] Error:', error.message);
         if (!res.writableEnded) {

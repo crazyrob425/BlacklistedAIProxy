@@ -24,7 +24,14 @@ const aiMonitorPlugin = {
      * 中间件：初始化请求上下文
      */
     async middleware(req, res, requestUrl, config) {
-        const aiPaths = ['/v1/chat/completions', '/v1/responses', '/v1/messages', '/v1beta/models'];
+        const aiPaths = [
+            '/v1/chat/completions', 
+            '/v1/responses', 
+            '/v1/messages', 
+            '/v1beta/models',
+            '/v1/images/generations',
+            '/v1/images/edits'
+        ];
         const isAiPath = aiPaths.some(path => requestUrl.pathname.includes(path));
 
         if (isAiPath && req.method === 'POST') {

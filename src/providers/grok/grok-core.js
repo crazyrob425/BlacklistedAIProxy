@@ -941,6 +941,11 @@ export class GrokApiService {
     }
 
     async generateContent(model, requestBody) {
+        if (requestBody._monitorRequestId) { 
+            this.config._monitorRequestId = requestBody._monitorRequestId; 
+            delete requestBody._monitorRequestId; 
+        }
+        
         logger.info(`[Grok] Starting generateContent (unified processing)`);
         
         const n = parseInt(requestBody.n || 1);
@@ -1382,7 +1387,7 @@ export class GrokApiService {
                             resp.isThinking = false;
                             delete resp.messageStepId;
                         }
-
+                        
                         // 1. 处理 cardAttachment (根据最新指令，若是图片则不处理)
                         if (resp.cardAttachment) {
                             try {

@@ -461,6 +461,69 @@
     box-shadow: 0 0 0 3px var(--primary-10);
 }
 
+/* Switch 样式 */
+.pg-workspace .pg-switch {
+    position: relative;
+    display: inline-block;
+    width: 42px;
+    height: 22px;
+}
+
+.pg-workspace .pg-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.pg-workspace .pg-switch-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--bg-tertiary);
+    transition: .4s;
+    border-radius: 34px;
+    border: 1px solid var(--border-color);
+}
+
+.pg-workspace .pg-switch-slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+    box-shadow: var(--shadow-sm);
+}
+
+.pg-workspace .pg-switch input:checked + .pg-switch-slider {
+    background-color: var(--primary-color);
+    border-color: var(--primary-hover);
+}
+
+.pg-workspace .pg-switch input:focus + .pg-switch-slider {
+    box-shadow: 0 0 1px var(--primary-color);
+}
+
+.pg-workspace .pg-switch input:checked + .pg-switch-slider:before {
+    transform: translateX(20px);
+}
+
+.pg-workspace .pg-stream-toggle-wrap {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-primary);
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
 /* Range Input 美化 */
 .pg-workspace input[type=range] {
     width: 100%;

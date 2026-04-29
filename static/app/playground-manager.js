@@ -28,6 +28,7 @@ function getSystemInput()    { return el('pg-system-input'); }
 function getTempSlider()     { return el('pg-temp-slider'); }
 function getTempVal()        { return el('pg-temp-val'); }
 function getMaxTokens()      { return el('pg-max-tokens'); }
+function getStreamCheckbox() { return el('pg-stream-checkbox'); }
 
 // ── Initialisation ───────────────────────────────────────────────────────────
 
@@ -87,6 +88,18 @@ function bindEvents() {
     document.addEventListener('change', (e) => {
         if (e.target.id === 'pg-model-select') {
             updateInputState();
+        }
+    });
+
+    document.addEventListener('change', (e) => {
+        if (e.target.id === 'pg-interface-select') {
+            const isChat = e.target.value === 'chat';
+            const streamBox = getStreamCheckbox();
+            if (streamBox) {
+                streamBox.disabled = !isChat;
+                const wrap = streamBox.closest('.pg-stream-toggle-wrap');
+                if (wrap) wrap.style.opacity = isChat ? '1' : '0.5';
+            }
         }
     });
 
@@ -186,6 +199,7 @@ async function handleSend() {
     const sysPrompt = getSystemInput()?.value.trim();
     const temp = parseFloat(getTempSlider()?.value || '0.7');
     const maxTokens = parseInt(getMaxTokens()?.value || '4096');
+    const useStream = getStreamCheckbox()?.checked ?? true;
 
     // Build history for request
     const requestMessages = [];
@@ -214,8 +228,14 @@ async function handleSend() {
     
     if (interfaceType === 'image' || interfaceType === 'image-edit') {
         await imageResponse(provider, model, text, filesToSend, assistantBubble, interfaceType);
-    } else {
+    } else if (useStream) {
         await streamResponse(provider, model, assistantBubble, {
+            messages: requestMessages,
+            temperature: temp,
+            max_tokens: maxTokens
+        });
+    } else {
+        await unaryResponse(provider, model, assistantBubble, {
             messages: requestMessages,
             temperature: temp,
             max_tokens: maxTokens
@@ -301,6 +321,74 @@ async function imageResponse(provider, model, prompt, files, bubble, interfaceTy
         if (errorMsg) {
             bubble.textContent = errorMsg;
             bubble.closest('.pg-message')?.classList.add('error');
+        }
+        isStreaming = false;
+        updateInputState();
+        scrollToBottom();
+    }
+}
+
+async function unaryResponse(provider, model, bubble, params) {
+    isStreaming = true;
+    updateInputState();
+
+    let errorMsg = '';
+    try {
+        const response = await fetch('/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`,
+                'model-provider': provider
+            },
+            body: JSON.stringify({
+                model,
+                messages: params.messages,
+                temperature: params.temperature,
+                max_tokens: params.max_tokens,
+                stream: false
+            })
+        });
+
+        if (!response.ok) {
+            errorMsg = await parseResponseError(response);
+            throw new Error(errorMsg);
+        }
+
+        const json = await response.json();
+        const content = json.choices?.[0]?.message?.content || '';
+        const reasoning = json.choices?.[0]?.message?.reasoning_content || json.choices?.[0]?.message?.thinking || '';
+
+        bubble.innerHTML = '';
+        const msgWrapper = bubble.closest('.pg-message');
+        if (msgWrapper) msgWrapper.style.display = 'flex';
+
+        if (reasoning) {
+            const resDiv = document.createElement('div');
+            resDiv.className = 'pg-reasoning';
+            resDiv.innerHTML = `<div class="pg-reasoning-title"><i class="fas fa-brain"></i>${t('playground.thinking')}</div><div class="pg-reasoning-content"></div>`;
+            resDiv.querySelector('.pg-reasoning-content').textContent = reasoning;
+            bubble.appendChild(resDiv);
+        }
+
+        if (content) {
+            const contentDiv = document.createElement('div');
+            contentDiv.innerHTML = renderMarkdown(content);
+            while (contentDiv.firstChild) bubble.appendChild(contentDiv.firstChild);
+            
+            const historyContent = content.replace(/data:[^;]+;base64,[A-Za-z0-9+/=]+/g, '[图片]');
+            messages.push({role: 'assistant', content: historyContent});
+        }
+
+    } catch (e) {
+        console.error('[Playground] Unary error:', e.message);
+        errorMsg = e.message || t('playground.reqFailed');
+    } finally {
+        if (errorMsg) {
+            bubble.textContent = errorMsg;
+            bubble.closest('.pg-message')?.classList.add('error');
+            const msgWrapper = bubble.closest('.pg-message');
+            if (msgWrapper) msgWrapper.style.display = 'flex';
         }
         isStreaming = false;
         updateInputState();
