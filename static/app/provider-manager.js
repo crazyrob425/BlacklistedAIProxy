@@ -769,7 +769,7 @@ function generateAddGroupButton(providerType) {
 function preOpenAuthPopup() {
     const width = 600;
     const height = 700;
-    const left = (window.screen.width - width) / 2 + 600;
+    const left = (window.screen.width - width) / 2;
     const top = (window.screen.height - height) / 2;
 
     try {
@@ -3076,7 +3076,7 @@ function showAuthModal(authUrl, authInfo, uiOptions = {}) {
                     // 通过服务端API处理手动输入的回调URL
                     window.apiClient.post('/oauth/manual-callback', {
                         provider: authInfo.provider,
-                        callbackUrl: url.href, //使用localhost访问
+                        callbackUrl: url.href, // Use localhost access
                         authMethod: authInfo.authMethod
                     })
                         .then(response => {
@@ -3158,7 +3158,7 @@ function showAuthModal(authUrl, authInfo, uiOptions = {}) {
     const openAuthPopup = () => {
         const width = 600;
         const height = 700;
-        const left = (window.screen.width - width) / 2 + 600;
+        const left = (window.screen.width - width) / 2;
         const top = (window.screen.height - height) / 2;
 
         if (authWindow && !authWindow.closed) {
