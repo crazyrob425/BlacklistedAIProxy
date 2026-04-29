@@ -766,17 +766,28 @@ function generateAddGroupButton(providerType) {
  * 处理生成授权链接
  * @param {string} providerType - 提供商类型
  */
-function preOpenAuthPopup() {
+function getAuthPopupConfig() {
     const width = 600;
     const height = 700;
     const left = (window.screen.width - width) / 2;
     const top = (window.screen.height - height) / 2;
+    return {
+        width,
+        height,
+        left,
+        top,
+        features: `width=${width},height=${height},left=${left},top=${top},status=no,resizable=yes,scrollbars=yes`
+    };
+}
+
+function preOpenAuthPopup() {
+    const { features } = getAuthPopupConfig();
 
     try {
         const popup = window.open(
             '',
             'OAuthAuthWindow',
-            `width=${width},height=${height},left=${left},top=${top},status=no,resizable=yes,scrollbars=yes`
+            features
         );
         if (popup && popup.document) {
             popup.document.title = 'OAuth';
@@ -3125,6 +3136,10 @@ function showAuthModal(authUrl, authInfo, uiOptions = {}) {
 
     const initializePopupHandlers = () => {
         if (popupInitialized) return;
+        if (!authWindow) {
+            popupInitialized = false;
+            return;
+        }
         popupInitialized = true;
         window.addEventListener('oauth_success_event', handleOAuthSuccess);
         window.addEventListener('message', handlePopupMessage);
@@ -3156,10 +3171,7 @@ function showAuthModal(authUrl, authInfo, uiOptions = {}) {
     };
 
     const openAuthPopup = () => {
-        const width = 600;
-        const height = 700;
-        const left = (window.screen.width - width) / 2;
-        const top = (window.screen.height - height) / 2;
+        const { features } = getAuthPopupConfig();
 
         if (authWindow && !authWindow.closed) {
             try {
@@ -3172,7 +3184,7 @@ function showAuthModal(authUrl, authInfo, uiOptions = {}) {
             authWindow = window.open(
                 authUrl,
                 'OAuthAuthWindow',
-                `width=${width},height=${height},left=${left},top=${top},status=no,resizable=yes,scrollbars=yes`
+                features
             );
         }
 
