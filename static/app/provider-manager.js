@@ -3165,7 +3165,7 @@ function showAuthModal(authUrl, authInfo, uiOptions = {}) {
                     processCallback(currentUrl);
                 }
             } catch (e) {
-                // 跨域受限是正常的
+                // Cross-origin restrictions are expected.
             }
         }, 1000);
     };
@@ -3173,19 +3173,19 @@ function showAuthModal(authUrl, authInfo, uiOptions = {}) {
     const openAuthPopup = () => {
         const { features } = getAuthPopupConfig();
 
-        if (authWindow && !authWindow.closed) {
-            try {
-                authWindow.location.href = authUrl;
-                authWindow.focus();
-            } catch (err) {
-                // ignore
-            }
-        } else {
+        if (!authWindow || authWindow.closed) {
             authWindow = window.open(
                 authUrl,
                 'OAuthAuthWindow',
                 features
             );
+        } else {
+            try {
+                authWindow.location.href = authUrl;
+                authWindow.focus();
+            } catch (err) {
+                // Ignore navigation errors from closed or cross-origin popups.
+            }
         }
 
         if (authWindow) {
