@@ -132,6 +132,25 @@ export const PROVIDER_MODELS = {
         'grok-imagine-1.0-edit',
         'grok-imagine-1.0-fast',
         'grok-imagine-1.0-fast-edit',
+    ],
+    'lmarena-bridge': [
+        'lmarena-auto',
+        'gpt-5',
+        'gpt-5-mini',
+        'claude-opus-4-7',
+        'claude-opus-4-6',
+        'claude-sonnet-4-6',
+        'claude-opus-4-5',
+        'gemini-3-pro',
+        'gemini-3-flash',
+        'gemini-2.5-pro',
+        'gemini-2.5-flash',
+        'grok-4.20',
+        'grok-3',
+        'deepseek-r2',
+        'llama-4-scout',
+        'llama-4-maverick',
+        'mistral-large-3',
     ]
 };
 
