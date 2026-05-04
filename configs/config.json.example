@@ -13,6 +13,7 @@
     "PROMPT_LOG_MODE": "none",
     "REQUEST_MAX_RETRIES": 3,
     "REQUEST_BASE_DELAY": 1000,
+    "REQUEST_MAX_RETRY_TIME_MS": 30000,
     "CRON_NEAR_MINUTES": 1,
     "CRON_REFRESH_TOKEN": false,
     "PROVIDER_POOLS_FILE_PATH": "configs/provider_pools.json",
