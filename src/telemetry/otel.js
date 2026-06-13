@@ -18,7 +18,8 @@
 
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { Resource } from '@opentelemetry/resources';
+import pkg from '@opentelemetry/resources';
+const { Resource } = pkg;
 import { trace, diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';

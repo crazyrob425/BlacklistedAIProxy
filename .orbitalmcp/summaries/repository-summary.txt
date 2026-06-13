@@ -1,0 +1,410 @@
+REPO: BlacklistedAIProxy
+FILES: 331 | DIRS: 72
+LANGS: .md:24 .sh:2 .json:25 .example:6 .yml:9 .ps1:9 .code-workspace:1 .bat:3 .html:22 .svg:5 .png:25 .js:146 .css:16 .rs:3 .toml:1 .icns:1 .ico:2 .iss:1 .rtf:1 .txt:2 .exe:5 .yaml:4 .webp:3 .mjs:1 .jpg:1 .mod:1 .sum:1 .go:1
+
+Repository contains 331 files across 72 directories.
+
+Primary languages:
+  .js: 146 files
+  .json: 25 files
+  .png: 25 files
+  .md: 24 files
+  .html: 22 files
+
+Main directories: Output, configs, desktop, docker, docs, installer, src, static, tests, tls-sidecar
+
+Key configuration files:
+  .env.example - Environment variables
+  .gitignore - Git ignore rules
+  desktop/wrb-dashboard-tauri/.gitignore - Git ignore rules
+  desktop/wrb-dashboard-tauri/package.json - Node.js project dependencies and scripts
+  desktop/wrb-dashboard-tauri/README.md - Project documentation
+  desktop/wrb-dashboard-tauri/src-tauri/.gitignore - Git ignore rules
+  docker/docker-compose.build.yml - Docker orchestration
+  docker/docker-compose.yml - Docker orchestration
+  docker-compose.otel.yml - Docker orchestration
+  Dockerfile - Docker container definition
+
+STRUCTURE:
+BlacklistedAIProxy/
+├── .babelrc
+├── .claude/
+│   ├── CLAUDE.md
+│   ├── hooks/
+│   │   └── vexp-guard.sh
+│   ├── settings.json
+│   └── settings.local.json
+├── .dockerignore
+├── .env.example
+├── .flowbaby/
+│   └── logs/
+├── .github/
+│   ├── copilot-instructions.md
+│   ├── ISSUE_TEMPLATE/
+│   │   └── beta-feedback.yml
+│   └── workflows/
+│       ├── build-windows-installer.yml
+│       ├── ci.yml
+│       ├── docker-publish.yml
+│       ├── windows-beta-installer.yml
+│       └── windows-release.yml
+├── .gitignore
+├── .mcp.json
+├── .specify/
+│   ├── memory/
+│   ├── scripts/
+│   │   └── powershell/
+│   │       ├── check-prerequisites.ps1
+│   │       ├── common.ps1
+│   │       ├── create-new-feature.ps1
+│   │       ├── setup-plan.ps1
+│   │       └── update-copilot-context.ps1
+│   └── specs/
+├── BlacklistedAIProxy.code-workspace
+├── build-full-automated.bat
+├── build_installer_user.ps1
+├── BUILD_INSTRUCTIONS.md
+├── CHANGELOG.md
+├── configs/
+│   ├── api-potluck-data.json.example
+│   ├── api-potluck-keys.json.example
+│   ├── config.json.example
+│   ├── plugins.json.example
+│   ├── provider_pools.json.example
+│   └── pwd
+├── CONTRIBUTING.md
+├── desktop/
+│   └── wrb-dashboard-tauri/
+│       ├── .gitignore
+│       ├── index.html
+│       ├── package-lock.json
+│       ├── package.json
+│       ├── public/
+│       │   ├── favicon.svg
+│       │   └── icons.svg
+│       ├── README.md
+│       ├── src/
+│       │   ├── assets/
+│       │   ├── main.js
+│       │   └── style.css
+│       └── src-tauri/
+│           ├── .gitignore
+│           ├── build.rs
+│           ├── capabilities/
+│           ├── Cargo.toml
+│           ├── icons/
+│           ├── src/
+│           └── tauri.conf.json
+├── docker/
+│   ├── docker-compose.build.yml
+│   └── docker-compose.yml
+├── docker-compose.otel.yml
+├── Dockerfile
+├── docs/
+│   ├── DEPENDENCY-REGISTER.md
+│   ├── GOVERNANCE.md
+│   ├── OPENCLAW_CONFIG_GUIDE-JA.md
+│   ├── OPENCLAW_CONFIG_GUIDE-ZH.md
+│   ├── OPENCLAW_CONFIG_GUIDE.md
+│   ├── OPENCODE_CONFIG_EXAMPLE.md
+│   ├── plugins/
+│   │   └── ensemble-synthesizer/
+│   │       └── README.md
+│   ├── PROVIDER_ADAPTER_GUIDE.md
+│   ├── WINDOWS_BETA_PRE_RELEASE.md
+│   └── WINDOWS_BETA_RELEASE_NOTES_TEMPLATE.md
+├── healthcheck.js
+├── install-and-run.bat
+├── install-and-run.ps1
+├── install-and-run.sh
+├── installer/
+│   ├── assets/
+│   │   └── README.md
+│   ├── BlacklistedProxy.iss
+│   ├── legal/
+│   │   ├── FullLegalTerms.rtf
+│   │   ├── HoldHarmless.txt
+│   │   └── TOS.txt
+│   ├── Output/
+│   │   ├── BlacklistedAIProxy-Setup-2.13.7-beta.1-win-x64-v2.exe
+│   │   ├── BlacklistedAIProxy-Setup-2.13.7-beta.1-win-x64-v3.exe
+│   │   └── BlacklistedAIProxy-Setup-2.13.7-beta.1-win-x64.exe
+│   ├── portable/
+│   │   ├── launcher.bat
+│   │   └── launcher.ps1
+│   ├── README.md
+│   └── scripts/
+│       ├── bug-reporter.ps1
+│       ├── service-setup.js
+│       └── watchdog.js
+├── jest.config.js
+├── LICENSE
+├── otel-collector-config.yaml
+├── Output/
+├── package-lock.json
+├── package.json
+├── plugin-concepts.md
+├── pnpm-lock.yaml
+├── promptfoo.yaml
+├── README-JA.md
+├── README-ZH.md
+├── README.md
+├── run-tests.js
+├── SECURITY.md
+├── src/
+│   ├── auth/
+│   │   ├── codex-oauth.js
+│   │   ├── gemini-oauth.js
+│   │   ├── iflow-oauth.js
+│   │   ├── index.js
+│   │   ├── kiro-oauth.js
+│   │   ├── oauth-handlers.js
+│   │   └── qwen-oauth.js
+│   ├── convert/
+│   │   ├── convert-old.js
+│   │   └── convert.js
+│   ├── converters/
+│   │   ├── BaseConverter.js
+│   │   ├── ConverterFactory.js
+│   │   ├── register-converters.js
+│   │   ├── strategies/
+│   │   │   ├── ClaudeConverter.js
+│   │   │   ├── CodexConverter.js
+│   │   │   ├── GeminiConverter.js
+│   │   │   ├── GrokConverter.js
+│   │   │   ├── OpenAIConverter.js
+│   │   │   └── OpenAIResponsesConverter.js
+│   │   └── utils.js
+│   ├── core/
+│   │   ├── config-manager.js
+│   │   ├── marketplace-catalog.js
+│   │   ├── master.js
+│   │   └── plugin-manager.js
+│   ├── example/
+│   │   ├── claude/
+│   │   │   ├── oldResponse1762501965597.json
+│   │   │   ├── oldResponseChunk1762501803864.json
+│   │   │   ├── originalRequestBody1762501795790.json
+│   │   │   ├── originalRequestBody1762501964743.json
+│   │   │   └── responseChunk1762590717239.json
+│   │   ├── gemini/
+│   │   │   ├── oldResponse1762502386432.json
+│   │   │   ├── oldResponseChunk1762502078640.json
+│   │   │   ├── originalRequestBody1762502075001.json
+│   │   │   └── originalRequestBody1762502375803.json
+│   │   ├── openai/
+│   │   │   ├── oldResponse1762501667708.json
+│   │   │   ├── oldResponseChunk1762501528837.json
+│   │   │   ├── originalRequestBody1762501497434.json
+│   │   │   └── originalRequestBody1762501665376.json
+│   │   └── openaiResponses/
+│   │       ├── oldResponse1762502706486.json
+│   │       ├── oldResponseChunk1762500869734.json
+│   │       └── originalRequestBody1762500856556.json
+│   ├── handlers/
+│   │   └── request-handler.js
+│   ├── img/
+│   │   ├── en.png
+│   │   ├── logo-mid.webp
+│   │   ├── logo-min.webp
+│   │   ├── logo.webp
+│   │   ├── web.png
+│   │   └── zh.png
+│   ├── plugins/
+│   │   ├── ai-monitor/
+│   │   │   └── index.js
+│   │   ├── api-potluck/
+│   │   │   ├── api-routes.js
+│   │   │   ├── index.js
+│   │   │   ├── key-manager.js
+│   │   │   ├── middleware.js
+│   │   │   └── user-data-manager.js
+│   │   ├── default-auth/
+│   │   │   └── index.js
+│   │   ├── ensemble-synthesizer/
+│   │   │   ├── api-routes.js
+│   │   │   ├── fanout.js
+│   │   │   ├── index.js
+│   │   │   ├── scorer.js
+│   │   │   └── synthesizer.js
+│   │   ├── model-usage-stats/
+│   │   │   ├── api-routes.js
+│   │   │   ├── index.js
+│   │   │   └── stats-manager.js
+│   │   ├── token-optimizer/
+│   │   │   ├── api-routes.js
+│   │   │   ├── cache.js
+│   │   │   ├── cost-estimator.js
+│   │   │   ├── index.js
+│   │   │   └── optimizer.js
+│   │   └── universal-guard/
+│   │       ├── alerting.js
+│   │       ├── api-routes.js
+│   │       ├── budget-guard.js
+│   │       ├── index.js
+│   │       ├── pii-scrubber.js
+│   │       ├── prompt-policy.js
+│   │       └── rate-limiter.js
+│   ├── providers/
+│   │   ├── adapter.js
+│   │   ├── claude/
+│   │   │   ├── claude-core.js
+│   │   │   ├── claude-kiro.js
+│   │   │   └── claude-strategy.js
+│   │   ├── forward/
+│   │   │   ├── forward-core.js
+│   │   │   └── forward-strategy.js
+│   │   ├── gemini/
+│   │   │   ├── antigravity-core.js
+│   │   │   ├── gemini-core.js
+│   │   │   └── gemini-strategy.js
+│   │   ├── grok/
+│   │   │   ├── grok-core.js
+│   │   │   ├── grok-strategy.js
+│   │   │   └── ws-imagine.js
+│   │   ├── openai/
+│   │   │   ├── codex-core.js
+│   │   │   ├── codex-responses-strategy.js
+│   │   │   ├── iflow-core.js
+│   │   │   ├── openai-core.js
+│   │   │   ├── openai-responses-core.js
+│   │   │   ├── openai-responses-core.mjs
+│   │   │   ├── openai-responses-strategy.js
+│   │   │   ├── openai-strategy.js
+│   │   │   └── qwen-core.js
+│   │   ├── provider-models.js
+│   │   └── provider-pool-manager.js
+│   ├── scripts/
+│   │   ├── kiro-idc-token-refresh.js
+│   │   ├── kiro-token-refresh.js
+│   │   └── merge-json-files.js
+│   ├── services/
+│   │   ├── api-manager.js
+│   │   ├── api-server.js
+│   │   ├── hybrid-gateway.js
+│   │   ├── service-manager.js
+│   │   ├── ui-manager.js
+│   │   └── usage-service.js
+│   ├── telemetry/
+│   │   ├── langfuse-bridge.js
+│   │   ├── otel.js
+│   │   └── tracing.js
+│   ├── ui-modules/
+│   │   ├── auth.js
+│   │   ├── config-api.js
+│   │   ├── config-scanner.js
+│   │   ├── event-broadcast.js
+│   │   ├── marketplace-api.js
+│   │   ├── oauth-api.js
+│   │   ├── plugin-api.js
+│   │   ├── provider-api.js
+│   │   ├── system-api.js
+│   │   ├── system-monitor.js
+│   │   ├── update-api.js
+│   │   ├── upload-config-api.js
+│   │   ├── usage-api.js
+│   │   └── usage-cache.js
+│   └── utils/
+│       ├── common.js
+│       ├── constants.js
+│       ├── grok-assets-proxy.js
+│       ├── logger.js
+│       ├── provider-strategies.js
+│       ├── provider-strategy.js
+│       ├── provider-utils.js
+│       ├── proxy-utils.js
+│       ├── tls-sidecar.js
+│       └── token-utils.js
+├── static/
+│   ├── aicodemirror.jpg
+│   ├── app/
+│   │   ├── app.js
+│   │   ├── auth.js
+│   │   ├── base.css
+│   │   ├── component-loader.js
+│   │   ├── config-manager.js
+│   │   ├── constants.js
+│   │   ├── event-handlers.js
+│   │   ├── event-stream.js
+│   │   ├── file-upload.js
+│   │   ├── i18n.js
+│   │   ├── I18N_GUIDE.md
+│   │   ├── image-zoom.js
+│   │   ├── language-switcher.js
+│   │   ├── marketplace-manager.js
+│   │   ├── mobile.css
+│   │   ├── modal.js
+│   │   ├── models-manager.js
+│   │   ├── navigation.js
+│   │   ├── plugin-manager.js
+│   │   ├── provider-manager.js
+│   │   ├── routing-examples.js
+│   │   ├── theme-switcher.js
+│   │   ├── tutorial-manager.js
+│   │   ├── upload-config-manager.js
+│   │   ├── usage-manager.js
+│   │   ├── utils.js
+│   │   └── workspace-manager.js
+│   ├── coffee.png
+│   ├── components/
+│   │   ├── header.css
+│   │   ├── header.html
+│   │   ├── section-config.css
+│   │   ├── section-config.html
+│   │   ├── section-dashboard.css
+│   │   ├── section-dashboard.html
+│   │   ├── section-guide.css
+│   │   ├── section-guide.html
+│   │   ├── section-logs.css
+│   │   ├── section-logs.html
+│   │   ├── section-marketplace.css
+│   │   ├── section-marketplace.html
+│   │   ├── section-plugins.css
+│   │   ├── section-plugins.html
+│   │   ├── section-providers.css
+│   │   ├── section-providers.html
+│   │   ├── section-tutorial.css
+│   │   ├── section-tutorial.html
+│   │   ├── section-upload-config.css
+│   │   ├── section-upload-config.html
+│   │   ├── section-usage.css
+│   │   ├── section-usage.html
+│   │   ├── section-workspace.css
+│   │   ├── section-workspace.html
+│   │   ├── sidebar.css
+│   │   └── sidebar.html
+│   ├── ensemble-synthesizer.html
+│   ├── favicon.ico
+│   ├── img/
+│   │   └── ensemble-synthesizer-logo.svg
+│   ├── index.html
+│   ├── lingtrueapi.png
+│   ├── login.html
+│   ├── model-usage-stats.html
+│   ├── packycode.png
+│   ├── poixeai.png
+│   ├── potluck-user.html
+│   ├── potluck.html
+│   ├── sponsor.png
+│   ├── token-optimizer.html
+│   ├── universal-guard.html
+│   ├── wechat.png
+│   └── x.com.png
+├── test-summary.js
+├── tests/
+│   ├── api-integration.test.js
+│   ├── concurrent-test.js
+│   ├── hybrid-gateway.test.js
+│   ├── promptfoo/
+│   │   └── security.yaml
+│   ├── provider-models.unit.test.js
+│   ├── security-fixes.test.js
+│   └── security-fixes.unit.test.js
+├── tls-sidecar/
+│   ├── .gitignore
+│   ├── go.mod
+│   ├── go.sum
+│   ├── main.go
+│   └── tls-sidecar.exe
+├── tls-sidecar.exe
+└── VERSION

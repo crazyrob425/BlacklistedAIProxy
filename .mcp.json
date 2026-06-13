@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "orbitalmcp-local": {
+      "url": "http://localhost:3001/mcp",
+      "headers": {}
+    }
+  }
+}

@@ -1,0 +1,134 @@
+{
+  "workspaceRoot": "c:\\Users\\User\\OneDrive\\Documents\\GitHub\\BlacklistedAIProxy",
+  "generatedAt": 1777767836659,
+  "structure": {
+    "totalFiles": 331,
+    "totalDirs": 72,
+    "languages": {
+      ".md": 24,
+      ".sh": 2,
+      ".json": 25,
+      ".example": 6,
+      ".yml": 9,
+      ".ps1": 9,
+      ".code-workspace": 1,
+      ".bat": 3,
+      ".html": 22,
+      ".svg": 5,
+      ".png": 25,
+      ".js": 146,
+      ".css": 16,
+      ".rs": 3,
+      ".toml": 1,
+      ".icns": 1,
+      ".ico": 2,
+      ".iss": 1,
+      ".rtf": 1,
+      ".txt": 2,
+      ".exe": 5,
+      ".yaml": 4,
+      ".webp": 3,
+      ".mjs": 1,
+      ".jpg": 1,
+      ".mod": 1,
+      ".sum": 1,
+      ".go": 1
+    },
+    "topDirectories": [
+      "Output",
+      "configs",
+      "desktop",
+      "docker",
+      "docs",
+      "installer",
+      "src",
+      "static",
+      "tests",
+      "tls-sidecar"
+    ]
+  },
+  "summary": "Repository contains 331 files across 72 directories.\n\nPrimary languages:\n  .js: 146 files\n  .json: 25 files\n  .png: 25 files\n  .md: 24 files\n  .html: 22 files\n\nMain directories: Output, configs, desktop, docker, docs, installer, src, static, tests, tls-sidecar\n\nKey configuration files:\n  .env.example - Environment variables\n  .gitignore - Git ignore rules\n  desktop/wrb-dashboard-tauri/.gitignore - Git ignore rules\n  desktop/wrb-dashboard-tauri/package.json - Node.js project dependencies and scripts\n  desktop/wrb-dashboard-tauri/README.md - Project documentation\n  desktop/wrb-dashboard-tauri/src-tauri/.gitignore - Git ignore rules\n  docker/docker-compose.build.yml - Docker orchestration\n  docker/docker-compose.yml - Docker orchestration\n  docker-compose.otel.yml - Docker orchestration\n  Dockerfile - Docker container definition",
+  "fileTree": "BlacklistedAIProxy/\n├── .babelrc\n├── .claude/\n│   ├── CLAUDE.md\n│   ├── hooks/\n│   │   └── vexp-guard.sh\n│   ├── settings.json\n│   └── settings.local.json\n├── .dockerignore\n├── .env.example\n├── .flowbaby/\n│   └── logs/\n├── .github/\n│   ├── copilot-instructions.md\n│   ├── ISSUE_TEMPLATE/\n│   │   └── beta-feedback.yml\n│   └── workflows/\n│       ├── build-windows-installer.yml\n│       ├── ci.yml\n│       ├── docker-publish.yml\n│       ├── windows-beta-installer.yml\n│       └── windows-release.yml\n├── .gitignore\n├── .mcp.json\n├── .specify/\n│   ├── memory/\n│   ├── scripts/\n│   │   └── powershell/\n│   │       ├── check-prerequisites.ps1\n│   │       ├── common.ps1\n│   │       ├── create-new-feature.ps1\n│   │       ├── setup-plan.ps1\n│   │       └── update-copilot-context.ps1\n│   └── specs/\n├── BlacklistedAIProxy.code-workspace\n├── build-full-automated.bat\n├── build_installer_user.ps1\n├── BUILD_INSTRUCTIONS.md\n├── CHANGELOG.md\n├── configs/\n│   ├── api-potluck-data.json.example\n│   ├── api-potluck-keys.json.example\n│   ├── config.json.example\n│   ├── plugins.json.example\n│   ├── provider_pools.json.example\n│   └── pwd\n├── CONTRIBUTING.md\n├── desktop/\n│   └── wrb-dashboard-tauri/\n│       ├── .gitignore\n│       ├── index.html\n│       ├── package-lock.json\n│       ├── package.json\n│       ├── public/\n│       │   ├── favicon.svg\n│       │   └── icons.svg\n│       ├── README.md\n│       ├── src/\n│       │   ├── assets/\n│       │   ├── main.js\n│       │   └── style.css\n│       └── src-tauri/\n│           ├── .gitignore\n│           ├── build.rs\n│           ├── capabilities/\n│           ├── Cargo.toml\n│           ├── icons/\n│           ├── src/\n│           └── tauri.conf.json\n├── docker/\n│   ├── docker-compose.build.yml\n│   └── docker-compose.yml\n├── docker-compose.otel.yml\n├── Dockerfile\n├── docs/\n│   ├── DEPENDENCY-REGISTER.md\n│   ├── GOVERNANCE.md\n│   ├── OPENCLAW_CONFIG_GUIDE-JA.md\n│   ├── OPENCLAW_CONFIG_GUIDE-ZH.md\n│   ├── OPENCLAW_CONFIG_GUIDE.md\n│   ├── OPENCODE_CONFIG_EXAMPLE.md\n│   ├── plugins/\n│   │   └── ensemble-synthesizer/\n│   │       └── README.md\n│   ├── PROVIDER_ADAPTER_GUIDE.md\n│   ├── WINDOWS_BETA_PRE_RELEASE.md\n│   └── WINDOWS_BETA_RELEASE_NOTES_TEMPLATE.md\n├── healthcheck.js\n├── install-and-run.bat\n├── install-and-run.ps1\n├── install-and-run.sh\n├── installer/\n│   ├── assets/\n│   │   └── README.md\n│   ├── BlacklistedProxy.iss\n│   ├── legal/\n│   │   ├── FullLegalTerms.rtf\n│   │   ├── HoldHarmless.txt\n│   │   └── TOS.txt\n│   ├── Output/\n│   │   ├── BlacklistedAIProxy-Setup-2.13.7-beta.1-win-x64-v2.exe\n│   │   ├── BlacklistedAIProxy-Setup-2.13.7-beta.1-win-x64-v3.exe\n│   │   └── BlacklistedAIProxy-Setup-2.13.7-beta.1-win-x64.exe\n│   ├── portable/\n│   │   ├── launcher.bat\n│   │   └── launcher.ps1\n│   ├── README.md\n│   └── scripts/\n│       ├── bug-reporter.ps1\n│       ├── service-setup.js\n│       └── watchdog.js\n├── jest.config.js\n├── LICENSE\n├── otel-collector-config.yaml\n├── Output/\n├── package-lock.json\n├── package.json\n├── plugin-concepts.md\n├── pnpm-lock.yaml\n├── promptfoo.yaml\n├── README-JA.md\n├── README-ZH.md\n├── README.md\n├── run-tests.js\n├── SECURITY.md\n├── src/\n│   ├── auth/\n│   │   ├── codex-oauth.js\n│   │   ├── gemini-oauth.js\n│   │   ├── iflow-oauth.js\n│   │   ├── index.js\n│   │   ├── kiro-oauth.js\n│   │   ├── oauth-handlers.js\n│   │   └── qwen-oauth.js\n│   ├── convert/\n│   │   ├── convert-old.js\n│   │   └── convert.js\n│   ├── converters/\n│   │   ├── BaseConverter.js\n│   │   ├── ConverterFactory.js\n│   │   ├── register-converters.js\n│   │   ├── strategies/\n│   │   │   ├── ClaudeConverter.js\n│   │   │   ├── CodexConverter.js\n│   │   │   ├── GeminiConverter.js\n│   │   │   ├── GrokConverter.js\n│   │   │   ├── OpenAIConverter.js\n│   │   │   └── OpenAIResponsesConverter.js\n│   │   └── utils.js\n│   ├── core/\n│   │   ├── config-manager.js\n│   │   ├── marketplace-catalog.js\n│   │   ├── master.js\n│   │   └── plugin-manager.js\n│   ├── example/\n│   │   ├── claude/\n│   │   │   ├── oldResponse1762501965597.json\n│   │   │   ├── oldResponseChunk1762501803864.json\n│   │   │   ├── originalRequestBody1762501795790.json\n│   │   │   ├── originalRequestBody1762501964743.json\n│   │   │   └── responseChunk1762590717239.json\n│   │   ├── gemini/\n│   │   │   ├── oldResponse1762502386432.json\n│   │   │   ├── oldResponseChunk1762502078640.json\n│   │   │   ├── originalRequestBody1762502075001.json\n│   │   │   └── originalRequestBody1762502375803.json\n│   │   ├── openai/\n│   │   │   ├── oldResponse1762501667708.json\n│   │   │   ├── oldResponseChunk1762501528837.json\n│   │   │   ├── originalRequestBody1762501497434.json\n│   │   │   └── originalRequestBody1762501665376.json\n│   │   └── openaiResponses/\n│   │       ├── oldResponse1762502706486.json\n│   │       ├── oldResponseChunk1762500869734.json\n│   │       └── originalRequestBody1762500856556.json\n│   ├── handlers/\n│   │   └── request-handler.js\n│   ├── img/\n│   │   ├── en.png\n│   │   ├── logo-mid.webp\n│   │   ├── logo-min.webp\n│   │   ├── logo.webp\n│   │   ├── web.png\n│   │   └── zh.png\n│   ├── plugins/\n│   │   ├── ai-monitor/\n│   │   │   └── index.js\n│   │   ├── api-potluck/\n│   │   │   ├── api-routes.js\n│   │   │   ├── index.js\n│   │   │   ├── key-manager.js\n│   │   │   ├── middleware.js\n│   │   │   └── user-data-manager.js\n│   │   ├── default-auth/\n│   │   │   └── index.js\n│   │   ├── ensemble-synthesizer/\n│   │   │   ├── api-routes.js\n│   │   │   ├── fanout.js\n│   │   │   ├── index.js\n│   │   │   ├── scorer.js\n│   │   │   └── synthesizer.js\n│   │   ├── model-usage-stats/\n│   │   │   ├── api-routes.js\n│   │   │   ├── index.js\n│   │   │   └── stats-manager.js\n│   │   ├── token-optimizer/\n│   │   │   ├── api-routes.js\n│   │   │   ├── cache.js\n│   │   │   ├── cost-estimator.js\n│   │   │   ├── index.js\n│   │   │   └── optimizer.js\n│   │   └── universal-guard/\n│   │       ├── alerting.js\n│   │       ├── api-routes.js\n│   │       ├── budget-guard.js\n│   │       ├── index.js\n│   │       ├── pii-scrubber.js\n│   │       ├── prompt-policy.js\n│   │       └── rate-limiter.js\n│   ├── providers/\n│   │   ├── adapter.js\n│   │   ├── claude/\n│   │   │   ├── claude-core.js\n│   │   │   ├── claude-kiro.js\n│   │   │   └── claude-strategy.js\n│   │   ├── forward/\n│   │   │   ├── forward-core.js\n│   │   │   └── forward-strategy.js\n│   │   ├── gemini/\n│   │   │   ├── antigravity-core.js\n│   │   │   ├── gemini-core.js\n│   │   │   └── gemini-strategy.js\n│   │   ├── grok/\n│   │   │   ├── grok-core.js\n│   │   │   ├── grok-strategy.js\n│   │   │   └── ws-imagine.js\n│   │   ├── openai/\n│   │   │   ├── codex-core.js\n│   │   │   ├── codex-responses-strategy.js\n│   │   │   ├── iflow-core.js\n│   │   │   ├── openai-core.js\n│   │   │   ├── openai-responses-core.js\n│   │   │   ├── openai-responses-core.mjs\n│   │   │   ├── openai-responses-strategy.js\n│   │   │   ├── openai-strategy.js\n│   │   │   └── qwen-core.js\n│   │   ├── provider-models.js\n│   │   └── provider-pool-manager.js\n│   ├── scripts/\n│   │   ├── kiro-idc-token-refresh.js\n│   │   ├── kiro-token-refresh.js\n│   │   └── merge-json-files.js\n│   ├── services/\n│   │   ├── api-manager.js\n│   │   ├── api-server.js\n│   │   ├── hybrid-gateway.js\n│   │   ├── service-manager.js\n│   │   ├── ui-manager.js\n│   │   └── usage-service.js\n│   ├── telemetry/\n│   │   ├── langfuse-bridge.js\n│   │   ├── otel.js\n│   │   └── tracing.js\n│   ├── ui-modules/\n│   │   ├── auth.js\n│   │   ├── config-api.js\n│   │   ├── config-scanner.js\n│   │   ├── event-broadcast.js\n│   │   ├── marketplace-api.js\n│   │   ├── oauth-api.js\n│   │   ├── plugin-api.js\n│   │   ├── provider-api.js\n│   │   ├── system-api.js\n│   │   ├── system-monitor.js\n│   │   ├── update-api.js\n│   │   ├── upload-config-api.js\n│   │   ├── usage-api.js\n│   │   └── usage-cache.js\n│   └── utils/\n│       ├── common.js\n│       ├── constants.js\n│       ├── grok-assets-proxy.js\n│       ├── logger.js\n│       ├── provider-strategies.js\n│       ├── provider-strategy.js\n│       ├── provider-utils.js\n│       ├── proxy-utils.js\n│       ├── tls-sidecar.js\n│       └── token-utils.js\n├── static/\n│   ├── aicodemirror.jpg\n│   ├── app/\n│   │   ├── app.js\n│   │   ├── auth.js\n│   │   ├── base.css\n│   │   ├── component-loader.js\n│   │   ├── config-manager.js\n│   │   ├── constants.js\n│   │   ├── event-handlers.js\n│   │   ├── event-stream.js\n│   │   ├── file-upload.js\n│   │   ├── i18n.js\n│   │   ├── I18N_GUIDE.md\n│   │   ├── image-zoom.js\n│   │   ├── language-switcher.js\n│   │   ├── marketplace-manager.js\n│   │   ├── mobile.css\n│   │   ├── modal.js\n│   │   ├── models-manager.js\n│   │   ├── navigation.js\n│   │   ├── plugin-manager.js\n│   │   ├── provider-manager.js\n│   │   ├── routing-examples.js\n│   │   ├── theme-switcher.js\n│   │   ├── tutorial-manager.js\n│   │   ├── upload-config-manager.js\n│   │   ├── usage-manager.js\n│   │   ├── utils.js\n│   │   └── workspace-manager.js\n│   ├── coffee.png\n│   ├── components/\n│   │   ├── header.css\n│   │   ├── header.html\n│   │   ├── section-config.css\n│   │   ├── section-config.html\n│   │   ├── section-dashboard.css\n│   │   ├── section-dashboard.html\n│   │   ├── section-guide.css\n│   │   ├── section-guide.html\n│   │   ├── section-logs.css\n│   │   ├── section-logs.html\n│   │   ├── section-marketplace.css\n│   │   ├── section-marketplace.html\n│   │   ├── section-plugins.css\n│   │   ├── section-plugins.html\n│   │   ├── section-providers.css\n│   │   ├── section-providers.html\n│   │   ├── section-tutorial.css\n│   │   ├── section-tutorial.html\n│   │   ├── section-upload-config.css\n│   │   ├── section-upload-config.html\n│   │   ├── section-usage.css\n│   │   ├── section-usage.html\n│   │   ├── section-workspace.css\n│   │   ├── section-workspace.html\n│   │   ├── sidebar.css\n│   │   └── sidebar.html\n│   ├── ensemble-synthesizer.html\n│   ├── favicon.ico\n│   ├── img/\n│   │   └── ensemble-synthesizer-logo.svg\n│   ├── index.html\n│   ├── lingtrueapi.png\n│   ├── login.html\n│   ├── model-usage-stats.html\n│   ├── packycode.png\n│   ├── poixeai.png\n│   ├── potluck-user.html\n│   ├── potluck.html\n│   ├── sponsor.png\n│   ├── token-optimizer.html\n│   ├── universal-guard.html\n│   ├── wechat.png\n│   └── x.com.png\n├── test-summary.js\n├── tests/\n│   ├── api-integration.test.js\n│   ├── concurrent-test.js\n│   ├── hybrid-gateway.test.js\n│   ├── promptfoo/\n│   │   └── security.yaml\n│   ├── provider-models.unit.test.js\n│   ├── security-fixes.test.js\n│   └── security-fixes.unit.test.js\n├── tls-sidecar/\n│   ├── .gitignore\n│   ├── go.mod\n│   ├── go.sum\n│   ├── main.go\n│   └── tls-sidecar.exe\n├── tls-sidecar.exe\n└── VERSION",
+  "keyFiles": [
+    {
+      "path": ".env.example",
+      "type": "config",
+      "purpose": "Environment variables"
+    },
+    {
+      "path": ".gitignore",
+      "type": "config",
+      "purpose": "Git ignore rules"
+    },
+    {
+      "path": "desktop/wrb-dashboard-tauri/.gitignore",
+      "type": "config",
+      "purpose": "Git ignore rules"
+    },
+    {
+      "path": "desktop/wrb-dashboard-tauri/package.json",
+      "type": "config",
+      "purpose": "Node.js project dependencies and scripts"
+    },
+    {
+      "path": "desktop/wrb-dashboard-tauri/README.md",
+      "type": "doc",
+      "purpose": "Project documentation"
+    },
+    {
+      "path": "desktop/wrb-dashboard-tauri/src-tauri/.gitignore",
+      "type": "config",
+      "purpose": "Git ignore rules"
+    },
+    {
+      "path": "docker/docker-compose.build.yml",
+      "type": "config",
+      "purpose": "Docker orchestration"
+    },
+    {
+      "path": "docker/docker-compose.yml",
+      "type": "config",
+      "purpose": "Docker orchestration"
+    },
+    {
+      "path": "docker-compose.otel.yml",
+      "type": "config",
+      "purpose": "Docker orchestration"
+    },
+    {
+      "path": "Dockerfile",
+      "type": "config",
+      "purpose": "Docker container definition"
+    },
+    {
+      "path": "docs/plugins/ensemble-synthesizer/README.md",
+      "type": "doc",
+      "purpose": "Project documentation"
+    },
+    {
+      "path": "installer/assets/README.md",
+      "type": "doc",
+      "purpose": "Project documentation"
+    },
+    {
+      "path": "installer/README.md",
+      "type": "doc",
+      "purpose": "Project documentation"
+    },
+    {
+      "path": "package.json",
+      "type": "config",
+      "purpose": "Node.js project dependencies and scripts"
+    },
+    {
+      "path": "README.md",
+      "type": "doc",
+      "purpose": "Project documentation"
+    },
+    {
+      "path": "tls-sidecar/.gitignore",
+      "type": "config",
+      "purpose": "Git ignore rules"
+    }
+  ]
+}

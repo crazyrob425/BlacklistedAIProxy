@@ -46,5 +46,5 @@ $numericVersion = "$version.1"
 & $isccPath "/DAppVersion=$fullVersion" "/DAppVersionNumeric=$numericVersion" "installer\BlacklistedProxy.iss"
 
 Write-Host "Starting the installer wizard..."
-$installerPath = "Output\BlacklistedAIProxy-Setup-$fullVersion-win-x64.exe"
+$installerPath = "installer\Output\BlacklistedAIProxy-Setup-$fullVersion-win-x64-v3.exe"
 Start-Process -FilePath $installerPath

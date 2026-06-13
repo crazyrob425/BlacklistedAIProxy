@@ -57,10 +57,11 @@ DefaultGroupName={#AppName}
 AllowNoIcons=yes
 DisableProgramGroupPage=no
 DisableWelcomePage=no
+DisableDirPage=no
 
 ; Output settings
 OutputDir=Output
-OutputBaseFilename=BlacklistedAIProxy-Setup-{#AppVersion}-win-x64
+OutputBaseFilename=BlacklistedAIProxy-Setup-{#AppVersion}-win-x64-v3
 ; SetupIconFile=assets\SetupIcon.ico
 ; UninstallDisplayIcon={app}\assets\SetupIcon.ico
 ; WizardImageFile=assets\WizardImage.bmp
@@ -158,18 +159,19 @@ Source: "..\tls-sidecar\tls-sidecar.exe"; DestDir: "{app}\tls-sidecar"; Flags: i
 ; ==============================================================================
 [Icons]
 ; Full install
-Name: "{group}\{#AppName} — Open Web UI";    Filename: "{app}\runtime\node.exe"; Parameters: """{app}\src\core\master.js"""; WorkingDir: "{app}"; Comment: "Launch the BlacklistedAIProxy proxy server and open the Web UI"; Components: shortcuts
-Name: "{group}\{#AppName} — Report a Bug";   Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\bug-reporter.ps1"""; Comment: "Report a bug directly to the GitHub issue tracker"; Components: bugreport
-Name: "{group}\{#AppName} — Uninstall";      Filename: "{uninstallexe}"; Components: shortcuts
-Name: "{group}\README & Documentation";      Filename: "{app}\README.md"; Components: shortcuts
+Name: "{group}\{#AppName} — Open Web UI";    Filename: "{app}\runtime\node.exe"; Parameters: """{app}\src\core\master.js"""; WorkingDir: "{app}"; Comment: "Launch the BlacklistedAIProxy proxy server and open the Web UI"; Tasks: startmenuicon; Components: shortcuts
+Name: "{group}\{#AppName} — Report a Bug";   Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\bug-reporter.ps1"""; Comment: "Report a bug directly to the GitHub issue tracker"; Tasks: startmenuicon; Components: bugreport
+Name: "{group}\{#AppName} — Uninstall";      Filename: "{uninstallexe}"; Tasks: startmenuicon; Components: shortcuts
+Name: "{group}\README & Documentation";      Filename: "{app}\README.md"; Tasks: startmenuicon; Components: shortcuts
 Name: "{commondesktop}\{#AppName}";          Filename: "{app}\runtime\node.exe"; Parameters: """{app}\src\core\master.js"""; WorkingDir: "{app}"; Tasks: desktopicon; Components: shortcuts
 
 ; Portable install
-Name: "{group}\{#AppName} Portable — Launch"; Filename: "{app}\Launch BlacklistedAIProxy.bat"; WorkingDir: "{app}"; Components: app; Check: IsPortableInstall
-Name: "{group}\{#AppName} — Report a Bug";    Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\bug-reporter.ps1"""; Components: bugreport; Check: IsPortableInstall
+Name: "{group}\{#AppName} Portable — Launch"; Filename: "{app}\Launch BlacklistedAIProxy.bat"; WorkingDir: "{app}"; Tasks: startmenuicon; Components: app; Check: IsPortableInstall
+Name: "{group}\{#AppName} — Report a Bug";    Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\bug-reporter.ps1"""; Tasks: startmenuicon; Components: bugreport; Check: IsPortableInstall
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a Desktop shortcut"; GroupDescription: "Additional shortcuts:"; Flags: unchecked
+Name: "startmenuicon"; Description: "Create Start Menu shortcuts"; GroupDescription: "Additional shortcuts:"; Flags: unchecked
 
 ; ==============================================================================
 ; REGISTRY (full install only)
@@ -189,6 +191,12 @@ Filename: "{cmd}"; Parameters: "/c mkdir ""{app}\logs"""; Flags: runhidden; Comp
 ; ── Copy example config if config.json doesn't exist ────────────────────────
 Filename: "{cmd}"; Parameters: "/c if not exist ""{app}\configs\config.json"" copy ""{app}\configs\config.json.example"" ""{app}\configs\config.json"""; Flags: runhidden; Components: app; StatusMsg: "Initializing configuration..."
 
+; ── Stop and remove existing services to prevent NSSM from hanging ───────────
+Filename: "{cmd}"; Parameters: "/c taskkill /F /FI ""SERVICES eq {#WatchdogName}"" /T"; Flags: runhidden; Components: watchdog
+Filename: "{app}\tools\nssm.exe"; Parameters: "remove {#WatchdogName} confirm"; Flags: runhidden; Components: watchdog
+Filename: "{cmd}"; Parameters: "/c taskkill /F /FI ""SERVICES eq {#ServiceName}"" /T"; Flags: runhidden; Components: service
+Filename: "{app}\tools\nssm.exe"; Parameters: "remove {#ServiceName} confirm"; Flags: runhidden; Components: service
+
 ; ── Install main service via NSSM ────────────────────────────────────────────
 Filename: "{app}\tools\nssm.exe"; Parameters: "install {#ServiceName} ""{app}\runtime\node.exe"" ""{app}\src\core\master.js"""; Flags: runhidden; Components: service; StatusMsg: "Installing Windows service..."
 Filename: "{app}\tools\nssm.exe"; Parameters: "set {#ServiceName} AppDirectory ""{app}"""; Flags: runhidden; Components: service
@@ -205,7 +213,7 @@ Filename: "{app}\tools\nssm.exe"; Parameters: "set {#ServiceName} AppRotateBytes
 Filename: "{app}\tools\nssm.exe"; Parameters: "set {#ServiceName} AppRestartDelay 5000"; Flags: runhidden; Components: service
 Filename: "{app}\tools\nssm.exe"; Parameters: "set {#ServiceName} AppThrottle 1500"; Flags: runhidden; Components: service
 ; Start the service immediately after install
-Filename: "{app}\tools\nssm.exe"; Parameters: "start {#ServiceName}"; Flags: runhidden; Components: service; StatusMsg: "Starting BlacklistedAIProxy service..."
+Filename: "{app}\tools\nssm.exe"; Parameters: "start {#ServiceName}"; Flags: runhidden nowait; Components: service; StatusMsg: "Starting BlacklistedAIProxy service..."
 
 ; ── Install watchdog service via NSSM ────────────────────────────────────────
 Filename: "{app}\tools\nssm.exe"; Parameters: "install {#WatchdogName} ""{app}\runtime\node.exe"" ""{app}\watchdog.js"""; Flags: runhidden; Components: watchdog; StatusMsg: "Installing watchdog service..."
@@ -216,7 +224,7 @@ Filename: "{app}\tools\nssm.exe"; Parameters: "set {#WatchdogName} Description B
 Filename: "{app}\tools\nssm.exe"; Parameters: "set {#WatchdogName} AppStdout ""{app}\logs\watchdog.log"""; Flags: runhidden; Components: watchdog
 Filename: "{app}\tools\nssm.exe"; Parameters: "set {#WatchdogName} AppStderr ""{app}\logs\watchdog-error.log"""; Flags: runhidden; Components: watchdog
 Filename: "{app}\tools\nssm.exe"; Parameters: "set {#WatchdogName} AppRestartDelay 10000"; Flags: runhidden; Components: watchdog
-Filename: "{app}\tools\nssm.exe"; Parameters: "start {#WatchdogName}"; Flags: runhidden; Components: watchdog; StatusMsg: "Starting watchdog service..."
+Filename: "{app}\tools\nssm.exe"; Parameters: "start {#WatchdogName}"; Flags: runhidden nowait; Components: watchdog; StatusMsg: "Starting watchdog service..."
 
 ; ── Open config file for user to review after install ────────────────────────
 Filename: "{app}\configs\config.json"; Description: "Open config.json to configure your providers"; Flags: postinstall shellexec skipifsilent; Components: app
@@ -226,10 +234,10 @@ Filename: "{app}\configs\config.json"; Description: "Open config.json to configu
 ; ==============================================================================
 [UninstallRun]
 ; Stop and remove watchdog service
-Filename: "{app}\tools\nssm.exe"; Parameters: "stop {#WatchdogName}"; Flags: runhidden; Components: watchdog; RunOnceId: "StopWatchdog"
+Filename: "{cmd}"; Parameters: "/c taskkill /F /FI ""SERVICES eq {#WatchdogName}"" /T"; Flags: runhidden; Components: watchdog; RunOnceId: "KillWatchdog"
 Filename: "{app}\tools\nssm.exe"; Parameters: "remove {#WatchdogName} confirm"; Flags: runhidden; Components: watchdog; RunOnceId: "RemoveWatchdog"
 ; Stop and remove main service
-Filename: "{app}\tools\nssm.exe"; Parameters: "stop {#ServiceName}"; Flags: runhidden; Components: service; RunOnceId: "StopService"
+Filename: "{cmd}"; Parameters: "/c taskkill /F /FI ""SERVICES eq {#ServiceName}"" /T"; Flags: runhidden; Components: service; RunOnceId: "KillService"
 Filename: "{app}\tools\nssm.exe"; Parameters: "remove {#ServiceName} confirm"; Flags: runhidden; Components: service; RunOnceId: "RemoveService"
 
 ; ==============================================================================
