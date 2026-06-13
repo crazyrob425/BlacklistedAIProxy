@@ -498,6 +498,40 @@ async function apiRequest(url, options = {}) {
     return apiClient.request(endpoint, options);
 }
 
+/**
+ * 复制文本到剪贴板（带兼容性回退）
+ * @param {string} text - 要复制的文本
+ * @returns {Promise<boolean>} 是否成功
+ */
+async function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+            await navigator.clipboard.writeText(text);
+            return true;
+        } catch (err) {
+            console.warn('navigator.clipboard failed, trying fallback:', err);
+        }
+    }
+
+    // Fallback: 使用 textarea 模拟复制
+    try {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        textArea.style.top = '0';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        return successful;
+    } catch (err) {
+        console.error('Fallback copy failed:', err);
+        return false;
+    }
+}
+
 // 导出所有工具函数
 export {
     formatUptime,
@@ -508,5 +542,6 @@ export {
     getProviderConfigs,
     getBaseProviderConfigs,
     getProviderStats,
-    apiRequest
+    apiRequest,
+    copyToClipboard
 };

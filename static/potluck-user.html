@@ -333,6 +333,27 @@
             width: 100%;
             justify-content: center;
         }
+
+        .calendar-panel { background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 2rem; box-shadow: var(--shadow-sm); }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .calendar-legend { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-tertiary); }
+        .calendar-legend .level { width: 10px; height: 10px; border-radius: 2px; }
+        .calendar-wrapper { overflow-x: auto; padding: 25px 0 10px; scrollbar-width: thin; margin-top: -15px; display: flex; justify-content: center; }
+        .calendar-grid { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 11px); gap: 3px; min-width: max-content; padding: 2px; }
+        .calendar-day { width: 11px; height: 11px; border-radius: 2px; background: var(--bg-secondary); position: relative; cursor: pointer; transition: transform 0.1s; }
+        .calendar-day:hover { transform: scale(1.2); z-index: 10; outline: 1px solid var(--primary-color); }
+        .calendar-footer { margin-top: 10px; font-size: 12px; color: var(--text-tertiary); text-align: right; }
+        .level-0, .calendar-day[data-level="0"] { background: var(--bg-secondary); }
+        .level-1, .calendar-day[data-level="1"] { background: #9be9a8; }
+        .level-2, .calendar-day[data-level="2"] { background: #40c463; }
+        .level-3, .calendar-day[data-level="3"] { background: #30a14e; }
+        .level-4, .calendar-day[data-level="4"] { background: #216e39; }
+        [data-theme="dark"] .level-1, [data-theme="dark"] .calendar-day[data-level="1"] { background: #0e4429; }
+        [data-theme="dark"] .level-2, [data-theme="dark"] .calendar-day[data-level="2"] { background: #006d32; }
+        [data-theme="dark"] .level-3, [data-theme="dark"] .calendar-day[data-level="3"] { background: #26a641; }
+        [data-theme="dark"] .level-4, [data-theme="dark"] .calendar-day[data-level="4"] { background: #39d353; }
+        .calendar-tooltip { position: fixed; padding: 6px 10px; background: rgba(0,0,0,0.9); color: #fff; font-size: 11px; border-radius: 4px; pointer-events: none; z-index: 1000; display: none; box-shadow: 0 3px 10px rgba(0,0,0,0.3); white-space: pre-line; line-height: 1.4; }
+
     </style>
 </head>
 <body>
@@ -399,6 +420,7 @@
                     <span id="statToday">0</span>
                     <span class="dim"> / <span id="statLimit">0</span></span>
                 </div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">QPS: <span id="statQps" style="font-weight:700;color:var(--primary-color)">0.00</span> (峰值: <span id="statMaxQps">0.00</span>) | RPM: <span id="statRpm" style="font-weight:700;color:var(--primary-color)">0.00</span> (峰值: <span id="statMaxRpm">0.00</span>)</div>
             </div>
             <div class="stat-card green">
                 <div class="label">剩余额度</div>
@@ -413,6 +435,7 @@
             <div class="stat-card green">
                 <div class="label">今日 Tokens</div>
                 <div class="value" id="statTodayTokens">0</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">TPS: <span id="statTps" style="font-weight:700;color:var(--primary-color)">0.00</span> (峰值: <span id="statMaxTps">0.00</span>)</div>
             </div>
             <div class="stat-card cyan">
                 <div class="label">今日缓存 Tokens</div>
@@ -430,8 +453,23 @@
 
         <!-- 我的使用分布统计区域 -->
         <div id="usageStatsSection" style="margin-bottom: 2.5rem; display: none;">
-            <h3 class="section-title"><i class="fas fa-chart-pie"></i> 我的使用分布 (最近 7 天)</h3>
+            <h3 class="section-title"><i class="fas fa-chart-pie"></i> 我的使用趋势与分布 (最近 3 个月)</h3>
             <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                <!-- Token 用量日历 -->
+                <div class="stat-card" style="text-align: left; padding: 20px;">
+                    <div class="label" style="margin-bottom: 10px; font-weight: 600; display: flex; justify-content: space-between;">
+                        <span>我的 Token 消耗趋势</span>
+                        <div class="calendar-legend" style="gap: 3px;">
+                            <div class="level level-1" style="width:8px;height:8px"></div>
+                            <div class="level level-4" style="width:8px;height:8px"></div>
+                        </div>
+                    </div>
+                    <div class="calendar-wrapper" style="justify-content: flex-start; padding: 10px 0 5px; margin-top: 0;">
+                        <div class="calendar-grid" id="calendarGrid" style="grid-template-rows: repeat(7, 11px); gap: 3px;"></div>
+                    </div>
+                    <div id="calendarFooter" style="font-size: 11px; color: var(--text-tertiary); margin-top: 8px;"></div>
+                </div>
+
                 <!-- 提供商分布 -->
                 <div class="stat-card" style="text-align: left; padding: 20px;">
                     <div class="label" style="margin-bottom: 15px; font-weight: 600; display: flex; justify-content: space-between;">
@@ -454,6 +492,8 @@
                 </div>
             </div>
         </div>
+        <div id="usageTooltip" class="calendar-tooltip"></div>
+
         
         <!-- API 密钥区域 -->
 
@@ -608,6 +648,14 @@
             document.getElementById('statTotalTokens').textContent = formatTokenCompact(data.tokens?.total || 0);
             document.getElementById('statTotalCachedTokens').textContent = formatTokenCompact(data.tokens?.cached || 0);
             
+            // 速率统计
+            document.getElementById('statQps').textContent = (data.usage?.qps || 0).toFixed(2);
+            document.getElementById('statMaxQps').textContent = (data.usage?.maxQps || 0).toFixed(2);
+            document.getElementById('statRpm').textContent = (data.usage?.rpm || 0).toFixed(2);
+            document.getElementById('statMaxRpm').textContent = (data.usage?.maxRpm || 0).toFixed(2);
+            document.getElementById('statTps').textContent = (data.usage?.tps || 0).toFixed(2);
+            document.getElementById('statMaxTps').textContent = (data.usage?.maxTps || 0).toFixed(2);
+            
             // 最后使用时间
             if (data.lastUsedAt) {
                 const date = new Date(data.lastUsedAt);
@@ -621,11 +669,80 @@
 
             // 渲染个人使用分布
             renderUsageHistory(data.usageHistory);
+            renderCalendar(data.usageHistory || {});
+        }
+
+        function renderCalendar(usageHistory = {}) {
+            const grid = document.getElementById('calendarGrid'), tooltip = document.getElementById('usageTooltip');
+            if (!grid) return;
+            grid.innerHTML = '';
+            const now = new Date();
+            const startDate = new Date();
+            startDate.setMonth(now.getMonth() - 3);
+            startDate.setDate(startDate.getDate() - startDate.getDay());
+            
+            // 提取每日总 Token 和请求数
+            const dailyData = {};
+            Object.entries(usageHistory).forEach(([date, data]) => {
+                dailyData[date] = {
+                    totalTokens: data.summary?.totalTokens || 0,
+                    requestCount: data.summary?.requestCount || 0,
+                    maxQps: data.summary?.maxQps || 0,
+                    maxRpm: data.summary?.maxRpm || 0,
+                    maxTps: data.summary?.maxTps || 0
+                };
+            });
+            
+            const values = Object.values(dailyData).map(d => d.totalTokens);
+            const max = Math.max(...values, 1000);
+            const dayCount = Math.floor((now - startDate) / (24 * 3600 * 1000)) + 1;
+            let currentTotal = 0;
+            
+            for(let i = 0; i < dayCount; i++){
+                const date = new Date(startDate);
+                date.setDate(startDate.getDate() + i);
+                if (date > now) break;
+                
+                // 统一使用北京时间 (UTC+8) 生成 key，与后端保持一致
+                const utc8Date = new Date(date.getTime() + (8 * 60 * 60 * 1000));
+                const dateKey = utc8Date.toISOString().split('T')[0];
+                const entry = dailyData[dateKey] || { totalTokens: 0, requestCount: 0 };
+                const tokens = entry.totalTokens;
+                const requests = entry.requestCount;
+                currentTotal += tokens;
+                
+                let level = 0;
+                if (tokens > 0) {
+                    const ratio = tokens / max;
+                    if (ratio < 0.25) level = 1;
+                    else if (ratio < 0.5) level = 2;
+                    else if (ratio < 0.75) level = 3;
+                    else level = 4;
+                }
+                
+                const day = document.createElement('div');
+                day.className = 'calendar-day';
+                day.dataset.level = level;
+                
+                const tipText = `${dateKey}: ${formatNumber(requests)} 次请求, ${formatTokenCompact(tokens)} Tokens${entry.maxQps ? `\n峰值: ${entry.maxQps.toFixed(2)} QPS / ${entry.maxRpm.toFixed(0)} RPM / ${entry.maxTps.toFixed(2)} TPS` : ''}`;
+                day.onmouseenter = (e) => {
+                    tooltip.innerText = tipText;
+                    tooltip.style.display = 'block';
+                    const rect = day.getBoundingClientRect();
+                    tooltip.style.left = `${rect.left + rect.width / 2 - tooltip.offsetWidth / 2}px`;
+                    tooltip.style.top = `${rect.top - tooltip.offsetHeight - 8}px`;
+                };
+                day.onmouseleave = () => { tooltip.style.display = 'none'; };
+                
+                grid.appendChild(day);
+            }
+            document.getElementById('calendarFooter').textContent = `最近三个月累计消耗: ${formatTokenCompact(currentTotal)} Tokens`;
         }
 
         /**
          * 渲染个人使用分布
          */
+
         function renderUsageHistory(usageHistory) {
             if (!usageHistory || Object.keys(usageHistory).length === 0) {
                 document.getElementById('usageStatsSection').style.display = 'none';
@@ -673,8 +790,8 @@
             const container = document.getElementById(elementId);
             const sorted = Object.entries(data).sort((a, b) => b[1] - a[1]);
             
-            // 最多显示前 5 个
-            const topData = sorted.slice(0, 5);
+            // 最多显示前 3 个
+            const topData = sorted.slice(0, 3);
             
             container.innerHTML = topData.map(([name, count]) => {
                 const percent = Math.round((count / total) * 100);
@@ -691,8 +808,8 @@
                 `;
             }).join('');
             
-            if (sorted.length > 5) {
-                const otherCount = sorted.slice(5).reduce((sum, item) => sum + item[1], 0);
+            if (sorted.length > 3) {
+                const otherCount = sorted.slice(3).reduce((sum, item) => sum + item[1], 0);
                 const otherPercent = Math.round((otherCount / total) * 100);
                 container.innerHTML += `
                     <div class="distribution-item">

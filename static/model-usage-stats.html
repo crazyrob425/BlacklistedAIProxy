@@ -8,7 +8,732 @@
   <link rel="stylesheet" href="app/base.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body{background:var(--bg-secondary);min-height:100vh}.navbar{position:sticky;top:0;z-index:100;background:var(--bg-primary);border-bottom:1px solid var(--border-color);box-shadow:var(--shadow-sm)}.navbar-inner,.main{max-width:1400px;margin:0 auto;padding:0 24px}.navbar-inner{height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px}.brand{display:flex;align-items:center;gap:12px;min-width:0}.brand-icon{width:40px;height:40px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--primary-color),var(--primary-light));color:#fff;box-shadow:var(--shadow-md)}.brand-title{font-size:18px;font-weight:700;color:var(--text-primary)}.brand-sub{font-size:12px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nav-actions{display:flex;align-items:center;gap:10px}.nav-btn,.theme-toggle,.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 14px;border-radius:var(--radius-lg);border:1px solid var(--border-color);background:var(--bg-primary);color:var(--text-primary);text-decoration:none;cursor:pointer;font-size:14px;font-weight:600;transition:var(--transition)}.theme-toggle{width:40px;padding:0;color:var(--text-secondary)}.nav-btn:hover,.theme-toggle:hover,.btn:hover{border-color:var(--primary-color);box-shadow:var(--shadow-md);transform:translateY(-1px)}.theme-toggle .fa-sun{display:none}[data-theme="dark"] .theme-toggle .fa-sun{display:inline-block}[data-theme="dark"] .theme-toggle .fa-moon{display:none}.main{padding:30px 24px 48px}.panel,.card,.provider,.table-card,.empty{background:var(--bg-primary);border:1px solid var(--border-color);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm)}.hero,.split,.stats{display:grid;gap:24px}.hero{grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);margin-bottom:24px}.split{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:24px}.stats{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-bottom:24px}.hero-main,.auth,.panel,.table-card{padding:24px}.eyebrow,.pill,.tag{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;font-size:12px;font-weight:600}.eyebrow{background:var(--bg-secondary);border:1px solid var(--border-color);color:var(--text-secondary)}.pill{background:var(--success-10);border:1px solid var(--primary-30);color:var(--success-text)}.pill.idle{background:var(--bg-secondary);border-color:var(--border-color);color:var(--text-secondary)}h1{margin:14px 0 12px;font-size:30px;line-height:1.2;color:var(--text-primary)}.copy,.sub,.help,.footer,.note{color:var(--text-secondary);font-size:14px;line-height:1.7}.meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.meta .tag{background:var(--bg-secondary);border:1px solid var(--border-color);color:var(--text-secondary)}.title,.tools{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.title{margin-bottom:12px}.section-title{margin:0 0 16px;font-size:18px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:10px}.label{display:block;margin-bottom:8px;font-size:13px;font-weight:600;color:var(--text-secondary)}.input,.select,.search{width:100%;min-height:42px;padding:0 14px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-lg);color:var(--text-primary);font-size:14px;transition:var(--transition)}.input{padding-top:10px;padding-bottom:10px}.input:focus,.select:focus,.search:focus{outline:none;border-color:var(--primary-color);box-shadow:0 0 0 4px var(--primary-10)}.group{margin-bottom:16px}.row,.tool-row{display:flex;gap:10px;flex-wrap:wrap}.status{display:none;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--radius-lg);margin-top:16px;font-size:13px;border:1px solid transparent}.status.show{display:flex}.status.info{background:var(--info-bg-alt);border-color:var(--info-border);color:var(--info-text-dark)}.status.success{background:var(--success-bg-light);border-color:var(--primary-30);color:var(--success-text)}.status.error{background:var(--danger-bg-light);border-color:var(--danger-border);color:var(--danger-text)}.btn{padding:0 16px;border:1px solid transparent}.btn-primary{background:linear-gradient(135deg,var(--primary-color),var(--primary-light));color:#fff}.btn-secondary{background:var(--bg-secondary);border-color:var(--border-color);color:var(--text-primary)}.btn-danger{background:var(--danger-color);color:#fff}.card{padding:20px;position:relative;overflow:hidden;transition:var(--transition)}.card:hover,.provider:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:var(--primary-30)}.card:before{content:'';position:absolute;top:0;left:0;right:0;height:3px}.card.green:before{background:linear-gradient(90deg,var(--primary-color),var(--primary-light))}.card.blue:before{background:linear-gradient(90deg,var(--info-color),#22d3ee)}.card.indigo:before{background:linear-gradient(90deg,var(--indigo-500),var(--indigo-600))}.card.orange:before{background:linear-gradient(90deg,var(--warning-color),#fbbf24)}.card-label{font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary)}.card-value{margin-top:10px;font-size:32px;font-weight:700;color:var(--text-primary);line-height:1.1}.card.green .card-value{color:var(--primary-color)}.card.blue .card-value{color:var(--info-color)}.card.indigo .card-value{color:var(--indigo-500)}.card.orange .card-value{color:var(--warning-color)}.note{margin-top:10px;font-size:12px;color:var(--text-tertiary)}.bars{display:flex;flex-direction:column;gap:14px}.bar{display:flex;flex-direction:column;gap:6px}.bar-head{display:flex;justify-content:space-between;gap:12px;font-size:13px}.bar-name{color:var(--text-primary);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bar-value{color:var(--text-secondary)}.track{height:8px;background:var(--bg-tertiary);border-radius:999px;overflow:hidden}.fill{height:100%;background:linear-gradient(90deg,var(--primary-color),var(--primary-light));border-radius:inherit}.providers{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:24px}.provider{padding:20px;transition:var(--transition)}.provider-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px}.provider-name{font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:6px}.provider-sub{font-size:12px;color:var(--text-secondary)}.provider-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--bg-secondary);border:1px solid var(--border-color);font-size:12px;font-weight:600;color:var(--text-secondary);white-space:nowrap}.mini{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.mini-box{padding:12px;border-radius:var(--radius-lg);background:var(--bg-secondary);border:1px solid var(--border-color)}.mini-label{font-size:12px;color:var(--text-secondary)}.mini-value{margin-top:6px;font-size:18px;font-weight:700;color:var(--text-primary)}.table-wrap{overflow:auto;border:1px solid var(--border-color);border-radius:var(--radius-lg)}table{width:100%;border-collapse:collapse}th,td{padding:14px 16px;text-align:left;border-bottom:1px solid var(--border-color)}th{background:var(--bg-secondary);font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary)}td{font-size:14px;color:var(--text-primary)}tr:last-child td{border-bottom:none}.mono{font-family:"JetBrains Mono",Consolas,monospace}.tag{background:var(--bg-secondary);border:1px solid var(--border-color);color:var(--text-secondary)}.empty{text-align:center;padding:36px 24px;color:var(--text-secondary);display:none}.empty i{font-size:32px;color:var(--text-tertiary);margin-bottom:12px}.footer{text-align:center;margin-top:20px;font-size:12px;color:var(--text-tertiary)}@media (max-width:1100px){.hero,.split,.stats{grid-template-columns:1fr}}@media (max-width:760px){.navbar-inner,.main{padding-left:16px;padding-right:16px}.brand-sub,.nav-btn span{display:none}.mini{grid-template-columns:1fr}.tool-row,.search,.select{width:100%}}
+    body {
+      background: var(--bg-secondary);
+      min-height: 100vh;
+    }
+
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg-primary);
+      border-bottom: 1px solid var(--border-color);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .navbar-inner,
+    .main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .navbar-inner {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+      color: #fff;
+      box-shadow: var(--shadow-md);
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .brand-sub {
+      font-size: 12px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-btn,
+    .theme-toggle,
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 0 14px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-color);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      text-decoration: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: var(--transition);
+    }
+
+    .theme-toggle {
+      width: 40px;
+      padding: 0;
+      color: var(--text-secondary);
+    }
+
+    .nav-btn:hover,
+    .theme-toggle:hover,
+    .btn:hover {
+      border-color: var(--primary-color);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+
+    .theme-toggle .fa-sun {
+      display: none;
+    }
+
+    [data-theme="dark"] .theme-toggle .fa-sun {
+      display: inline-block;
+    }
+
+    [data-theme="dark"] .theme-toggle .fa-moon {
+      display: none;
+    }
+
+    .main {
+      padding: 30px 24px 48px;
+    }
+
+    .panel,
+    .card,
+    .provider,
+    .table-card,
+    .empty {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .hero,
+    .split,
+    .stats {
+      display: grid;
+      gap: 24px;
+    }
+
+    .hero {
+      grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+      margin-bottom: 24px;
+    }
+
+    .split {
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      margin-bottom: 24px;
+    }
+
+    .calendar-panel {
+      padding: 16px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+    }
+
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .calendar-legend {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .calendar-legend .level {
+      width: 9px;
+      height: 9px;
+      border-radius: 1px;
+    }
+
+    .calendar-wrapper {
+      overflow-x: auto;
+      padding: 5px 0;
+      display: flex;
+      justify-content: flex-start;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-auto-flow: column;
+      grid-template-rows: repeat(7, 11px);
+      gap: 3px;
+      min-width: max-content;
+    }
+
+    .calendar-day {
+      width: 11px;
+      height: 11px;
+      border-radius: 2px;
+      background: var(--bg-secondary);
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+
+    .calendar-day:hover {
+      transform: scale(1.2);
+      z-index: 10;
+      outline: 1px solid var(--primary-color);
+    }
+
+    .calendar-footer {
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+
+    .level-0,
+    .calendar-day[data-level="0"] {
+      background: var(--bg-secondary);
+    }
+
+    .level-1,
+    .calendar-day[data-level="1"] {
+      background: #9be9a8;
+    }
+
+    .level-2,
+    .calendar-day[data-level="2"] {
+      background: #40c463;
+    }
+
+    .level-3,
+    .calendar-day[data-level="3"] {
+      background: #30a14e;
+    }
+
+    .level-4,
+    .calendar-day[data-level="4"] {
+      background: #216e39;
+    }
+
+    [data-theme="dark"] .level-1,
+    [data-theme="dark"] .calendar-day[data-level="1"] {
+      background: #0e4429;
+    }
+
+    [data-theme="dark"] .level-2,
+    [data-theme="dark"] .calendar-day[data-level="2"] {
+      background: #006d32;
+    }
+
+    [data-theme="dark"] .level-3,
+    [data-theme="dark"] .calendar-day[data-level="3"] {
+      background: #26a641;
+    }
+
+    [data-theme="dark"] .level-4,
+    [data-theme="dark"] .calendar-day[data-level="4"] {
+      background: #39d353;
+    }
+
+    .calendar-tooltip {
+      position: fixed;
+      padding: 6px 10px;
+      background: rgba(0, 0, 0, 0.9);
+      color: #fff;
+      font-size: 11px;
+      border-radius: 4px;
+      pointer-events: none;
+      z-index: 1000;
+      display: none;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+      white-space: pre-line;
+      line-height: 1.4;
+    }
+
+    .stats {
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      margin-bottom: 24px;
+    }
+
+    .hero-main,
+    .auth,
+    .panel,
+    .table-card {
+      padding: 24px;
+    }
+
+    .eyebrow,
+    .pill,
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .eyebrow {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+    }
+
+    .pill {
+      background: var(--success-10);
+      border: 1px solid var(--primary-30);
+      color: var(--success-text);
+    }
+
+    .pill.idle {
+      background: var(--bg-secondary);
+      border-color: var(--border-color);
+      color: var(--text-secondary);
+    }
+
+    h1 {
+      margin: 14px 0 12px;
+      font-size: 30px;
+      line-height: 1.2;
+      color: var(--text-primary);
+    }
+
+    .copy,
+    .sub,
+    .help,
+    .footer,
+    .note {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .meta {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .meta .tag {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+    }
+
+    .title,
+    .tools {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .title {
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      margin: 0 0 16px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .input,
+    .select,
+    .search {
+      width: 100%;
+      min-height: 42px;
+      padding: 0 14px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      color: var(--text-primary);
+      font-size: 14px;
+      transition: var(--transition);
+    }
+
+    .input {
+      padding-top: 10px;
+      padding-bottom: 10px;
+    }
+
+    .input:focus,
+    .select:focus,
+    .search:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 4px var(--primary-10);
+    }
+
+    .group {
+      margin-bottom: 16px;
+    }
+
+    .row,
+    .tool-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .status {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: var(--radius-lg);
+      margin-top: 16px;
+      font-size: 13px;
+      border: 1px solid transparent;
+    }
+
+    .status.show {
+      display: flex;
+    }
+
+    .status.info {
+      background: var(--info-bg-alt);
+      border-color: var(--info-border);
+      color: var(--info-text);
+    }
+
+    .status.success {
+      background: var(--success-10);
+      border-color: var(--primary-30);
+      color: var(--success-text);
+    }
+
+    .status.error {
+      background: var(--danger-10);
+      border-color: var(--danger-30);
+      color: var(--danger-text);
+    }
+
+    .hero-main {
+      background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-main h1,
+    .hero-main .eyebrow,
+    .hero-main .copy,
+    .hero-main .tag {
+      color: #fff;
+    }
+
+    .hero-main .eyebrow,
+    .hero-main .tag {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .hero-main::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 60%;
+      height: 150%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+      transform: rotate(-20deg);
+    }
+
+    .card {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      transition: var(--transition);
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .card-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .card-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+    }
+
+    .card.green {
+      border-top: 4px solid #10b981;
+    }
+
+    .card.blue {
+      border-top: 4px solid #3b82f6;
+    }
+
+    .card.cyan {
+      border-top: 4px solid #06b6d4;
+    }
+
+    .card.indigo {
+      border-top: 4px solid #6366f1;
+    }
+
+    .card.orange {
+      border-top: 4px solid #f59e0b;
+    }
+
+    .bars {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .bar {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .bar-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .bar-name {
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 70%;
+    }
+
+    .bar-value {
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      font-weight: 500;
+    }
+
+    .track {
+      height: 8px;
+      background: var(--bg-secondary);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+      border-radius: 4px;
+      transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .providers {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+      padding: 20px 0;
+    }
+
+    .provider {
+      padding: 20px;
+      transition: var(--transition);
+    }
+
+    .provider:hover {
+      border-color: var(--primary-color);
+      box-shadow: var(--shadow-md);
+    }
+
+    .provider-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .provider-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .provider-sub {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .provider-badge {
+      padding: 4px 8px;
+      background: var(--bg-secondary);
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .provider-badge i {
+      color: var(--warning-color);
+    }
+
+    .mini {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .mini-box {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .mini-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .mini-value {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+    }
+
+    .table-card {
+      overflow: hidden;
+    }
+
+    .table-card .tools {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th {
+      text-align: left;
+      padding: 14px 20px;
+      background: var(--bg-primary);
+      color: var(--text-tertiary);
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    td {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-primary);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: var(--bg-secondary);
+    }
+
+    .mono {
+      font-family: var(--font-mono);
+      font-weight: 500;
+      font-size: 13px;
+    }
+
+    .empty {
+      padding: 60px 24px;
+      text-align: center;
+      display: none;
+    }
+
+    .empty i {
+      font-size: 48px;
+      color: var(--text-tertiary);
+      margin-bottom: 20px;
+    }
+
+    .empty h3 {
+      margin: 0 0 8px;
+      color: var(--text-primary);
+    }
+
+    .empty p {
+      margin: 0;
+      color: var(--text-tertiary);
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 32px;
+      padding-bottom: 24px;
+    }
   </style>
 </head>
 <body>
@@ -32,7 +757,7 @@
       <div class="panel hero-main">
         <span class="eyebrow"><i class="fas fa-chart-pie"></i> 统计面板</span>
         <h1>模型用量统计面板</h1>
-        <div class="copy">通过 <code>/api/model-usage-stats</code> 查看系统已累计的请求数、Prompt Tokens、Completion Tokens 和 Provider / Model 维度分布。</div>
+        <div class="copy">通过 <code>/api/model-usage-stats</code> 查看系统已累计的请求数、输入 Token、输出 Token 和 Provider / Model 维度分布。</div>
         <div class="meta">
           <span class="tag"><i class="fas fa-key"></i> 支持后台 Token 与 API Key</span>
           <span class="tag"><i class="fas fa-database"></i> 基于插件持久化统计</span>
@@ -55,16 +780,39 @@
       </aside>
     </section>
     <section class="stats">
-      <article class="card green"><div class="card-label">总请求数</div><div class="card-value" id="totalRequests">0</div><div class="note">累计成功落库的模型调用次数</div></article>
-      <article class="card blue"><div class="card-label">Prompt Tokens</div><div class="card-value" id="promptTokens">0</div><div class="note">输入 token 的累计值</div></article>
-      <article class="card cyan"><div class="card-label">Cached Tokens</div><div class="card-value" id="cachedTokens">0</div><div class="note">缓存命中的累计值</div></article>
-      <article class="card indigo"><div class="card-label">Completion Tokens</div><div class="card-value" id="completionTokens">0</div><div class="note">输出 token 的累计值</div></article>
-      <article class="card orange"><div class="card-label">总 Tokens</div><div class="card-value" id="totalTokens">0</div><div class="note" id="updatedAt">等待数据</div></article>
+      <article class="card green">
+        <div class="card-label">总请求数</div>
+        <div class="card-value" id="totalRequests">0</div>
+        <div class="note">QPS: <span id="currentQps" style="font-weight:700;color:var(--primary-color)">0.00</span> (峰值: <span id="maxQps">0.00</span>) | RPM: <span id="currentRpm" style="font-weight:700;color:var(--primary-color)">0.00</span> (峰值: <span id="maxRpm">0.00</span>)</div>
+      </article>
+      <article class="card blue"><div class="card-label">输入 Token</div><div class="card-value" id="promptTokens">0</div><div class="note">输入 token 的累计值</div></article>
+      <article class="card cyan"><div class="card-label">缓存 Token</div><div class="card-value" id="cachedTokens">0</div><div class="note">缓存命中的累计值</div></article>
+      <article class="card indigo"><div class="card-label">输出 Token</div><div class="card-value" id="completionTokens">0</div><div class="note">输出 token 的累计值</div></article>
+      <article class="card orange">
+        <div class="card-label">总 Token</div>
+        <div class="card-value" id="totalTokens">0</div>
+        <div class="note">TPS: <span id="currentTps" style="font-weight:700;color:var(--primary-color)">0.00</span> (峰值: <span id="maxTps">0.00</span>) | <span id="updatedAt">等待数据</span></div>
+      </article>
     </section>
-    <section class="split">
-      <div class="panel"><h2 class="section-title"><i class="fas fa-sitemap"></i>Provider 分布</h2><div class="bars" id="providerBars"></div></div>
-      <div class="panel"><h2 class="section-title"><i class="fas fa-fire"></i>Top Models</h2><div class="bars" id="topModelBars"></div></div>
+    
+    <section class="split" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
+      <div class="panel calendar-panel" style="margin-bottom: 0;">
+        <div class="calendar-header">
+          <h2 class="section-title" style="margin:0; font-size: 16px;"><i class="fas fa-calendar-days"></i> Token 使用趋势 (3个月)</h2>
+          <div class="calendar-legend" style="font-size: 10px;">
+            <div class="level level-1"></div>
+            <div class="level level-4"></div>
+          </div>
+        </div>
+        <div class="calendar-wrapper" style="justify-content: flex-start; padding: 15px 0 5px;">
+          <div class="calendar-grid" id="calendarGrid" style="grid-template-rows: repeat(7, 11px); gap: 3px;"></div>
+        </div>
+        <div class="calendar-footer" id="calendarFooter" style="font-size: 11px; text-align: left; margin-top: 5px;"></div>
+      </div>
+      <div class="panel"><h2 class="section-title" style="font-size: 16px;"><i class="fas fa-sitemap"></i>Provider 分布</h2><div class="bars" id="providerBars"></div></div>
+      <div class="panel"><h2 class="section-title" style="font-size: 16px;"><i class="fas fa-fire"></i>Top Models</h2><div class="bars" id="topModelBars"></div></div>
     </section>
+    <div id="usageTooltip" class="calendar-tooltip"></div>
     <section>
       <div class="tools">
         <h2 class="section-title" style="margin:0"><i class="fas fa-layer-group"></i>Provider 视图</h2>
@@ -82,10 +830,10 @@
         <div class="tool-row">
           <input class="search" id="searchInput" type="search" placeholder="搜索 provider 或 model">
           <select class="select" id="sortSelect">
-            <option value="totalTokens-desc">按总 Tokens 降序</option>
+            <option value="totalTokens-desc">按总 Token 降序</option>
             <option value="requestCount-desc">按请求数降序</option>
-            <option value="promptTokens-desc">按 Prompt Tokens 降序</option>
-            <option value="completionTokens-desc">按 Completion Tokens 降序</option>
+            <option value="promptTokens-desc">按输入 Token 降序</option>
+            <option value="completionTokens-desc">按输出 Token 降序</option>
             <option value="provider-asc">按 Provider 升序</option>
             <option value="model-asc">按 Model 升序</option>
           </select>
@@ -98,35 +846,377 @@
         </table>
       </div>
     </section>
-    <section class="empty" id="emptyState"><i class="fas fa-chart-pie"></i><h3>暂无统计数据</h3><p>先发起几次模型请求，再回来查看这里的可视化结果。</p></section>
+    <section class="empty" id="emptyState"></section>
     <p class="footer">如果上游响应没有提供 usage，调用次数仍会统计，但 token 数可能保持为 0。</p>
   </main>
   <script type="module">
-    import{initThemeSwitcher,setTheme,getCurrentTheme}from'./app/theme-switcher.js';setTheme(getCurrentTheme());initThemeSwitcher('themeToggle');
+    import { initThemeSwitcher, setTheme, getCurrentTheme } from './app/theme-switcher.js';
+    setTheme(getCurrentTheme());
+    initThemeSwitcher('themeToggle');
   </script>
   <script>
-    const API_BASE='/api/model-usage-stats',STORAGE_KEY='model_usage_stats_auth';let rows=[];const el=id=>document.getElementById(id),fmt=v=>new Intl.NumberFormat('zh-CN').format(Number(v||0)),fmtToken=v=>{const value=Number(v||0);if(!Number.isFinite(value))return'0';const abs=Math.abs(value);const units=[{threshold:1e9,suffix:'G'},{threshold:1e6,suffix:'M'},{threshold:1e3,suffix:'K'}];for(const unit of units){if(abs>=unit.threshold){const scaled=value/unit.threshold;const digits=Math.abs(scaled)>=100?0:Math.abs(scaled)>=10?1:2;return`${scaled.toFixed(digits).replace(/\.0+$|(\.\d*[1-9])0+$/,'$1')}${unit.suffix}`}}return fmt(value)};
-    function rel(iso){if(!iso)return'未记录';const d=new Date(iso);if(Number.isNaN(d.getTime()))return iso;const m=Math.floor((Date.now()-d.getTime())/6e4);if(m<1)return'刚刚';if(m<60)return`${m} 分钟前`;const h=Math.floor(m/60);if(h<24)return`${h} 小时前`;const day=Math.floor(h/24);return day<30?`${day} 天前`:d.toLocaleString('zh-CN')}
-    function status(msg,type='info'){const icon=type==='error'?'fa-triangle-exclamation':type==='success'?'fa-circle-check':'fa-circle-info';el('status').className=`status ${type} show`;el('status').innerHTML=`<i class="fas ${icon}"></i><span>${msg}</span>`}
-    function badge(text,ok=false){const n=el('authBadge');n.className=ok?'pill':'pill idle';n.textContent=text}
-    function credential(){return{value:el('credentialValue').value.trim()}}
-    function saveCredential(){const c=credential();if(c.value)localStorage.setItem(STORAGE_KEY,JSON.stringify(c))}
-    function restoreCredential(){try{const c=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');if(!c)return;el('credentialValue').value=c.value||''}catch{}}
-    function clearCredential(){localStorage.removeItem(STORAGE_KEY);el('credentialValue').value='';badge('未连接',false);status('已清空本地保存的凭证。')}
-    function headers(){const c=credential();if(!c.value)throw new Error('请先输入访问凭证。');return{Authorization:`Bearer ${c.value}`,'x-api-key':c.value}}
-    async function request(url,options={}){const res=await fetch(url,{...options,headers:{...(options.headers||{}),...headers()}}),text=await res.text();let payload=null;try{payload=text?JSON.parse(text):null}catch{throw new Error(`接口返回了非 JSON 内容: ${text||'(empty)'}`)}if(!res.ok){if(payload?.error?.code==='PLUGIN_DISABLED')throw new Error('插件未启用：请先在插件管理中启用 model-usage-stats。');throw new Error(payload?.error?.message||payload?.message||`请求失败 (${res.status})`)}return payload}
-    function flatten(data){const list=[];for(const [provider,pd] of Object.entries(data.providers||{})){for(const [model,md] of Object.entries(pd.models||{}))list.push({provider,model,...md})}return list}
-    function bars(id,items,getValue,getLabel){const box=el(id);box.innerHTML='';if(!items.length){box.innerHTML='<div class="mini-box"><div class="mini-label">暂无数据</div><div class="mini-value" style="font-size:14px">等待统计写入</div></div>';return}const max=Math.max(...items.map(getValue),1);items.forEach(item=>{const v=Number(getValue(item)||0),w=Math.max(v/max*100,2),node=document.createElement('div');node.className='bar';node.innerHTML=`<div class="bar-head"><div class="bar-name" title="${getLabel(item)}">${getLabel(item)}</div><div class="bar-value">${fmtToken(v)}</div></div><div class="track"><div class="fill" style="width:${w}%"></div></div>`;box.appendChild(node)})}
-    function renderSummary(data){const s=data.summary||{};el('totalRequests').textContent=fmt(s.requestCount);el('promptTokens').textContent=fmtToken(s.promptTokens);el('cachedTokens').textContent=fmtToken(s.cachedTokens);el('completionTokens').textContent=fmtToken(s.completionTokens);el('totalTokens').textContent=fmtToken(s.totalTokens);el('updatedAt').textContent=data.updatedAt?`更新于 ${new Date(data.updatedAt).toLocaleString('zh-CN')}`:'尚未写入'}
-    function renderProviders(data){const providers=Object.entries(data.providers||{}).map(([name,p])=>({name,data:p,count:Object.keys(p.models||{}).length})).sort((a,b)=>(b.data.summary?.totalTokens||0)-(a.data.summary?.totalTokens||0));const box=el('providerCards');box.innerHTML='';if(!providers.length){box.innerHTML='<div class="provider"><div class="provider-name">暂无 Provider 统计</div><div class="provider-sub">当前还没有可展示的累计数据。</div></div>';return}providers.forEach(p=>{const s=p.data.summary||{};const node=document.createElement('article');node.className='provider';node.innerHTML=`<div class="provider-head"><div><div class="provider-name">${p.name}</div><div class="provider-sub">包含 ${fmt(p.count)} 个模型</div></div><span class="provider-badge"><i class="fas fa-bolt"></i>${fmt(s.requestCount)} 次调用</span></div><div class="mini"><div class="mini-box"><div class="mini-label">Total Tokens</div><div class="mini-value">${fmtToken(s.totalTokens)}</div></div><div class="mini-box"><div class="mini-label">Prompt</div><div class="mini-value">${fmtToken(s.promptTokens)}</div></div><div class="mini-box"><div class="mini-label">Cached</div><div class="mini-value">${fmtToken(s.cachedTokens)}</div></div><div class="mini-box"><div class="mini-label">Completion</div><div class="mini-value">${fmtToken(s.completionTokens)}</div></div><div class="mini-box"><div class="mini-label">最近使用</div><div class="mini-value" style="font-size:14px">${rel(s.lastUsedAt)}</div></div></div>`;box.appendChild(node)})}
-    function filteredRows(){const keyword=el('searchInput').value.trim().toLowerCase();const [field,dir]=el('sortSelect').value.split('-');const list=keyword?rows.filter(r=>r.provider.toLowerCase().includes(keyword)||r.model.toLowerCase().includes(keyword)):rows.slice();list.sort((a,b)=>{if(field==='provider'||field==='model'){const l=String(a[field]||''),r=String(b[field]||'');return dir==='desc'?r.localeCompare(l):l.localeCompare(r)}const l=Number(a[field]||0),r=Number(b[field]||0);return dir==='desc'?r-l:l-r});return list}
-    function renderTable(){const tbody=el('tableBody'),list=filteredRows();tbody.innerHTML='';if(!list.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text-tertiary)">没有匹配的数据</td></tr>';return}list.forEach(r=>{const tr=document.createElement('tr');tr.innerHTML=`<td><span class="tag"><i class="fas fa-server"></i>${r.provider}</span></td><td>${r.model}</td><td class="mono">${fmt(r.requestCount)}</td><td class="mono">${fmtToken(r.promptTokens)}</td><td class="mono">${fmtToken(r.cachedTokens)}</td><td class="mono">${fmtToken(r.completionTokens)}</td><td class="mono">${fmtToken(r.totalTokens)}</td><td>${rel(r.lastUsedAt)}</td>`;tbody.appendChild(tr)})}
-    function render(data){rows=flatten(data);el('emptyState').style.display=rows.length?'none':'block';renderSummary(data);const providers=Object.entries(data.providers||{}).map(([name,p])=>({name,totalTokens:Number(p.summary?.totalTokens||0)})).sort((a,b)=>b.totalTokens-a.totalTokens).slice(0,8);const topModels=rows.slice().sort((a,b)=>Number(b.totalTokens||0)-Number(a.totalTokens||0)).slice(0,8);bars('providerBars',providers,i=>i.totalTokens,i=>i.name);bars('topModelBars',topModels,i=>Number(i.totalTokens||0),i=>`${i.provider} / ${i.model}`);renderProviders(data);renderTable()}
-    async function loadData(){try{saveCredential();status('正在加载统计数据...');const payload=await request(API_BASE);render(payload.data||payload);badge('已连接',true);status(`已加载 ${fmt(rows.length)} 条模型统计。`,'success')}catch(error){console.error(error);badge('连接失败',false);status(error.message,'error')}}
-    async function resetData(){if(!confirm('确认重置全部模型统计吗？此操作会清空已落库的累计数据。'))return;try{status('正在重置统计数据...');const payload=await request(`${API_BASE}/reset`,{method:'POST'});render(payload.data||payload);status('统计数据已重置。','success')}catch(error){console.error(error);status(error.message,'error')}}
-    async function resetTokenData(){if(!confirm('确认重置模型 Token 统计吗？这会清空 Prompt / Completion / Cached / Total Tokens，但保留请求次数与最近使用时间。'))return;try{status('正在重置 Token 统计...');const payload=await request(`${API_BASE}/reset-tokens`,{method:'POST'});render(payload.data||payload);status('模型 Token 统计已重置。','success')}catch(error){console.error(error);status(error.message,'error')}}
-    el('connectBtn').addEventListener('click',loadData);el('refreshBtn').addEventListener('click',loadData);el('resetBtn').addEventListener('click',resetData);el('resetTokensBtn').addEventListener('click',resetTokenData);el('clearBtn').addEventListener('click',clearCredential);el('searchInput').addEventListener('input',renderTable);el('sortSelect').addEventListener('change',renderTable);el('credentialValue').addEventListener('keydown',e=>{if(e.key==='Enter')loadData()});
-    restoreCredential();if(el('credentialValue').value.trim())loadData();
+    const API_BASE = '/api/model-usage-stats',
+      STORAGE_KEY = 'model_usage_stats_auth';
+    let rows = [];
+
+    const el = id => document.getElementById(id),
+      fmt = v => new Intl.NumberFormat('zh-CN').format(Number(v || 0)),
+      fmtToken = v => {
+        const value = Number(v || 0);
+        if (!Number.isFinite(value)) return '0';
+        const abs = Math.abs(value);
+        const units = [{
+          threshold: 1e9,
+          suffix: 'G'
+        }, {
+          threshold: 1e6,
+          suffix: 'M'
+        }, {
+          threshold: 1e3,
+          suffix: 'K'
+        }];
+        for (const unit of units) {
+          if (abs >= unit.threshold) {
+            const scaled = value / unit.threshold;
+            const digits = Math.abs(scaled) >= 100 ? 0 : Math.abs(scaled) >= 10 ? 1 : 2;
+            return `${scaled.toFixed(digits).replace(/\.0+$|(\.\d*[1-9])0+$/,'$1')}${unit.suffix}`
+          }
+        }
+        return fmt(value)
+      };
+
+    function rel(iso) {
+      if (!iso) return '未记录';
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return iso;
+      const m = Math.floor((Date.now() - d.getTime()) / 6e4);
+      if (m < 1) return '刚刚';
+      if (m < 60) return `${m} 分钟前`;
+      const h = Math.floor(m / 60);
+      if (h < 24) return `${h} 小时前`;
+      const day = Math.floor(h / 24);
+      return day < 30 ? `${day} 天前` : d.toLocaleString('zh-CN')
+    }
+
+    function status(msg, type = 'info') {
+      const icon = type === 'error' ? 'fa-triangle-exclamation' : type === 'success' ? 'fa-circle-check' : 'fa-circle-info';
+      el('status').className = `status ${type} show`;
+      el('status').innerHTML = `<i class="fas ${icon}"></i><span>${msg}</span>`
+    }
+
+    function badge(text, ok = false) {
+      const n = el('authBadge');
+      n.className = ok ? 'pill' : 'pill idle';
+      n.textContent = text
+    }
+
+    function credential() {
+      return {
+        value: el('credentialValue').value.trim()
+      }
+    }
+
+    function saveCredential() {
+      const c = credential();
+      if (c.value) localStorage.setItem(STORAGE_KEY, JSON.stringify(c))
+    }
+
+    function restoreCredential() {
+      try {
+        const c = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+        if (!c) return;
+        el('credentialValue').value = c.value || ''
+      } catch {}
+    }
+
+    function clearCredential() {
+      localStorage.removeItem(STORAGE_KEY);
+      el('credentialValue').value = '';
+      badge('未连接', false);
+      status('已清空本地保存的凭证。')
+    }
+
+    function headers() {
+      const c = credential();
+      if (!c.value) throw new Error('请先输入访问凭证。');
+      return {
+        Authorization: `Bearer ${c.value}`,
+        'x-api-key': c.value
+      }
+    }
+
+    async function request(url, options = {}) {
+      const res = await fetch(url, {
+          ...options,
+          headers: {
+            ...(options.headers || {}),
+            ...headers()
+          }
+        }),
+        text = await res.text();
+      let payload = null;
+      try {
+        payload = text ? JSON.parse(text) : null
+      } catch {
+        throw new Error(`接口返回了非 JSON 内容: ${text||'(empty)'}`)
+      }
+      if (!res.ok) {
+        if (payload?.error?.code === 'PLUGIN_DISABLED') throw new Error('插件未启用：请先在插件管理中启用 model-usage-stats。');
+        throw new Error(payload?.error?.message || payload?.message || `请求失败 (${res.status})`)
+      }
+      return payload
+    }
+
+    function flatten(data) {
+      const list = [];
+      for (const [provider, pd] of Object.entries(data.providers || {})) {
+        for (const [model, md] of Object.entries(pd.models || {})) list.push({
+          provider,
+          model,
+          ...md
+        })
+      }
+      return list
+    }
+
+    function bars(id, items, getValue, getLabel) {
+      const box = el(id);
+      box.innerHTML = '';
+      if (!items.length) {
+        box.innerHTML = '<div class="mini-box"><div class="mini-label">暂无数据</div><div class="mini-value" style="font-size:14px">等待统计写入</div></div>';
+        return
+      }
+      const max = Math.max(...items.map(getValue), 1);
+      items.forEach(item => {
+        const v = Number(getValue(item) || 0),
+          w = Math.max(v / max * 100, 2),
+          node = document.createElement('div');
+        node.className = 'bar';
+        const fillStyle = item.isOther ? 'background:#94a3b8' : '';
+        node.innerHTML = `<div class="bar-head"><div class="bar-name" title="${getLabel(item)}">${getLabel(item)}</div><div class="bar-value">${fmtToken(v)}</div></div><div class="track"><div class="fill" style="width:${w}%;${fillStyle}"></div></div>`;
+        box.appendChild(node)
+      })
+    }
+
+    function renderSummary(data) {
+      const s = data.summary || {};
+      el('totalRequests').textContent = fmt(s.requestCount);
+      el('promptTokens').textContent = fmtToken(s.promptTokens);
+      el('cachedTokens').textContent = fmtToken(s.cachedTokens);
+      el('completionTokens').textContent = fmtToken(s.completionTokens);
+      el('totalTokens').textContent = fmtToken(s.totalTokens);
+      el('currentQps').textContent = (s.qps || 0).toFixed(2);
+      el('maxQps').textContent = (s.maxQps || 0).toFixed(2);
+      el('currentRpm').textContent = (s.rpm || 0).toFixed(2);
+      el('maxRpm').textContent = (s.maxRpm || 0).toFixed(2);
+      el('currentTps').textContent = (s.tps || 0).toFixed(2);
+      el('maxTps').textContent = (s.maxTps || 0).toFixed(2);
+      el('updatedAt').textContent = data.updatedAt ? `更新于 ${new Date(data.updatedAt).toLocaleString('zh-CN')}` : '尚未写入'
+    }
+
+    function renderProviders(data) {
+      const providers = Object.entries(data.providers || {}).map(([name, p]) => ({
+        name,
+        data: p,
+        count: Object.keys(p.models || {}).length
+      })).sort((a, b) => (b.data.summary?.totalTokens || 0) - (a.data.summary?.totalTokens || 0));
+      const box = el('providerCards');
+      box.innerHTML = '';
+      if (!providers.length) {
+        box.innerHTML = '<div class="provider"><div class="provider-name">暂无 Provider 统计</div><div class="provider-sub">当前还没有可展示的累计数据。</div></div>';
+        return
+      }
+      providers.forEach(p => {
+        const s = p.data.summary || {};
+        const node = document.createElement('article');
+        node.className = 'provider';
+        node.innerHTML = `<div class="provider-head"><div><div class="provider-name">${p.name}</div><div class="provider-sub">包含 ${fmt(p.count)} 个模型</div></div><span class="provider-badge"><i class="fas fa-bolt"></i>${fmt(s.requestCount)} 次调用</span></div><div class="mini"><div class="mini-box"><div class="mini-label">总 Token</div><div class="mini-value">${fmtToken(s.totalTokens)}</div></div><div class="mini-box"><div class="mini-label">输入</div><div class="mini-value">${fmtToken(s.promptTokens)}</div></div><div class="mini-box"><div class="mini-label">输出</div><div class="mini-value">${fmtToken(s.completionTokens)}</div></div><div class="mini-box"><div class="mini-label">QPS / RPM</div><div class="mini-value">${(s.qps || 0).toFixed(2)} / ${(s.rpm || 0).toFixed(2)}</div></div><div class="mini-box"><div class="mini-label">TPS</div><div class="mini-value">${(s.tps || 0).toFixed(2)}</div></div><div class="mini-box"><div class="mini-label">最近使用</div><div class="mini-value" style="font-size:14px">${rel(s.lastUsedAt)}</div></div></div>`;
+        box.appendChild(node)
+      })
+    }
+
+    function filteredRows() {
+      const keyword = el('searchInput').value.trim().toLowerCase();
+      const [field, dir] = el('sortSelect').value.split('-');
+      const list = keyword ? rows.filter(r => r.provider.toLowerCase().includes(keyword) || r.model.toLowerCase().includes(keyword)) : rows.slice();
+      list.sort((a, b) => {
+        if (field === 'provider' || field === 'model') {
+          const l = String(a[field] || ''),
+            r = String(b[field] || '');
+          return dir === 'desc' ? r.localeCompare(l) : l.localeCompare(r)
+        }
+        const l = Number(a[field] || 0),
+          r = Number(b[field] || 0);
+        return dir === 'desc' ? r - l : l - r
+      });
+      return list
+    }
+
+    function renderTable() {
+      const tbody = el('tableBody'),
+        list = filteredRows();
+      tbody.innerHTML = '';
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-tertiary)">没有匹配的数据</td></tr>';
+        return
+      }
+      list.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td><span class="tag"><i class="fas fa-server"></i>${r.provider}</span></td><td>${r.model}</td><td class="mono">${fmt(r.requestCount)}</td><td class="mono">${fmtToken(r.promptTokens)}</td><td class="mono">${fmtToken(r.cachedTokens)}</td><td class="mono">${fmtToken(r.completionTokens)}</td><td class="mono">${fmtToken(r.totalTokens)}</td><td>${rel(r.lastUsedAt)}</td>`;
+        tbody.appendChild(tr)
+      })
+    }
+
+    function renderCalendar(dailyData = {}) {
+      const grid = el('calendarGrid'),
+        tooltip = el('usageTooltip');
+      grid.innerHTML = '';
+      const now = new Date();
+      const startDate = new Date();
+      startDate.setMonth(now.getMonth() - 3);
+      startDate.setDate(startDate.getDate() - startDate.getDay());
+
+      const values = Object.values(dailyData).map(d => d.totalTokens || 0);
+      const max = Math.max(...values, 1000);
+      const dayCount = Math.floor((now - startDate) / (24 * 3600 * 1000)) + 1;
+      let currentTotal = 0;
+
+      for (let i = 0; i < dayCount; i++) {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + i);
+        if (date > now) break;
+
+        // 统一使用北京时间 (UTC+8) 生成 key，与后端保持一致
+        const utc8Date = new Date(date.getTime() + (8 * 60 * 60 * 1000));
+        const dateKey = utc8Date.toISOString().split('T')[0];
+        const data = dailyData[dateKey] || {
+          totalTokens: 0,
+          requestCount: 0
+        };
+        const tokens = data.totalTokens || 0;
+        const requests = data.requestCount || 0;
+        currentTotal += tokens;
+
+        let level = 0;
+        if (tokens > 0) {
+          const ratio = tokens / max;
+          if (ratio < 0.25) level = 1;
+          else if (ratio < 0.5) level = 2;
+          else if (ratio < 0.75) level = 3;
+          else level = 4;
+        }
+
+        const day = document.createElement('div');
+        day.className = 'calendar-day';
+        day.dataset.level = level;
+
+        const tipText = `${dateKey}: ${fmt(requests)} 次请求, ${fmtToken(tokens)} Token${data.maxQps ? `\n峰值: ${data.maxQps.toFixed(2)} QPS / ${data.maxRpm.toFixed(0)} RPM / ${data.maxTps.toFixed(2)} TPS` : ''}`;
+        day.onmouseenter = (e) => {
+          tooltip.innerText = tipText;
+          tooltip.style.display = 'block';
+          const rect = day.getBoundingClientRect();
+          tooltip.style.left = `${rect.left + rect.width / 2 - tooltip.offsetWidth / 2}px`;
+          tooltip.style.top = `${rect.top - tooltip.offsetHeight - 8}px`;
+        };
+        day.onmouseleave = () => {
+          tooltip.style.display = 'none';
+        };
+
+        grid.appendChild(day);
+      }
+      el('calendarFooter').textContent = `最近三个月累计消耗: ${fmtToken(currentTotal)} Token`;
+    }
+
+    function render(data) {
+      rows = flatten(data);
+      el('emptyState').style.display = rows.length ? 'none' : 'none';
+      renderSummary(data);
+      const providersRaw = Object.entries(data.providers || {}).map(([name, p]) => ({
+        name,
+        totalTokens: Number(p.summary?.totalTokens || 0)
+      })).sort((a, b) => b.totalTokens - a.totalTokens);
+      const providers = providersRaw.slice(0, 3);
+      if (providersRaw.length > 3) {
+        const otherTokens = providersRaw.slice(3).reduce((sum, p) => sum + p.totalTokens, 0);
+        providers.push({
+          name: `其它 (${providersRaw.length-3} 个)`,
+          totalTokens: otherTokens,
+          isOther: true
+        })
+      }
+      const modelsRaw = rows.slice().sort((a, b) => Number(b.totalTokens || 0) - Number(a.totalTokens || 0));
+      const topModels = modelsRaw.slice(0, 3);
+      if (modelsRaw.length > 3) {
+        const otherTokens = modelsRaw.slice(3).reduce((sum, m) => sum + (Number(m.totalTokens) || 0), 0);
+        topModels.push({
+          name: `其它 (${modelsRaw.length-3} 个)`,
+          totalTokens: otherTokens,
+          isOther: true
+        })
+      }
+      bars('providerBars', providers, i => i.totalTokens, i => i.name);
+      bars('topModelBars', topModels, i => i.totalTokens, i => i.isOther ? i.name : `${i.provider} / ${i.model}`);
+      renderProviders(data);
+      renderTable();
+      renderCalendar(data.daily || {});
+    }
+
+    async function loadData() {
+      try {
+        saveCredential();
+        status('正在加载统计数据...');
+        const payload = await request(API_BASE);
+        render(payload.data || payload);
+        badge('已连接', true);
+        status(`已加载 ${fmt(rows.length)} 条模型统计。`, 'success')
+      } catch (error) {
+        console.error(error);
+        badge('连接失败', false);
+        status(error.message, 'error')
+      }
+    }
+
+    async function resetData() {
+      if (!confirm('确认重置全部模型统计吗？此操作会清空已落库的累计数据。')) return;
+      try {
+        status('正在重置统计数据...');
+        const payload = await request(`${API_BASE}/reset`, {
+          method: 'POST'
+        });
+        render(payload.data || payload);
+        status('统计数据已重置。', 'success')
+      } catch (error) {
+        console.error(error);
+        status(error.message, 'error')
+      }
+    }
+
+    async function resetTokenData() {
+      if (!confirm('确认重置模型 Token 统计吗？这会清空输入 / 输出 / 缓存 / 总 Token，但保留请求次数与最近使用时间。')) return;
+      try {
+        status('正在重置 Token 统计...');
+        const payload = await request(`${API_BASE}/reset-tokens`, {
+          method: 'POST'
+        });
+        render(payload.data || payload);
+        status('模型 Token 统计已重置。', 'success')
+      } catch (error) {
+        console.error(error);
+        status(error.message, 'error')
+      }
+    }
+    el('connectBtn').addEventListener('click', loadData);
+    el('refreshBtn').addEventListener('click', loadData);
+    el('resetBtn').addEventListener('click', resetData);
+    el('resetTokensBtn').addEventListener('click', resetTokenData);
+    el('clearBtn').addEventListener('click', clearCredential);
+    el('searchInput').addEventListener('input', renderTable);
+    el('sortSelect').addEventListener('change', renderTable);
+    el('credentialValue').addEventListener('keydown', e => {
+      if (e.key === 'Enter') loadData()
+    });
+    restoreCredential();
+    if (el('credentialValue').value.trim()) loadData();
   </script>
 </body>
 </html>

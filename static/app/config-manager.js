@@ -1,6 +1,6 @@
 // 配置管理模块
 
-import { showToast, formatUptime } from './utils.js';
+import { showToast, formatUptime, copyToClipboard } from './utils.js';
 import { handleProviderChange, handleGeminiCredsTypeChange, handleKiroCredsTypeChange } from './event-handlers.js';
 import { loadProviders } from './provider-manager.js';
 import { t } from './i18n.js';
@@ -585,7 +585,14 @@ function generateApiKey() {
     
     apiKeyEl.value = randomKey;
     
-    showToast(t('common.success'), t('config.apiKey.generated') || '已生成新的 API 密钥', 'success');
+    // 使用带回退机制的复制函数
+    copyToClipboard(randomKey).then(success => {
+        if (success) {
+            showToast(t('common.success'), t('config.apiKey.generatedAndCopied') || '已生成并自动复制新的 API 密钥', 'success');
+        } else {
+            showToast(t('common.success'), t('config.apiKey.generated') || '已生成新的 API 密钥', 'success');
+        }
+    });
     
     // 触发输入框的 change 事件
     apiKeyEl.dispatchEvent(new Event('input', { bubbles: true }));

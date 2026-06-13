@@ -3,7 +3,7 @@
 import { elements, autoScroll, setAutoScroll, clearLogs } from './constants.js';
 import { showToast } from './utils.js';
 import { t } from './i18n.js';
-import { checkUpdate, performUpdate } from './provider-manager.js';
+import { checkUpdate, performUpdate, loadProviders } from './provider-manager.js';
 
 /**
  * 初始化所有事件监听器
@@ -208,6 +208,18 @@ function initEventListeners() {
         performUpdateBtn.addEventListener('click', performUpdate);
     }
 
+    // 刷新提供商状态按钮
+    const refreshProviderStatusBtn = document.getElementById('refreshProviderStatusBtn');
+    if (refreshProviderStatusBtn) {
+        refreshProviderStatusBtn.addEventListener('click', () => {
+            const icon = refreshProviderStatusBtn.querySelector('i');
+            if (icon) icon.classList.add('fa-spin');
+            loadProviders(true).finally(() => {
+                if (icon) icon.classList.remove('fa-spin');
+            });
+        });
+    }
+
     // 添加提供商组按钮
     const addProviderGroupBtn = document.getElementById('add-provider-group-btn');
     if (addProviderGroupBtn) {
@@ -217,6 +229,14 @@ function initEventListeners() {
             } else {
                 console.error('showAddProviderGroupModal function not found');
             }
+        });
+    }
+
+    // 提供商搜索功能
+    const providerSearchInput = document.getElementById('providerSearchInput');
+    if (providerSearchInput) {
+        providerSearchInput.addEventListener('input', () => {
+            loadProviders();
         });
     }
 

@@ -59,8 +59,38 @@ const MODEL_CONTEXT_TOKENS = {
     "claude-haiku-4-5-20251001": 200000,
 };
 
-function getContextTokensForModel(model) {
-    return MODEL_CONTEXT_TOKENS[model] || KIRO_CONSTANTS.TOTAL_CONTEXT_TOKENS;
+function normalizeContextLength(value) {
+    if (value === undefined || value === null || value === '') {
+        return null;
+    }
+
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) && numericValue > 0 ? numericValue : null;
+}
+
+function findCustomModelConfigForModel(model, config = {}) {
+    const targetModel = typeof model === 'string'
+        ? model.replace(/^[^:]+:/, '')
+        : '';
+    if (!targetModel) {
+        return null;
+    }
+
+    const customModels = Array.isArray(config?.customModels) ? config.customModels : [];
+    return customModels.find(({ id, alias, actualModel } = {}) =>
+        id === targetModel || alias === targetModel || actualModel === targetModel
+    ) || null;
+}
+
+function getContextTokensForModel(model, config = {}, fallbackModel = null) {
+    const customModelConfig = findCustomModelConfigForModel(model, config) ||
+        findCustomModelConfigForModel(fallbackModel, config);
+    const configuredModelContextLength = normalizeContextLength(customModelConfig?.contextLength);
+    if (configuredModelContextLength !== null) {
+        return configuredModelContextLength;
+    }
+
+    return MODEL_CONTEXT_TOKENS[model] || MODEL_CONTEXT_TOKENS[fallbackModel] || KIRO_CONSTANTS.TOTAL_CONTEXT_TOKENS;
 }
 // 从 provider-models.js 获取支持的模型列表
 const KIRO_MODELS = getProviderModels(MODEL_PROVIDER.KIRO_API);
@@ -68,6 +98,7 @@ const KIRO_MODELS = getProviderModels(MODEL_PROVIDER.KIRO_API);
 // 完整的模型映射表
 const FULL_MODEL_MAPPING = {
     "claude-haiku-4-5":"claude-haiku-4.5",
+    "claude-opus-4-7":"claude-opus-4.7",
     "claude-opus-4-6":"claude-opus-4.6",
     "claude-sonnet-4-6":"claude-sonnet-4.6",
     "claude-opus-4-5":"claude-opus-4.5",
@@ -561,7 +592,7 @@ async loadCredentials() {
         }
 
         // 从文件加载
-        const targetFilePath = this.credsFilePath || path.join(this.credPath, KIRO_AUTH_TOKEN_FILE);
+        const targetFilePath = tokenFilePath;
         const dirPath = path.dirname(targetFilePath);
         const targetFileName = path.basename(targetFilePath);
 
@@ -590,16 +621,21 @@ async loadCredentials() {
             logger.warn(`[Kiro Auth] Error loading credentials from directory ${dirPath}: ${error.message}`);
         }
 
-        // Apply loaded credentials
-        this.accessToken = this.accessToken || mergedCredentials.accessToken;
-        this.refreshToken = this.refreshToken || mergedCredentials.refreshToken;
-        this.clientId = this.clientId || mergedCredentials.clientId;
-        this.clientSecret = this.clientSecret || mergedCredentials.clientSecret;
-        this.authMethod = this.authMethod || mergedCredentials.authMethod;
-        this.expiresAt = this.expiresAt || mergedCredentials.expiresAt;
-        this.profileArn = this.profileArn || mergedCredentials.profileArn;
-        this.region = this.region || mergedCredentials.region;
-        this.idcRegion = this.idcRegion || mergedCredentials.idcRegion;
+        // Apply loaded credentials. Force-refresh paths must not keep stale in-memory tokens.
+        const applyCredential = (field) => {
+            if (mergedCredentials[field] !== undefined && mergedCredentials[field] !== null) {
+                this[field] = mergedCredentials[field];
+            }
+        };
+        applyCredential('accessToken');
+        applyCredential('refreshToken');
+        applyCredential('clientId');
+        applyCredential('clientSecret');
+        applyCredential('authMethod');
+        applyCredential('expiresAt');
+        applyCredential('profileArn');
+        applyCredential('region');
+        applyCredential('idcRegion');
 
         if (!this.region) {
             logger.warn('[Kiro Auth] Region not found in credentials. Using default region us-east-1 for URLs.');
@@ -694,9 +730,20 @@ async saveCredentialsToFile(filePath, newData) {
                 refreshToken: this.refreshToken,
             };
 
+            const hasIdcClientCredentials = !!(this.clientId && this.clientSecret);
+            const isSocialAuth = this.authMethod === KIRO_CONSTANTS.AUTH_METHOD_SOCIAL ||
+                (!this.authMethod && !hasIdcClientCredentials);
+            if (!this.authMethod) {
+                this.authMethod = isSocialAuth ? KIRO_CONSTANTS.AUTH_METHOD_SOCIAL : 'builder-id';
+                logger.warn(`[Kiro Auth] authMethod missing in credentials. Inferred ${this.authMethod} from available fields.`);
+            }
+
             let refreshUrl = this.refreshUrl;
-            if (this.authMethod !== KIRO_CONSTANTS.AUTH_METHOD_SOCIAL) {
+            if (!isSocialAuth) {
                 refreshUrl = this.refreshIDCUrl;
+                if (!hasIdcClientCredentials) {
+                    throw new Error('IDC refresh requires clientId and clientSecret.');
+                }
                 requestBody.clientId = this.clientId;
                 requestBody.clientSecret = this.clientSecret;
                 requestBody.grantType = 'refresh_token';
@@ -714,7 +761,7 @@ async saveCredentialsToFile(filePath, newData) {
             };
             this._applySidecar(axiosConfig);
 
-            if (this.authMethod === KIRO_CONSTANTS.AUTH_METHOD_SOCIAL) {
+            if (isSocialAuth) {
                 response = await this.axiosSocialRefreshInstance.request(axiosConfig);
                 logger.info('[Kiro Auth] Token refresh social response: ok');
             } else {
@@ -724,9 +771,9 @@ async saveCredentialsToFile(filePath, newData) {
 
             if (response.data && response.data.accessToken) {
                 this.accessToken = response.data.accessToken;
-                this.refreshToken = response.data.refreshToken;
-                this.profileArn = response.data.profileArn;
-                const expiresIn = response.data.expiresIn;
+                this.refreshToken = response.data.refreshToken || this.refreshToken;
+                this.profileArn = response.data.profileArn || this.profileArn;
+                const expiresIn = Number(response.data.expiresIn) || 3600;
                 const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
                 this.expiresAt = expiresAt;
                 logger.info('[Kiro Auth] Access token refreshed successfully');
@@ -953,7 +1000,7 @@ async saveCredentialsToFile(filePath, newData) {
         processedMessages.length = 0;
         processedMessages.push(...mergedMessages);
 
-        const codewhispererModel = MODEL_MAPPING[model] || MODEL_MAPPING[this.modelName];
+        const codewhispererModel = MODEL_MAPPING[model] || model;
         
         // 动态压缩 tools（保留全部工具，但过滤掉 web_search/websearch）
         let toolsContext = {};
@@ -1556,27 +1603,10 @@ async saveCredentialsToFile(filePath, newData) {
                 await this._handle402Error(error, 'callApi');
             }
 
-            // Handle 403 (Forbidden) - mark as unhealthy immediately, no retry
+            // Handle 403 (Forbidden). Most Kiro 403s are account/policy/quota/profile issues,
+            // not expired access tokens, so do not blindly refresh.
             if (status === 403 && !isRetry) {
-                logger.info('[Kiro] Received 403. Marking credential as need refresh...');
-                
-                // 检查是否为 temporarily suspended 错误
-                const isSuspended = errorMessage && errorMessage.toLowerCase().includes('temporarily is suspended');
-                
-                if (isSuspended) {
-                    // temporarily suspended 错误：直接标记为不健康，不刷新 UUID
-                    logger.info('[Kiro] Account temporarily suspended. Marking as unhealthy without UUID refresh...');
-                    this._markCredentialUnhealthy('403 Forbidden - Account temporarily suspended', error);
-                } else {
-                    // 其他 403 错误：先刷新 UUID，然后标记需要刷新
-                    // const newUuid = this._refreshUuid();
-                    // if (newUuid) {
-                    //     logger.info(`[Kiro] UUID refreshed: ${this.uuid} -> ${newUuid}`);
-                    //     this.uuid = newUuid;
-                    // }
-                    this._markCredentialNeedRefresh('403 Forbidden', error);
-                }
-                
+                this._handleForbiddenCredentialError(error, 'callApi');
                 // Mark error for credential switch without recording error count
                 error.shouldSwitchCredential = true;
                 error.skipErrorCount = true;
@@ -1615,6 +1645,73 @@ async saveCredentialsToFile(filePath, newData) {
             if (error.response && error.response.data) { logger.error('[Kiro] 400 Response body:', typeof error.response.data === 'string' ? error.response.data.substring(0, 500) : JSON.stringify(error.response.data).substring(0, 500)); }
             logger.error(`[Kiro] API call failed (Status: ${status}, Code: ${errorCode}):`, error.message);
             throw error;
+        }
+    }
+
+    _getErrorResponseText(error) {
+        const data = error?.response?.data;
+        if (data === undefined || data === null) {
+            return error?.message || '';
+        }
+        if (Buffer.isBuffer(data)) {
+            return data.toString('utf8');
+        }
+        if (typeof data === 'string') {
+            return data;
+        }
+        try {
+            return JSON.stringify(data);
+        } catch {
+            return String(data);
+        }
+    }
+
+    _isRefreshableForbidden(error) {
+        const text = this._getErrorResponseText(error).toLowerCase();
+        if (!text) return false;
+
+        const nonRefreshablePatterns = [
+            'temporarily is suspended',
+            'temporarily suspended',
+            'disabled',
+            'violation of terms',
+            'terms of service',
+            'appeal',
+            'quota',
+            'limit exceeded',
+            'payment required',
+            'not authorized to access',
+            'not allowed'
+        ];
+        if (nonRefreshablePatterns.some(pattern => text.includes(pattern))) {
+            return false;
+        }
+
+        const tokenRelated = text.includes('token') ||
+            text.includes('authorization') ||
+            text.includes('authenticate') ||
+            text.includes('credential');
+        const refreshableAuthState = text.includes('expired') ||
+            text.includes('invalid') ||
+            text.includes('unauthorized');
+
+        return tokenRelated && refreshableAuthState;
+    }
+
+    _handleForbiddenCredentialError(error, context) {
+        const responseText = this._getErrorResponseText(error);
+        const responseSnippet = responseText ? responseText.substring(0, 500) : '';
+
+        if (responseSnippet) {
+            logger.warn(`[Kiro] 403 response body (${context}): ${responseSnippet}`);
+        }
+
+        if (this._isRefreshableForbidden(error)) {
+            logger.info(`[Kiro] Received token-related 403 in ${context}. Marking credential as needs refresh.`);
+            this._markCredentialNeedRefresh(`403 Forbidden (${context}) - token-related${responseSnippet ? `: ${responseSnippet}` : ''}`, error);
+        } else {
+            logger.info(`[Kiro] Received non-refreshable 403 in ${context}. Marking credential as unhealthy without refresh.`);
+            this._markCredentialUnhealthy(`403 Forbidden (${context})${responseSnippet ? `: ${responseSnippet}` : ''}`, error);
         }
     }
 
@@ -1816,7 +1913,7 @@ async saveCredentialsToFile(filePath, newData) {
             this._markCredentialNeedRefresh('Token near expiry in generateContent');
         }
         
-        const finalModel = MODEL_MAPPING[model] ? model : this.modelName;
+        const finalModel = MODEL_MAPPING[model] ? model : model;
         logger.info(`[Kiro] Calling generateContent with model: ${finalModel}`);
         
         // Estimate input tokens before making the API call
@@ -2097,27 +2194,10 @@ async saveCredentialsToFile(filePath, newData) {
                 await this._handle402Error(error, 'stream');
             }
 
-            // Handle 403 (Forbidden) - mark as unhealthy immediately, no retry
+            // Handle 403 (Forbidden). Most Kiro 403s are account/policy/quota/profile issues,
+            // not expired access tokens, so do not blindly refresh.
             if (status === 403 && !isRetry) {
-                logger.info('[Kiro] Received 403 in stream. Marking credential as need refresh...');
-                
-                // 检查是否为 temporarily suspended 错误
-                const isSuspended = errorMessage && errorMessage.toLowerCase().includes('temporarily is suspended');
-                
-                if (isSuspended) {
-                    // temporarily suspended 错误：直接标记为不健康，不刷新 UUID
-                    logger.info('[Kiro] Account temporarily suspended in stream. Marking as unhealthy without UUID refresh...');
-                    this._markCredentialUnhealthy('403 Forbidden - Account temporarily suspended', error);
-                } else {
-                    // 其他 403 错误：先刷新 UUID，然后标记需要刷新
-                    // const newUuid = this._refreshUuid();
-                    // if (newUuid) {
-                    //     logger.info(`[Kiro] UUID refreshed: ${this.uuid} -> ${newUuid}`);
-                    //     this.uuid = newUuid;
-                    // }
-                    this._markCredentialNeedRefresh('403 Forbidden', error);
-                }
-
+                this._handleForbiddenCredentialError(error, 'stream');
                 // Mark error for credential switch without recording error count
                 error.shouldSwitchCredential = true;
                 error.skipErrorCount = true;
@@ -2193,7 +2273,7 @@ async saveCredentialsToFile(filePath, newData) {
             this._markCredentialNeedRefresh('Token near expiry in generateContentStream');
         }
         
-        const finalModel = MODEL_MAPPING[model] ? model : this.modelName;
+        const finalModel = MODEL_MAPPING[model] ? model : model;
         logger.info(`[Kiro] Calling generateContentStream with model: ${finalModel} (real streaming)`);
 
         let inputTokens = 0;
@@ -2646,7 +2726,7 @@ async saveCredentialsToFile(filePath, newData) {
             // 总 token = TOTAL_CONTEXT_TOKENS * contextUsagePercentage / 100
             // input token = 总 token - output token
             if (contextUsagePercentage !== null && contextUsagePercentage > 0) {
-                const contextTokens = getContextTokensForModel(finalModel);
+                const contextTokens = getContextTokensForModel(model, this.config, finalModel);
                 const totalTokens = Math.round(contextTokens * contextUsagePercentage / 100);
                 inputTokens = Math.max(0, totalTokens - outputTokens);
                 logger.info(`[Kiro] Token calculation from contextUsagePercentage: total=${totalTokens}, output=${outputTokens}, input=${inputTokens}`);
@@ -3047,20 +3127,8 @@ async saveCredentialsToFile(filePath, newData) {
             }
             
             if (status === 403) {
-                logger.info('[Kiro] Received 403 on getUsageLimits. Marking credential as unhealthy (no retry)...');
-                
-                // 检查是否为 temporarily suspended 错误
-                const isSuspended = errorMessage && errorMessage.toLowerCase().includes('temporarily is suspended');
-                
-                if (isSuspended) {
-                    // temporarily suspended 错误：直接标记为不健康，不刷新 UUID
-                    logger.info('[Kiro] Account temporarily suspended on usage query. Marking as unhealthy without UUID refresh...');
-                    this._markCredentialUnhealthy('403 Forbidden - Account temporarily suspended on usage query', formattedError);
-                } else {
-                    // 其他 403 错误：标记需要刷新
-                    this._markCredentialNeedRefresh('403 Forbidden on usage query', formattedError);
-                }
-                
+                this._handleForbiddenCredentialError(error, 'usage query');
+                formattedError.credentialMarkedUnhealthy = true;
                 throw formattedError;
             }
             

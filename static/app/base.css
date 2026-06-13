@@ -679,8 +679,179 @@ body {
     color: var(--danger-text);
 }
 
+.expiration-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.expiration-tag.healthy {
+    background: var(--success-bg-light);
+    color: var(--success-text);
+}
+
+.expiration-tag.warning {
+    background: var(--warning-bg);
+    color: var(--warning-text);
+}
+
+.expiration-tag.expired {
+    background: var(--danger-bg-light);
+    color: var(--danger-color);
+}
+
 .status-success { color: var(--success-color); }
 .status-error { color: var(--danger-color); }
+
+/* Provider Cards Grid - Compact Version */
+.provider-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.provider-item-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 8px 10px;
+    position: relative;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-height: 64px;
+    justify-content: space-between;
+}
+
+.provider-item-card:hover {
+    border-color: var(--primary-color);
+    background: var(--bg-secondary);
+}
+
+/* 移除突兀的侧边条 */
+.provider-item-card::before {
+    display: none;
+}
+
+.provider-item-card.healthy { border-bottom: 2px solid rgba(40, 167, 69, 0.7); }
+.provider-item-card.unhealthy { border-bottom: 2px solid rgba(220, 53, 69, 0.7); }
+.provider-item-card.disabled { border-bottom: 2px solid rgba(108, 117, 125, 0.7); }
+
+.provider-item-card .card-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+}
+
+/* 回归精致小圆点 */
+.provider-item-card .card-status-dot {
+    display: block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.provider-item-card.healthy .card-status-dot { background: var(--success-color); box-shadow: 0 0 4px var(--success-color); }
+.provider-item-card.unhealthy .card-status-dot { background: var(--danger-color); box-shadow: 0 0 4px var(--danger-color); }
+.provider-item-card.disabled .card-status-dot { background: var(--text-tertiary); }
+
+.provider-item-card.healthy::before { background: var(--success-color); }
+.provider-item-card.unhealthy::before { background: var(--danger-color); }
+
+/* 禁用状态：保留原有的健康/不健康侧边条，但降低饱和度 */
+.provider-item-card.disabled { 
+    opacity: 0.75; 
+    filter: grayscale(0.8);
+    background: var(--bg-secondary);
+}
+
+.provider-item-card .card-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow: hidden;
+}
+
+.provider-item-card .card-status-dot {
+    display: none;
+}
+
+.provider-item-card .card-name {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.provider-item-card .card-body {
+    display: flex;
+    gap: 8px;
+    font-size: 0.65rem;
+    color: var(--text-tertiary);
+    padding: 0;
+    background: none;
+}
+
+.provider-item-card .card-stat {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.provider-item-card .card-stat i {
+    font-size: 0.65rem;
+}
+
+/* 操作按钮悬浮显示 */
+.provider-item-card .card-actions {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    display: flex;
+    gap: 2px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    background: var(--bg-primary);
+    padding: 2px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    z-index: 10;
+}
+
+.provider-item-card:hover .card-actions {
+    opacity: 1;
+}
+
+.card-action-btn {
+    background: none;
+    border: none;
+    padding: 2px 4px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    transition: all 0.1s;
+}
+
+.card-action-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--primary-color);
+}
+
+.card-action-btn.btn-delete:hover {
+    color: var(--danger-color);
+}
 
 /* 响应式调整通用部分 */
 @media (max-width: 768px) {

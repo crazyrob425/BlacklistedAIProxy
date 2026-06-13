@@ -1110,13 +1110,13 @@ export class AntigravityApiService {
             
             logger.error(`[Antigravity API] Error calling (Status: ${status}, Code: ${errorCode}):`, error.message);
 
-            if ((status === 400 || status === 401) && !isRetry) {
-                logger.info('[Antigravity API] Received 401/400. Triggering background refresh via PoolManager...');
+            if ((status === 401) && !isRetry) {
+                logger.info('[Antigravity API] Received 401 Unauthorized. Triggering background refresh via PoolManager...');
                 
                 // 标记当前凭证为不健康（会自动进入刷新队列）
                 const poolManager = getProviderPoolManager();
                 if (poolManager && this.uuid) {
-                    logger.info(`[Antigravity] Marking credential ${this.uuid} as needs refresh. Reason: 401/400 Unauthorized`);
+                    logger.info(`[Antigravity] Marking credential ${this.uuid} as needs refresh. Reason: 401 Unauthorized`);
                     poolManager.markProviderNeedRefresh(this.config.MODEL_PROVIDER || MODEL_PROVIDER.ANTIGRAVITY, {
                         uuid: this.uuid
                     });
@@ -1213,13 +1213,13 @@ export class AntigravityApiService {
             
             logger.error(`[Antigravity API] Error during stream (Status: ${status}, Code: ${errorCode}):`, error.message);
 
-            if ((status === 400 || status === 401) && !isRetry) {
-                logger.info('[Antigravity API] Received 401/400 during stream. Triggering background refresh via PoolManager...');
+            if ((status === 401) && !isRetry) {
+                logger.info('[Antigravity API] Received 401 Unauthorized during stream. Triggering background refresh via PoolManager...');
                 
                 // 标记当前凭证为不健康（会自动进入刷新队列）
                 const poolManager = getProviderPoolManager();
                 if (poolManager && this.uuid) {
-                    logger.info(`[Antigravity] Marking credential ${this.uuid} as needs refresh. Reason: 401/400 Unauthorized in stream`);
+                    logger.info(`[Antigravity] Marking credential ${this.uuid} as needs refresh. Reason: 401 Unauthorized in stream`);
                     poolManager.markProviderNeedRefresh(this.config.MODEL_PROVIDER || MODEL_PROVIDER.ANTIGRAVITY, {
                         uuid: this.uuid
                     });

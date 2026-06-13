@@ -204,6 +204,14 @@
                     <div class="faq-question" data-i18n="guide.faq.q7">Q: 请求返回 403 Forbidden 错误怎么办？</div>
                     <div class="faq-answer" data-i18n="guide.faq.a7">A: 403 表示访问被拒绝。首先检查"提供商池"页面中节点状态，如果节点健康检查正常，可以忽略此报错。其他可能原因包括：账号权限不足、API Key 权限受限、地区访问限制、凭据已失效等。</div>
                 </div>
+                <div class="faq-item">
+                    <div class="faq-question" data-i18n="guide.faq.q8">Q: 为什么要开启“启用 OAuth 令牌自动刷新”？</div>
+                    <div class="faq-answer" data-i18n="guide.faq.a8">A: OAuth 令牌通常有有效期（如 1 小时）。开启后，系统会在后台自动刷新即将过期的令牌，确保 24/7 稳定服务，避免因令牌过期导致的请求失败。</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question" data-i18n="guide.faq.q9">Q: “预加载模型提供商”未开启对 Token 保持有什么影响？</div>
+                    <div class="faq-answer" data-i18n="guide.faq.a9">A: 系统仅会对已预加载的提供商执行自动刷新。如果某提供商未预加载，其 Token 将不会在后台自动刷新，长时间不使用可能导致 Token 过期。建议将常用提供商加入预加载列表。</div>
+                </div>
             </div>
         </div>
     </div>

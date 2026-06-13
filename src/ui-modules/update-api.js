@@ -1,4 +1,5 @@
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
+import { atomicWriteFile, withFileLock } from '../utils/file-lock.js';
 import logger from '../utils/logger.js';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -383,7 +384,9 @@ export async function performUpdate(targetTag = null) {
     const versionFilePath = path.join(process.cwd(), 'VERSION');
     try {
         const newVersion = finalTag.replace(/^v/, '');
-        writeFileSync(versionFilePath, newVersion, 'utf-8');
+        await withFileLock(versionFilePath, async () => {
+            await atomicWriteFile(versionFilePath, newVersion, 'utf-8');
+        });
         logger.info(`[Update] VERSION file updated to ${newVersion}`);
     } catch (error) {
         logger.warn('[Update] Failed to update VERSION file:', error.message);

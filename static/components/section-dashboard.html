@@ -125,49 +125,78 @@
         </div>
     </div>
 
-    <!-- Path Routing Examples Panel -->
-    <div class="routing-examples-panel">
-        <h3><i class="fas fa-route"></i> <span data-i18n="dashboard.routing.title">路径路由调用示例</span></h3>
-        <p class="routing-description" data-i18n="dashboard.routing.description">通过不同路径路由访问不同的AI模型提供商，支持灵活的模型切换</p>
-        
-        <div class="routing-examples-grid">
-            <!-- 路径路由示例将由 routing-examples.js 动态渲染 -->
-            <div class="routing-examples-loading">
+    <!-- Provider Nodes Status Panel -->
+    <div class="provider-status-panel">
+        <div class="system-info-header">
+            <h3><i class="fas fa-network-wired"></i> <span data-i18n="dashboard.providerStatus">提供商节点状态</span></h3>
+            <button id="refreshProviderStatusBtn" class="btn btn-outline btn-sm" data-i18n-title="common.refresh" title="刷新">
+                <i class="fas fa-sync-alt"></i> <span data-i18n="common.refresh">刷新</span>
+            </button>
+        </div>
+        <div id="providerStatusGrid" class="provider-status-grid">
+            <!-- Provider status cards will be loaded here -->
+            <div class="status-loading">
                 <i class="fas fa-spinner fa-spin"></i>
                 <span data-i18n="common.loading">加载中...</span>
             </div>
         </div>
+    </div>
 
-        <div class="routing-tips">
-            <h4><i class="fas fa-lightbulb"></i> <span data-i18n="dashboard.routing.tips">使用提示</span></h4>
-            <ul>
-                <li data-i18n="dashboard.routing.tip1"><strong>即时切换:</strong> 通过修改URL路径即可切换不同的AI模型提供商</li>
-                <li data-i18n="dashboard.routing.tip2"><strong>客户端配置:</strong> 在Cherry-Studio、NextChat、Cline等客户端中设置API端点为对应路径</li>
-                <li data-i18n="dashboard.routing.tip3"><strong>跨协议调用:</strong> 支持OpenAI协议调用Claude模型，或Claude协议调用OpenAI模型</li>
-            </ul>
-        </div>
+    <!-- Advanced Information (Collapsible) -->
+    <details class="dashboard-details">
+        <summary class="dashboard-summary">
+            <div class="summary-content">
+                <i class="fas fa-tools"></i>
+                <span data-i18n="dashboard.advancedInfo">高级信息 (路径路由与模型列表)</span>
+                <span class="expand-hint" data-i18n="dashboard.expandMore">展开更多</span>
+            </div>
+            <i class="fas fa-chevron-down caret-icon"></i>
+        </summary>
 
-        <!-- 可用模型列表 -->
-        <div class="models-section">
-            <h4 class="models-section-title"><i class="fas fa-cube"></i> <span data-i18n="models.title">可用模型列表</span></h4>
-            <div class="models-description">
-                <div class="highlight-note">
-                    <i class="fas fa-info-circle"></i>
-                    <span data-i18n="models.note">点击模型名称可直接复制到剪贴板</span>
+        <!-- Path Routing Examples Panel -->
+        <div class="routing-examples-panel" style="margin-top: 1rem; border-top: none;">
+            <h3><i class="fas fa-route"></i> <span data-i18n="dashboard.routing.title">路径路由调用示例</span></h3>
+            <p class="routing-description" data-i18n="dashboard.routing.description">通过不同路径路由访问不同的AI模型提供商，支持灵活的模型切换</p>
+            
+            <div class="routing-examples-grid">
+                <!-- 路径路由示例将由 routing-examples.js 动态渲染 -->
+                <div class="routing-examples-loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span data-i18n="common.loading">加载中...</span>
                 </div>
             </div>
-            
-            <!-- Models Container -->
-            <div class="models-container">
-                <div id="modelsList" class="models-list">
-                    <!-- Models will be loaded here -->
-                    <div class="models-loading">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <span data-i18n="common.loading">加载中...</span>
+
+            <div class="routing-tips">
+                <h4><i class="fas fa-lightbulb"></i> <span data-i18n="dashboard.routing.tips">使用提示</span></h4>
+                <ul>
+                    <li data-i18n="dashboard.routing.tip1"><strong>即时切换:</strong> 通过修改URL路径即可切换不同的AI模型提供商</li>
+                    <li data-i18n="dashboard.routing.tip2"><strong>客户端配置:</strong> 在Cherry-Studio、NextChat、Cline等客户端中设置API端点为对应路径</li>
+                    <li data-i18n="dashboard.routing.tip3"><strong>跨协议调用:</strong> 支持OpenAI协议调用Claude模型，或Claude协议调用OpenAI模型</li>
+                </ul>
+            </div>
+
+            <!-- 可用模型列表 -->
+            <div class="models-section">
+                <h4 class="models-section-title"><i class="fas fa-cube"></i> <span data-i18n="models.title">可用模型列表</span></h4>
+                <div class="models-description">
+                    <div class="highlight-note">
+                        <i class="fas fa-info-circle"></i>
+                        <span data-i18n="models.note">点击模型名称可直接复制到剪贴板</span>
+                    </div>
+                </div>
+                
+                <!-- Models Container -->
+                <div class="models-container">
+                    <div id="modelsList" class="models-list">
+                        <!-- Models will be loaded here -->
+                        <div class="models-loading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span data-i18n="common.loading">加载中...</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </details>
     
 </section>

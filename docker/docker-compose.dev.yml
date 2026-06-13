@@ -1,0 +1,16 @@
+# 开发模式覆盖配置 - 热重载
+# 使用方法: docker compose -f docker/docker-compose.build.yml -f docker/docker-compose.dev.yml up -d --build
+
+services:
+  aiclient-api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    volumes:
+      # 从项目根目录挂载 configs，使用绝对路径确保正确
+      - ../configs:/app/configs
+      # 挂载源代码以支持热重载，但保留 node_modules
+      - ../src:/app/src:ro
+      - ../package.json:/app/package.json:ro
+    # 使用 shell form 以支持 $ARGS 展开
+    command: ["sh", "-c", "node --watch src/core/master.js $ARGS"]

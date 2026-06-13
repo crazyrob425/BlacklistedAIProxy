@@ -380,7 +380,7 @@ async function copyCurlExample(provider, options = {}) {
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -d '{
-    "model": "grok-3",
+    "model": "grok-4.1-mini",
     "messages": [{"role": "user", "content": "${message}"}],
     "stream": true
   }'`;
@@ -389,7 +389,7 @@ async function copyCurlExample(provider, options = {}) {
   -H "Content-Type: application/json" \\
   -H "X-API-Key: YOUR_API_KEY" \\
   -d '{
-    "model": "grok-3",
+    "model": "grok-4.1-mini",
     "max_tokens": 1000,
     "messages": [{"role": "user", "content": "${message}"}]
   }'`;
@@ -444,7 +444,7 @@ function renderRoutingExamples(providerConfigs) {
         'openai-qwen-oauth': 'qwen3-coder-plus',
         'openai-iflow': 'qwen3-max',
         'openai-codex-oauth': 'gpt-5',
-        'grok-custom': 'grok-3',
+        'grok-custom': 'grok-4.1-mini',
         'openaiResponses-custom': 'gpt-4o'
     };
 

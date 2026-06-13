@@ -1,9 +1,11 @@
 node_modules
+logs/
 .serena/
 .claude/
 CLAUDE.md
 config.json
 provider_pools.json
+custom_models.json
 plugins.json
 fetch_system_prompt.txt
 input_system_prompt.txt

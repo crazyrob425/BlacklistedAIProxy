@@ -8,23 +8,23 @@ import logger from '../../utils/logger.js';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { RateManager } from '../../utils/rate-tracker.js';
+import { getBeijingDateString } from '../../utils/common.js';
 
 // 配置文件路径
 const KEYS_STORE_FILE = path.join(process.cwd(), 'configs', 'api-potluck-keys.json');
+
 const KEY_PREFIX = 'maki_';
 
-// 默认配置
 const DEFAULT_CONFIG = {
-    defaultDailyLimit: 500,
-    persistInterval: 5000
+    persistInterval: 5000,
+    defaultDailyLimit: 500
 };
 
-// 配置获取函数（由外部注入）
 let configGetter = null;
 
 /**
- * 设置配置获取函数
- * @param {Function} getter - 返回配置对象的函数
+ * 设置配置获取器
  */
 export function setConfigGetter(getter) {
     configGetter = getter;
@@ -40,12 +40,21 @@ function getConfig() {
     return DEFAULT_CONFIG;
 }
 
-// 内存缓存
+/**
+ * 获取今日日期字符串
+ */
+function getTodayDateString() {
+    return getBeijingDateString();
+}
+
+// 插件状态
 let keyStore = null;
 let isDirty = false;
 let isWriting = false;
 let persistTimer = null;
 let currentPersistInterval = DEFAULT_CONFIG.persistInterval;
+
+const rateManager = new RateManager(60);
 
 function createUsageBucket() {
     return {
@@ -53,7 +62,10 @@ function createUsageBucket() {
         promptTokens: 0,
         completionTokens: 0,
         totalTokens: 0,
-        cachedTokens: 0
+        cachedTokens: 0,
+        maxQps: 0,
+        maxRpm: 0,
+        maxTps: 0
     };
 }
 
@@ -77,7 +89,10 @@ function normalizeUsageBucket(bucket) {
         promptTokens: toNumber(bucket?.promptTokens),
         completionTokens: toNumber(bucket?.completionTokens),
         totalTokens: toNumber(bucket?.totalTokens),
-        cachedTokens: toNumber(bucket?.cachedTokens)
+        cachedTokens: toNumber(bucket?.cachedTokens),
+        maxQps: toNumber(bucket?.maxQps),
+        maxRpm: toNumber(bucket?.maxRpm),
+        maxTps: toNumber(bucket?.maxTps)
     };
 }
 
@@ -131,11 +146,22 @@ function normalizeStore(store = {}) {
 }
 
 function addUsage(target, usage = {}) {
-    target.requestCount += toNumber(usage.requestCount);
+    // 默认请求数为 1，确保总量与明细一致
+    const rCount = usage.requestCount !== undefined ? toNumber(usage.requestCount) : 1;
+    target.requestCount += rCount;
     target.promptTokens += toNumber(usage.promptTokens);
     target.completionTokens += toNumber(usage.completionTokens);
     target.totalTokens += toNumber(usage.totalTokens);
     target.cachedTokens += toNumber(usage.cachedTokens);
+    
+    // 聚合峰值：使用累加还是最大值取决于上下文。
+    // 在汇总多个 Key 的历史数据时，累加可能更能代表系统总峰值（假设可能同时发生）
+    // 但更准确的是记录全局 RateTracker 的峰值。
+    // 这里简单处理：如果 usage 中有峰值，则取最大值或累加。
+    // 鉴于这是日历展示，我们取最大值以展示该日达到的最高单项或汇总峰值。
+    target.maxQps = Math.max(target.maxQps || 0, toNumber(usage.maxQps));
+    target.maxRpm = Math.max(target.maxRpm || 0, toNumber(usage.maxRpm));
+    target.maxTps = Math.max(target.maxTps || 0, toNumber(usage.maxTps));
 }
 
 function resetUsageBucketTokens(bucket) {
@@ -144,6 +170,9 @@ function resetUsageBucketTokens(bucket) {
     bucket.completionTokens = 0;
     bucket.totalTokens = 0;
     bucket.cachedTokens = 0;
+    bucket.maxQps = 0;
+    bucket.maxRpm = 0;
+    bucket.maxTps = 0;
 }
 
 function resetUsageHistoryTokens(usageHistory) {
@@ -261,14 +290,6 @@ function generateApiKey() {
 }
 
 /**
- * 获取今天的日期字符串 (YYYY-MM-DD)
- */
-function getTodayDateString() {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-}
-
-/**
  * 检查并重置过期的每日计数
  */
 function checkAndResetDailyCount(keyData) {
@@ -315,11 +336,13 @@ export async function createKey(name = '', dailyLimit = null) {
         totalCachedTokens: 0,
         lastResetDate: today,
         lastUsedAt: null,
-        enabled: true
+        enabled: true,
+        usageHistory: {}
     };
 
     keyStore.keys[apiKey] = keyData;
     markDirty();
+
     await persistIfDirty(); // 创建操作立即持久化
 
     logger.info(`[API Potluck] Created key: ${apiKey.substring(0, 12)}...`);
@@ -334,8 +357,15 @@ export async function listKeys() {
     const keys = [];
     for (const [keyId, keyData] of Object.entries(keyStore.keys)) {
         const updated = checkAndResetDailyCount({ ...keyData });
+        const rates = rateManager.getStats(`key:${keyId}`);
         keys.push({
             ...updated,
+            qps: rates.qps,
+            tps: rates.tps,
+            rpm: rates.rpm,
+            maxQps: Math.max(updated.maxQps || 0, rates.maxQps),
+            maxTps: Math.max(updated.maxTps || 0, rates.maxTps),
+            maxRpm: Math.max(updated.maxRpm || 0, rates.maxRpm),
             maskedKey: `${keyId.substring(0, 12)}...${keyId.substring(keyId.length - 4)}`
         });
     }
@@ -349,7 +379,17 @@ export async function getKey(keyId) {
     ensureLoaded();
     const keyData = keyStore.keys[keyId];
     if (!keyData) return null;
-    return checkAndResetDailyCount({ ...keyData });
+    const updated = checkAndResetDailyCount({ ...keyData });
+    const rates = rateManager.getStats(`key:${keyId}`);
+    return {
+        ...updated,
+        qps: rates.qps,
+        tps: rates.tps,
+        rpm: rates.rpm,
+        maxQps: Math.max(updated.maxQps || 0, rates.maxQps),
+        maxTps: Math.max(updated.maxTps || 0, rates.maxTps),
+        maxRpm: Math.max(updated.maxRpm || 0, rates.maxRpm)
+    };
 }
 
 /**
@@ -359,6 +399,10 @@ export async function deleteKey(keyId) {
     ensureLoaded();
     if (!keyStore.keys[keyId]) return false;
     delete keyStore.keys[keyId];
+    
+    // 清理速率追踪器，防止内存泄漏
+    rateManager.remove(`key:${keyId}`);
+
     markDirty();
     await persistIfDirty(); // 删除操作立即持久化
     logger.info(`[API Potluck] Deleted key: ${keyId.substring(0, 12)}...`);
@@ -412,6 +456,9 @@ export async function resetKeyTokenStats(keyId) {
     keyData.totalCachedTokens = 0;
     resetUsageHistoryTokens(keyData.usageHistory);
 
+    // 重置该 Key 的速率追踪器
+    rateManager.remove(`key:${keyId}`);
+
     markDirty();
     await persistIfDirty();
     logger.info(`[API Potluck] Reset token stats for key: ${keyId.substring(0, 12)}...`);
@@ -438,7 +485,11 @@ export async function resetAllTokenStats() {
         updated++;
     }
 
+    // 重置所有 Key 的速率追踪器
+    rateManager.clear();
+
     if (updated > 0) {
+
         markDirty();
         await persistIfDirty();
     }
@@ -469,89 +520,83 @@ export async function updateKeyName(keyId, newName) {
     return keyStore.keys[keyId];
 }
 
+// 用于防止同一请求重复统计速率，改用 Map 以支持批量清理
+const recordedRequests = new Map();
+let lastCleanupTime = Date.now();
+
 /**
- * 重新生成 API Key（保留原有数据，更换 Key ID）
- * @param {string} oldKeyId - 原 Key ID
- * @returns {Promise<{oldKey: string, newKey: string, keyData: Object}|null>}
+ * 清理过期的请求记录
  */
-export async function regenerateKey(oldKeyId) {
-    ensureLoaded();
-    const oldKeyData = keyStore.keys[oldKeyId];
-    if (!oldKeyData) return null;
+function cleanupRecordedRequests() {
+    const now = Date.now();
+    if (now - lastCleanupTime < 60000) return; // 每分钟清理一次
     
-    // 生成新的唯一 Key
-    const newKeyId = generateApiKey();
-    
-    // 复制数据到新 Key
-    const newKeyData = {
-        ...oldKeyData,
-        id: newKeyId,
-        regeneratedAt: new Date().toISOString(),
-        regeneratedFrom: oldKeyId.substring(0, 12) + '...'
-    };
-    
-    // 删除旧 Key，添加新 Key
-    delete keyStore.keys[oldKeyId];
-    keyStore.keys[newKeyId] = newKeyData;
-    
-    markDirty();
-    await persistIfDirty(); // 立即持久化
-    
-    logger.info(`[API Potluck] Regenerated key: ${oldKeyId.substring(0, 12)}... -> ${newKeyId.substring(0, 12)}...`);
-    
-    return {
-        oldKey: oldKeyId,
-        newKey: newKeyId,
-        keyData: newKeyData
-    };
+    const cutoff = now - 60000; // 清理 1 分钟前的记录
+    for (const [id, timestamp] of recordedRequests.entries()) {
+        if (timestamp < cutoff) recordedRequests.delete(id);
+    }
+    lastCleanupTime = now;
 }
 
 /**
- * 验证 API Key 是否有效且有配额
+ * 增加 API Key 的使用量
+ * @param {string} apiKey - API Key ID
+ * @param {string} pName - 提供商名称
+ * @param {string} mName - 模型名称
+ * @param {Object} usage - 用量数据
+ * @param {string} [requestId] - 请求 ID，用于防止重复统计速率
  */
-export async function validateKey(apiKey) {
-    ensureLoaded();
-    if (!apiKey || !apiKey.startsWith(KEY_PREFIX)) {
-        return { valid: false, reason: 'invalid_format' };
-    }
-    const keyData = keyStore.keys[apiKey];
-    if (!keyData) return { valid: false, reason: 'not_found' };
-    if (!keyData.enabled) return { valid: false, reason: 'disabled' };
-
-    // 直接在内存中检查和重置
-    checkAndResetDailyCount(keyData);
-    
-    // 检查每日限额
-    if (keyData.todayUsage < keyData.dailyLimit) {
-        return { valid: true, keyData };
-    }
-    
-    return { valid: false, reason: 'quota_exceeded', keyData };
-}
-
-/**
- * 增加 Key 的使用次数（原子操作，直接修改内存）
- * @param {string} apiKey - API Key
- * @param {string} provider - 使用的提供商
- * @param {string} model - 使用的模型
- * @param {{promptTokens?: number, completionTokens?: number, totalTokens?: number, cachedTokens?: number}} usage - token 用量
- */
-export async function incrementUsage(apiKey, provider = 'unknown', model = 'unknown', usage = {}) {
+export async function incrementUsage(apiKey, pName = 'unknown', mName = 'unknown', usage = {}, requestId = null) {
     ensureLoaded();
     const keyData = keyStore.keys[apiKey];
-    if (!keyData) return null;
+    if (!keyData) return;
 
-    checkAndResetDailyCount(keyData);
-    
-    // 消耗每日限额
-    if (keyData.todayUsage < keyData.dailyLimit) {
-        keyData.todayUsage += 1;
-    } else {
-        // 每日限额用尽
-        return null;
+    // 防止同一请求重复统计速率
+    let shouldRecordRate = true;
+    if (requestId) {
+        cleanupRecordedRequests();
+        if (recordedRequests.has(requestId)) {
+            shouldRecordRate = false;
+        } else {
+            recordedRequests.set(requestId, Date.now());
+        }
+    }
+
+    // 记录速率统计
+    if (shouldRecordRate) {
+        rateManager.record(`key:${apiKey}`, usage.totalTokens);
+    }
+
+    const rates = rateManager.getGlobalStats();
+    const updatePeaks = (target) => {
+        target.maxQps = Math.max(target.maxQps || 0, rates.qps);
+        target.maxRpm = Math.max(target.maxRpm || 0, rates.rpm);
+        target.maxTps = Math.max(target.maxTps || 0, rates.tps);
+    };
+
+    // 更新每日和历史统计
+    const today = getTodayDateString();
+    if (!keyData.usageHistory) keyData.usageHistory = {};
+    if (!keyData.usageHistory[today]) {
+        keyData.usageHistory[today] = normalizeUsageHistoryDay();
     }
     
-    keyData.totalUsage += 1;
+    const dayHistory = keyData.usageHistory[today];
+    addUsage(dayHistory.summary, usage);
+    updatePeaks(dayHistory.summary);
+    
+    if (!dayHistory.providers[pName]) dayHistory.providers[pName] = createUsageBucket();
+    addUsage(dayHistory.providers[pName], usage);
+    updatePeaks(dayHistory.providers[pName]);
+    
+    if (!dayHistory.models[mName]) dayHistory.models[mName] = createUsageBucket();
+    addUsage(dayHistory.models[mName], usage);
+    updatePeaks(dayHistory.models[mName]);
+
+    // 更新今日和累计总量 (统一处理默认调用次数)
+    const rCount = usage.requestCount !== undefined ? toNumber(usage.requestCount) : 1;
+    keyData.todayUsage += rCount;
+    keyData.totalUsage += rCount;
     keyData.todayPromptTokens += toNumber(usage.promptTokens);
     keyData.todayCompletionTokens += toNumber(usage.completionTokens);
     keyData.todayTotalTokens += toNumber(usage.totalTokens);
@@ -562,28 +607,16 @@ export async function incrementUsage(apiKey, provider = 'unknown', model = 'unkn
     keyData.totalCachedTokens += toNumber(usage.cachedTokens);
     keyData.lastUsedAt = new Date().toISOString();
 
-    // 记录个人按天统计 (每个 Key 独立)
-    const today = getTodayDateString();
-    if (!keyData.usageHistory) keyData.usageHistory = {};
-    if (!keyData.usageHistory[today]) {
-        keyData.usageHistory[today] = normalizeUsageHistoryDay();
-    }
-    
-    // 确保 provider 和 model 是字符串
-    const pName = String(provider || 'unknown');
-    const mName = String(model || 'unknown');
-    
-    const userHistory = keyData.usageHistory[today];
-    userHistory.providers[pName] = normalizeUsageBucket(userHistory.providers[pName]);
-    userHistory.models[mName] = normalizeUsageBucket(userHistory.models[mName]);
-    addUsage(userHistory.summary, { requestCount: 1, ...usage });
-    addUsage(userHistory.providers[pName], { requestCount: 1, ...usage });
-    addUsage(userHistory.models[mName], { requestCount: 1, ...usage });
+    // 同时也给 keyData 注入实时峰值（如果需要持久化）
+    if (!keyData.maxQps) keyData.maxQps = 0;
+    if (!keyData.maxRpm) keyData.maxRpm = 0;
+    if (!keyData.maxTps) keyData.maxTps = 0;
+    updatePeaks(keyData);
 
-    // 清理该 Key 的过期历史 (保留 7 天)
+    // 清理该 Key 的过期历史 (保留 100 天以支持 3 个月日历)
     const userDates = Object.keys(keyData.usageHistory).sort();
-    if (userDates.length > 7) {
-        const dropDates = userDates.slice(0, userDates.length - 7);
+    if (userDates.length > 100) {
+        const dropDates = userDates.slice(0, userDates.length - 100);
         dropDates.forEach(d => delete keyData.usageHistory[d]);
     }
 
@@ -647,6 +680,7 @@ export async function getStats() {
         }
     }
 
+    const globalRates = rateManager.getGlobalStats();
     return {
         totalKeys: keys.length,
         enabledKeys,
@@ -661,6 +695,12 @@ export async function getStats() {
         totalCompletionTokens,
         totalTokens,
         totalCachedTokens,
+        qps: globalRates.qps,
+        tps: globalRates.tps,
+        rpm: globalRates.rpm,
+        maxQps: globalRates.maxQps,
+        maxTps: globalRates.maxTps,
+        maxRpm: globalRates.maxRpm,
         usageHistory: aggregatedHistory
     };
 }
@@ -699,6 +739,68 @@ export async function applyDailyLimitToAllKeys(newLimit) {
 export function getAllKeyIds() {
     ensureLoaded();
     return Object.keys(keyStore.keys);
+}
+
+/**
+ * 验证 API Key 是否有效
+ * @param {string} apiKey - 待验证的 Key
+ * @returns {Promise<{valid: boolean, reason?: string, keyData?: Object}>}
+ */
+export async function validateKey(apiKey) {
+    ensureLoaded();
+    if (!apiKey || !apiKey.startsWith(KEY_PREFIX)) {
+        return { valid: false, reason: 'invalid_format' };
+    }
+    const keyData = keyStore.keys[apiKey];
+    if (!keyData) {
+        return { valid: false, reason: 'not_found' };
+    }
+    if (!keyData.enabled) {
+        return { valid: false, reason: 'disabled' };
+    }
+    const updated = checkAndResetDailyCount(keyData);
+    if (updated.dailyLimit > 0 && updated.todayUsage >= updated.dailyLimit) {
+        return { valid: false, reason: 'quota_exceeded', keyData: updated };
+    }
+    return { valid: true, keyData: updated };
+}
+
+/**
+ * 重新生成 API Key（保留原有数据，更换 Key ID）
+ * @param {string} oldKeyId - 原 Key ID
+ * @returns {Promise<{oldKey: string, newKey: string, keyData: Object}|null>}
+ */
+export async function regenerateKey(oldKeyId) {
+    ensureLoaded();
+    const oldKeyData = keyStore.keys[oldKeyId];
+    if (!oldKeyData) return null;
+    
+    // 生成新的唯一 Key
+    const newKeyId = generateApiKey();
+    
+    // 复制数据到新 Key
+    const newKeyData = {
+        ...oldKeyData,
+        id: newKeyId,
+        regeneratedAt: new Date().toISOString(),
+        regeneratedFrom: oldKeyId.substring(0, 12) + '...'
+    };
+    
+    // 删除旧 Key，添加新 Key
+    delete keyStore.keys[oldKeyId];
+    keyStore.keys[newKeyId] = newKeyData;
+    
+    // 清理旧 Key 的速率追踪器
+    rateManager.remove(`key:${oldKeyId}`);
+
+    markDirty();
+    await persistIfDirty();
+    
+    return {
+        oldKey: oldKeyId,
+        newKey: newKeyId,
+        keyData: newKeyData
+    };
 }
 
 // 导出常量

@@ -488,7 +488,9 @@ function createInstanceUsageCard(instance, providerType) {
     collapsedSummary.innerHTML = `
         <div class="collapsed-summary-row collapsed-summary-name-row">
             <i class="fas fa-chevron-right usage-toggle-icon"></i>
-            <span class="collapsed-name" title="${displayName}">${displayName}</span>
+            <span class="collapsed-name" title="${displayName} (${t('usage.clickToManage') || '点击管理此节点'})" 
+                  onclick="event.stopPropagation(); window.jumpToProviderNode('${providerType}', '${instance.uuid}', event)"
+                  style="cursor: pointer; transition: color 0.2s;">${displayName}</span>
             ${statusIcon}
         </div>
         ${showUsage ? `
@@ -558,7 +560,9 @@ function createInstanceUsageCard(instance, providerType) {
             </div>
         </div>
         <div class="instance-name">
-            <span class="instance-name-text" title="${instance.name || instance.uuid}">${instance.name || instance.uuid}</span>
+            <span class="instance-name-text" title="${instance.name || instance.uuid} (${t('usage.clickToManage') || '点击管理此节点'})" 
+                  onclick="window.jumpToProviderNode('${providerType}', '${instance.uuid}', event)"
+                  style="cursor: pointer; transition: color 0.2s;">${instance.name || instance.uuid}</span>
         </div>
         ${userInfoHTML}
     `;
