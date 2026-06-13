@@ -7,10 +7,16 @@
  * single OpenAI-compatible endpoint.
  *
  * Configuration keys (per pool node):
- *   LMARENA_BRIDGE_URL      Required. URL of the running LMArenaBridge sidecar.
- *                           e.g. "http://localhost:8000"
- *   LMARENA_BRIDGE_API_KEY  Optional. API key if the bridge requires authentication.
- *   LMARENA_MODEL_OVERRIDE  Optional. Force a specific LMArena model for all requests.
+ *   LMARENA_BRIDGE_URL        Required. URL of the running LMArenaBridge sidecar.
+ *                             e.g. "http://localhost:8000"
+ *   LMARENA_BRIDGE_API_KEY    Optional. API key if the bridge requires authentication.
+ *   LMARENA_MODEL_OVERRIDE    Optional. Force a specific LMArena model for all requests.
+ *
+ * Shared retry settings (global config):
+ *   REQUEST_MAX_RETRIES       Max number of retry attempts (default: 3).
+ *   REQUEST_BASE_DELAY        Base delay in ms for exponential back-off (default: 1000).
+ *   REQUEST_MAX_RETRY_TIME_MS Cap on total retry time in ms; retries stop once this is
+ *                             exceeded regardless of REQUEST_MAX_RETRIES (default: 30000).
  *
  * Setup:
  *   pip install lmarenabridge camoufox
@@ -34,6 +40,56 @@ if (!_lmarenaModels || _lmarenaModels.length === 0) {
     logger.warn('[LMArena] No models found for lmarena-bridge in PROVIDER_MODELS. Check provider-models.js.');
 }
 export const LMARENA_MODELS = _lmarenaModels || [];
+
+/**
+ * Parse an SSE byte stream into JSON objects.
+ *
+ * Handles:
+ *  - JSON payloads split across multiple chunks (buffer accumulation)
+ *  - Streams that end without a trailing newline (flush of remaining buffer)
+ *  - The `[DONE]` sentinel that signals end-of-stream
+ *  - Non-JSON `data:` lines (e.g. keep-alive pings) — these are silently skipped
+ *    at debug level so logs stay clean in production
+ *
+ * @param {AsyncIterable<Buffer|string>} stream
+ * @yields {object} Parsed JSON chunks
+ */
+export async function* parseSSEStream(stream) {
+    let buffer = '';
+
+    for await (const chunk of stream) {
+        buffer += chunk.toString();
+        let newlineIndex;
+        while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+            const line = buffer.substring(0, newlineIndex).trim();
+            buffer = buffer.substring(newlineIndex + 1);
+
+            if (!line.startsWith('data: ')) continue;
+            const jsonData = line.substring(6).trim();
+            if (jsonData === '[DONE]') return;
+
+            try {
+                yield JSON.parse(jsonData);
+            } catch {
+                // Non-JSON data lines are intentionally skipped (e.g. SSE comments, keep-alives).
+                logger.debug('[LMArena] Skipping non-JSON SSE line:', jsonData);
+            }
+        }
+    }
+
+    // Flush any remaining buffer content after the stream ends (no trailing newline case)
+    const remaining = buffer.trim();
+    if (remaining.length > 0 && remaining.startsWith('data: ')) {
+        const jsonData = remaining.substring(6).trim();
+        if (jsonData !== '[DONE]') {
+            try {
+                yield JSON.parse(jsonData);
+            } catch {
+                logger.debug('[LMArena] Skipping non-JSON SSE line (flush):', jsonData);
+            }
+        }
+    }
+}
 
 export class LMArenaApiService {
     constructor(config) {
@@ -120,7 +176,7 @@ export class LMArenaApiService {
         return model;
     }
 
-    async _callApi(body, isStream = false, retryCount = 0) {
+    async _callApi(body, isStream = false, retryCount = 0, retryStartTime = null) {
         if (!this.isInitialized) {
             await this.initialize();
             if (!this.isInitialized) {
@@ -132,6 +188,8 @@ export class LMArenaApiService {
 
         const maxRetries = this.config.REQUEST_MAX_RETRIES ?? 3;
         const baseDelay = this.config.REQUEST_BASE_DELAY ?? 1000;
+        const maxRetryTimeMs = this.config.REQUEST_MAX_RETRY_TIME_MS ?? 30000;
+        const startTime = retryStartTime ?? Date.now();
 
         try {
             const resolvedModel = this._resolveModel(body.model);
@@ -154,22 +212,23 @@ export class LMArenaApiService {
         } catch (error) {
             const status = error.response?.status;
             const isNetworkError = isRetryableNetworkError(error);
+            const elapsed = Date.now() - startTime;
 
-            if (status === 503 || (isNetworkError && retryCount < maxRetries)) {
+            if ((status === 503 || isNetworkError) && retryCount < maxRetries && elapsed < maxRetryTimeMs) {
                 const delay = baseDelay * Math.pow(2, retryCount);
                 logger.warn(`[LMArena] Retrying (attempt ${retryCount + 1}/${maxRetries}) after ${delay}ms`);
                 await new Promise(r => setTimeout(r, delay));
-                return this._callApi(body, isStream, retryCount + 1);
+                return this._callApi(body, isStream, retryCount + 1, startTime);
             }
 
             if (status === 429 || status === 401 || status === 403) {
                 error.shouldSwitchCredential = true;
             }
-            if (status >= 500 && status < 600 && retryCount < maxRetries) {
+            if (status >= 500 && status < 600 && retryCount < maxRetries && elapsed < maxRetryTimeMs) {
                 const delay = baseDelay * Math.pow(2, retryCount);
                 logger.warn(`[LMArena] Server error ${status}, retrying in ${delay}ms`);
                 await new Promise(r => setTimeout(r, delay));
-                return this._callApi(body, isStream, retryCount + 1);
+                return this._callApi(body, isStream, retryCount + 1, startTime);
             }
 
             logger.error(`[LMArena] API error (status=${status || error.code}): ${error.message}`);
@@ -193,40 +252,7 @@ export class LMArenaApiService {
         delete body._requestBaseUrl;
 
         const response = await this._callApi(body, true);
-        const stream = response.data;
-        let buffer = '';
-
-        for await (const chunk of stream) {
-            buffer += chunk.toString();
-            let newlineIndex;
-            while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
-                const line = buffer.substring(0, newlineIndex).trim();
-                buffer = buffer.substring(newlineIndex + 1);
-
-                if (!line.startsWith('data: ')) continue;
-                const jsonData = line.substring(6).trim();
-                if (jsonData === '[DONE]') return;
-
-                try {
-                    yield JSON.parse(jsonData);
-                } catch {
-                    logger.debug('[LMArena] Skipping non-JSON SSE line:', jsonData);
-                }
-            }
-        }
-
-        // Flush any remaining buffer content after the stream ends (no trailing newline case)
-        const remaining = buffer.trim();
-        if (remaining.length > 0 && remaining.startsWith('data: ')) {
-            const jsonData = remaining.substring(6).trim();
-            if (jsonData !== '[DONE]') {
-                try {
-                    yield JSON.parse(jsonData);
-                } catch {
-                    logger.debug('[LMArena] Skipping non-JSON SSE line (flush):', jsonData);
-                }
-            }
-        }
+        yield* parseSSEStream(response.data);
     }
 
     async listModels() {
