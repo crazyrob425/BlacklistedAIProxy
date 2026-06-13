@@ -300,6 +300,7 @@
                 if (response.ok && data.success) {
                     // 登录成功，保存token
                     localStorage.setItem('authToken', data.token);
+                    localStorage.removeItem('authTokenExpiry');
                     
                     // 跳转到主页
                     window.location.href = '/';
@@ -331,6 +332,12 @@
 
         function checkLoginStatus() {
             const token = localStorage.getItem('authToken');
+            const expiry = localStorage.getItem('authTokenExpiry');
+            if (expiry && Date.now() > parseInt(expiry, 10)) {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('authTokenExpiry');
+                return;
+            }
             
             if (token) {
                 // Token存在，跳转到主页

@@ -766,6 +766,38 @@ function generateAddGroupButton(providerType) {
  * 处理生成授权链接
  * @param {string} providerType - 提供商类型
  */
+function getAuthPopupConfig() {
+    const width = 600;
+    const height = 700;
+    const left = (window.screen.width - width) / 2;
+    const top = (window.screen.height - height) / 2;
+    return {
+        width,
+        height,
+        left,
+        top,
+        features: `width=${width},height=${height},left=${left},top=${top},status=no,resizable=yes,scrollbars=yes`
+    };
+}
+
+function preOpenAuthPopup() {
+    const { features } = getAuthPopupConfig();
+
+    try {
+        const popup = window.open(
+            '',
+            'OAuthAuthWindow',
+            features
+        );
+        if (popup && popup.document) {
+            popup.document.title = 'OAuth';
+        }
+        return popup;
+    } catch (error) {
+        return null;
+    }
+}
+
 async function handleGenerateAuthUrl(providerType) {
     // 如果是 Kiro OAuth，先显示认证方式选择对话框
     if (providerType === 'claude-kiro-oauth') {
@@ -785,7 +817,8 @@ async function handleGenerateAuthUrl(providerType) {
         return;
     }
 
-    await executeGenerateAuthUrl(providerType, {});
+    const popupRef = preOpenAuthPopup();
+    await executeGenerateAuthUrl(providerType, { ui: { popupRef } });
 }
 
 /**
@@ -856,7 +889,8 @@ function showCodexAuthMethodSelector(providerType) {
             if (method === 'batch-import') {
                 showCodexBatchImportModal(providerType);
             } else {
-                await executeGenerateAuthUrl(providerType, {});
+                const popupRef = preOpenAuthPopup();
+                await executeGenerateAuthUrl(providerType, { ui: { popupRef } });
             }
         });
     });
@@ -1246,7 +1280,8 @@ function showKiroAuthMethodSelector(providerType) {
             } else if (method === 'aws-import') {
                 showKiroAwsImportModal();
             } else {
-                await executeGenerateAuthUrl(providerType, { method });
+                const popupRef = preOpenAuthPopup();
+                await executeGenerateAuthUrl(providerType, { method, ui: { popupRef } });
             }
         });
     });
@@ -1320,7 +1355,8 @@ function showGeminiAuthMethodSelector(providerType) {
             if (method === 'batch-import') {
                 showGeminiBatchImportModal(providerType);
             } else {
-                await executeGenerateAuthUrl(providerType, {});
+                const popupRef = preOpenAuthPopup();
+                await executeGenerateAuthUrl(providerType, { ui: { popupRef } });
             }
         });
     });
@@ -2744,6 +2780,7 @@ function showKiroAwsImportModal() {
  */
 async function executeGenerateAuthUrl(providerType, extraOptions = {}) {
     try {
+        const { ui = {}, ...requestOptions } = extraOptions;
         showToast(t('common.info'), t('modal.provider.auth.initializing'), 'info');
         
         // 使用 fileUploadHandler 中的 getProviderKey 获取目录名称
@@ -2754,7 +2791,7 @@ async function executeGenerateAuthUrl(providerType, extraOptions = {}) {
             {
                 saveToConfigs: true,
                 providerDir: providerDir,
-                ...extraOptions
+                ...requestOptions
             }
         );
         
@@ -2778,7 +2815,7 @@ async function executeGenerateAuthUrl(providerType, extraOptions = {}) {
             }
 
             // 显示授权信息模态框
-            showAuthModal(response.authUrl, response.authInfo);
+            showAuthModal(response.authUrl, response.authInfo, ui);
         } else {
             showToast(t('common.error'), t('modal.provider.auth.failed'), 'error');
         }
@@ -2809,7 +2846,7 @@ function getAuthFilePath(provider) {
  * @param {string} authUrl - 授权URL
  * @param {Object} authInfo - 授权信息
  */
-function showAuthModal(authUrl, authInfo) {
+function showAuthModal(authUrl, authInfo, uiOptions = {}) {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.style.display = 'flex';
@@ -2961,6 +2998,207 @@ function showAuthModal(authUrl, authInfo) {
     `;
     
     document.body.appendChild(modal);
+
+    let authWindow = uiOptions.popupRef || null;
+    let pollTimer = null;
+    let popupInitialized = false;
+
+    const cleanupAuthListeners = () => {
+        if (pollTimer) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+        }
+        window.removeEventListener('oauth_success_event', handleOAuthSuccess);
+        window.removeEventListener('message', handlePopupMessage);
+        popupInitialized = false;
+    };
+
+    // 监听 OAuth 成功事件，自动关闭窗口和模态框
+    const handleOAuthSuccess = () => {
+        if (authWindow && !authWindow.closed) {
+            authWindow.close();
+        }
+        modal.remove();
+        cleanupAuthListeners();
+        
+        // 授权成功后刷新配置和提供商列表
+        loadProviders();
+        loadConfigList();
+    };
+
+    // 回调页主动 postMessage 时，优先使用父页面关闭子窗口
+    const handlePopupMessage = (event) => {
+        if (event.origin !== window.location.origin) {
+            return;
+        }
+
+        const data = event.data;
+        if (!data || data.type !== 'oauth-popup-complete') {
+            return;
+        }
+
+        if (data.provider && data.provider !== authInfo.provider) {
+            return;
+        }
+
+        handleOAuthSuccess();
+    };
+
+    const ensureManualCallbackUi = () => {
+        const urlSection = modal.querySelector('.auth-url-section');
+        if (!urlSection || modal.querySelector('.manual-callback-section')) {
+            return;
+        }
+        const manualInputHtml = `
+            <div class="manual-callback-section" style="margin-top: 20px; padding: 15px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px;">
+                <h4 style="color: #92400e; margin-bottom: 8px;"><i class="fas fa-exclamation-circle"></i> <span data-i18n="oauth.manual.title">${t('oauth.manual.title')}</span></h4>
+                <p style="font-size: 0.875rem; color: #b45309; margin-bottom: 10px;" data-i18n-html="oauth.manual.desc">${t('oauth.manual.desc')}</p>
+                <div class="auth-url-container" style="display: flex; gap: 5px;">
+                    <input type="text" class="manual-callback-input" data-i18n="oauth.manual.placeholder" placeholder="粘贴回调 URL (包含 code=...)" style="flex: 1; padding: 8px; border: 1px solid #fcd34d; border-radius: 4px; background: white; color: black;">
+                    <button class="btn btn-success apply-callback-btn" style="padding: 8px 15px; white-space: nowrap; background: #059669; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        <i class="fas fa-check"></i> <span data-i18n="oauth.manual.submit">${t('oauth.manual.submit')}</span>
+                    </button>
+                </div>
+            </div>
+        `;
+        urlSection.insertAdjacentHTML('afterend', manualInputHtml);
+    };
+
+    const processCallback = (urlStr, isManualInput = false) => {
+        try {
+            // 尝试清理 URL（有些用户可能会复制多余的文字）
+            const cleanUrlStr = urlStr.trim().match(/https?:\/\/[^\s]+/)?.[0] || urlStr.trim();
+            const url = new URL(cleanUrlStr);
+            
+            if (url.searchParams.has('code') || url.searchParams.has('token')) {
+                if (pollTimer) {
+                    clearInterval(pollTimer);
+                    pollTimer = null;
+                }
+                // 构造本地可处理的 URL，只修改 hostname，保持原始 URL 的端口号不变
+                const localUrl = new URL(url.href);
+                localUrl.hostname = window.location.hostname;
+                localUrl.protocol = window.location.protocol;
+                
+                showToast(t('common.info'), t('oauth.processing'), 'info');
+                
+                // 如果是手动输入，直接通过 fetch 请求处理，然后关闭子窗口
+                if (isManualInput) {
+                    // 通过服务端API处理手动输入的回调URL
+                    window.apiClient.post('/oauth/manual-callback', {
+                        provider: authInfo.provider,
+                        callbackUrl: url.href, // Use localhost access
+                        authMethod: authInfo.authMethod
+                    })
+                        .then(response => {
+                            if (response.success) {
+                                console.log('OAuth 回调处理成功');
+                                handleOAuthSuccess();
+                                showToast(t('common.success'), t('oauth.success.msg'), 'success');
+                            } else {
+                                console.error('OAuth 回调处理失败:', response.error);
+                                showToast(t('common.error'), response.error || t('oauth.error.process'), 'error');
+                            }
+                        })
+                        .catch(err => {
+                            console.error('OAuth 回调请求失败:', err);
+                            showToast(t('common.error'), t('oauth.error.process'), 'error');
+                        });
+                } else {
+                    // 自动监听模式：优先在子窗口中跳转（如果没关）
+                    if (authWindow && !authWindow.closed) {
+                        authWindow.location.href = localUrl.href;
+                    } else {
+                        // 备选方案：通过 fetch 请求
+                        // 通过 fetch 请求本地服务器处理回调
+                        fetch(localUrl.href)
+                            .then(response => {
+                                if (response.ok) {
+                                    console.log('OAuth 回调处理成功');
+                                } else {
+                                    console.error('OAuth 回调处理失败:', response.status);
+                                }
+                            })
+                            .catch(err => {
+                                console.error('OAuth 回调请求失败:', err);
+                            });
+                    }
+                }
+                
+            } else {
+                showToast(t('common.warning'), t('oauth.invalid.url'), 'warning');
+            }
+        } catch (err) {
+            console.error('处理回调失败:', err);
+            showToast(t('common.error'), t('oauth.error.format'), 'error');
+        }
+    };
+
+    const initializePopupHandlers = () => {
+        if (popupInitialized) return;
+        if (!authWindow) {
+            popupInitialized = false;
+            return;
+        }
+        popupInitialized = true;
+        window.addEventListener('oauth_success_event', handleOAuthSuccess);
+        window.addEventListener('message', handlePopupMessage);
+        ensureManualCallbackUi();
+
+        const manualInput = modal.querySelector('.manual-callback-input');
+        const applyBtn = modal.querySelector('.apply-callback-btn');
+        if (applyBtn) {
+            applyBtn.addEventListener('click', () => {
+                processCallback(manualInput.value, true);
+            });
+        }
+
+        pollTimer = setInterval(() => {
+            try {
+                if (!authWindow || authWindow.closed) {
+                    cleanupAuthListeners();
+                    return;
+                }
+                // 如果能读到说明回到了同域
+                const currentUrl = authWindow.location.href;
+                if (currentUrl && (currentUrl.includes('code=') || currentUrl.includes('token='))) {
+                    processCallback(currentUrl);
+                }
+            } catch (e) {
+                // Cross-origin restrictions are expected.
+            }
+        }, 1000);
+    };
+
+    const openAuthPopup = () => {
+        const { features } = getAuthPopupConfig();
+
+        if (!authWindow || authWindow.closed) {
+            authWindow = window.open(
+                authUrl,
+                'OAuthAuthWindow',
+                features
+            );
+        } else {
+            try {
+                authWindow.location.href = authUrl;
+                authWindow.focus();
+            } catch (err) {
+                // Ignore navigation errors from closed or cross-origin popups.
+            }
+        }
+
+        if (authWindow) {
+            showToast(t('common.info'), t('oauth.window.opened'), 'info');
+            initializePopupHandlers();
+        } else {
+            showToast(t('common.error'), t('oauth.window.blocked'), 'error');
+        }
+    };
+
+    if (authWindow && !authWindow.closed) {
+        openAuthPopup();
+    }
     
     // 关闭按钮事件
     const closeBtn = modal.querySelector('.modal-close');
@@ -3024,180 +3262,7 @@ function showAuthModal(authUrl, authInfo) {
     // 在浏览器中打开按钮
     const openBtn = modal.querySelector('.open-auth-btn');
     openBtn.addEventListener('click', () => {
-        // 使用子窗口打开，以便监听 URL 变化
-        const width = 600;
-        const height = 700;
-        const left = (window.screen.width - width) / 2 + 600;
-        const top = (window.screen.height - height) / 2;
-        
-        const authWindow = window.open(
-            authUrl,
-            'OAuthAuthWindow',
-            `width=${width},height=${height},left=${left},top=${top},status=no,resizable=yes,scrollbars=yes`
-        );
-
-        let pollTimer = null;
-        const cleanupAuthListeners = () => {
-            if (pollTimer) {
-                clearInterval(pollTimer);
-                pollTimer = null;
-            }
-            window.removeEventListener('oauth_success_event', handleOAuthSuccess);
-            window.removeEventListener('message', handlePopupMessage);
-        };
-
-        // 监听 OAuth 成功事件，自动关闭窗口和模态框
-        const handleOAuthSuccess = () => {
-            if (authWindow && !authWindow.closed) {
-                authWindow.close();
-            }
-            modal.remove();
-            cleanupAuthListeners();
-            
-            // 授权成功后刷新配置和提供商列表
-            loadProviders();
-            loadConfigList();
-        };
-
-        // 回调页主动 postMessage 时，优先使用父页面关闭子窗口
-        const handlePopupMessage = (event) => {
-            if (event.origin !== window.location.origin) {
-                return;
-            }
-
-            const data = event.data;
-            if (!data || data.type !== 'oauth-popup-complete') {
-                return;
-            }
-
-            if (data.provider && data.provider !== authInfo.provider) {
-                return;
-            }
-
-            handleOAuthSuccess();
-        };
-
-        window.addEventListener('oauth_success_event', handleOAuthSuccess);
-        window.addEventListener('message', handlePopupMessage);
-        
-        if (authWindow) {
-            showToast(t('common.info'), t('oauth.window.opened'), 'info');
-            
-            // 添加手动输入回调 URL 的 UI
-            const urlSection = modal.querySelector('.auth-url-section');
-            if (urlSection && !modal.querySelector('.manual-callback-section')) {
-            const manualInputHtml = `
-                <div class="manual-callback-section" style="margin-top: 20px; padding: 15px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px;">
-                    <h4 style="color: #92400e; margin-bottom: 8px;"><i class="fas fa-exclamation-circle"></i> <span data-i18n="oauth.manual.title">${t('oauth.manual.title')}</span></h4>
-                    <p style="font-size: 0.875rem; color: #b45309; margin-bottom: 10px;" data-i18n-html="oauth.manual.desc">${t('oauth.manual.desc')}</p>
-                    <div class="auth-url-container" style="display: flex; gap: 5px;">
-                        <input type="text" class="manual-callback-input" data-i18n="oauth.manual.placeholder" placeholder="粘贴回调 URL (包含 code=...)" style="flex: 1; padding: 8px; border: 1px solid #fcd34d; border-radius: 4px; background: white; color: black;">
-                        <button class="btn btn-success apply-callback-btn" style="padding: 8px 15px; white-space: nowrap; background: #059669; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                            <i class="fas fa-check"></i> <span data-i18n="oauth.manual.submit">${t('oauth.manual.submit')}</span>
-                        </button>
-                    </div>
-                </div>
-            `;
-            urlSection.insertAdjacentHTML('afterend', manualInputHtml);
-            }
-
-            const manualInput = modal.querySelector('.manual-callback-input');
-            const applyBtn = modal.querySelector('.apply-callback-btn');
-
-            // 处理回调 URL 的核心逻辑
-            const processCallback = (urlStr, isManualInput = false) => {
-                try {
-                    // 尝试清理 URL（有些用户可能会复制多余的文字）
-                    const cleanUrlStr = urlStr.trim().match(/https?:\/\/[^\s]+/)?.[0] || urlStr.trim();
-                    const url = new URL(cleanUrlStr);
-                    
-                    if (url.searchParams.has('code') || url.searchParams.has('token')) {
-                        if (pollTimer) {
-                            clearInterval(pollTimer);
-                            pollTimer = null;
-                        }
-                        // 构造本地可处理的 URL，只修改 hostname，保持原始 URL 的端口号不变
-                        const localUrl = new URL(url.href);
-                        localUrl.hostname = window.location.hostname;
-                        localUrl.protocol = window.location.protocol;
-                        
-                        showToast(t('common.info'), t('oauth.processing'), 'info');
-                        
-                        // 如果是手动输入，直接通过 fetch 请求处理，然后关闭子窗口
-                        if (isManualInput) {
-                            // 通过服务端API处理手动输入的回调URL
-                            window.apiClient.post('/oauth/manual-callback', {
-                                provider: authInfo.provider,
-                                callbackUrl: url.href, //使用localhost访问
-                                authMethod: authInfo.authMethod
-                            })
-                                .then(response => {
-                                    if (response.success) {
-                                        console.log('OAuth 回调处理成功');
-                                        handleOAuthSuccess();
-                                        showToast(t('common.success'), t('oauth.success.msg'), 'success');
-                                    } else {
-                                        console.error('OAuth 回调处理失败:', response.error);
-                                        showToast(t('common.error'), response.error || t('oauth.error.process'), 'error');
-                                    }
-                                })
-                                .catch(err => {
-                                    console.error('OAuth 回调请求失败:', err);
-                                    showToast(t('common.error'), t('oauth.error.process'), 'error');
-                                });
-                        } else {
-                            // 自动监听模式：优先在子窗口中跳转（如果没关）
-                            if (authWindow && !authWindow.closed) {
-                                authWindow.location.href = localUrl.href;
-                            } else {
-                                // 备选方案：通过 fetch 请求
-                                // 通过 fetch 请求本地服务器处理回调
-                                fetch(localUrl.href)
-                                    .then(response => {
-                                        if (response.ok) {
-                                            console.log('OAuth 回调处理成功');
-                                        } else {
-                                            console.error('OAuth 回调处理失败:', response.status);
-                                        }
-                                    })
-                                    .catch(err => {
-                                        console.error('OAuth 回调请求失败:', err);
-                                    });
-                            }
-                        }
-                        
-                    } else {
-                        showToast(t('common.warning'), t('oauth.invalid.url'), 'warning');
-                    }
-                } catch (err) {
-                    console.error('处理回调失败:', err);
-                    showToast(t('common.error'), t('oauth.error.format'), 'error');
-                }
-            };
-
-            applyBtn.addEventListener('click', () => {
-                processCallback(manualInput.value, true);
-            });
-
-            // 启动定时器轮询子窗口 URL
-            pollTimer = setInterval(() => {
-                try {
-                    if (authWindow.closed) {
-                        cleanupAuthListeners();
-                        return;
-                    }
-                    // 如果能读到说明回到了同域
-                    const currentUrl = authWindow.location.href;
-                    if (currentUrl && (currentUrl.includes('code=') || currentUrl.includes('token='))) {
-                        processCallback(currentUrl);
-                    }
-                } catch (e) {
-                    // 跨域受限是正常的
-                }
-            }, 1000);
-        } else {
-            showToast(t('common.error'), t('oauth.window.blocked'), 'error');
-        }
+        openAuthPopup();
     });
     
 }
