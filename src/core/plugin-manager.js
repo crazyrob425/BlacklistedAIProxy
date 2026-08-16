@@ -158,11 +158,20 @@ class PluginManager {
      */
     async saveConfig() {
         try {
+            const serialized = JSON.stringify(this.pluginsConfig, null, 2);
             const dir = path.dirname(PLUGINS_CONFIG_FILE);
             if (!existsSync(dir)) {
                 await fs.mkdir(dir, { recursive: true });
             }
-            await fs.writeFile(PLUGINS_CONFIG_FILE, JSON.stringify(this.pluginsConfig, null, 2), 'utf8');
+
+            if (existsSync(PLUGINS_CONFIG_FILE)) {
+                const current = await fs.readFile(PLUGINS_CONFIG_FILE, 'utf8');
+                if (current === serialized) {
+                    return;
+                }
+            }
+
+            await fs.writeFile(PLUGINS_CONFIG_FILE, serialized, 'utf8');
         } catch (error) {
             logger.error('[PluginManager] Failed to save config:', error.message);
         }
