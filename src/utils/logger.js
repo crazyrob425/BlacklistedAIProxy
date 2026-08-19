@@ -25,6 +25,7 @@ class Logger {
         this.requestContext = new Map(); // 存储请求上下文
         this.contextTTL = 5 * 60 * 1000; // 请求上下文 TTL：5 分钟
         this._contextCleanupTimer = null;
+        this._rotationTimer = null;
         this.levels = {
             debug: 0,
             info: 1,
@@ -71,11 +72,20 @@ class Logger {
 
             // 创建写入流
             this.logStream = fs.createWriteStream(this.currentLogFile, { flags: 'a' });
-            
             // 监听错误
             this.logStream.on('error', (err) => {
                 console.error('[Logger] Failed to write to log file:', err.message);
             });
+
+            // 背景轮询日志文件大小并轮转，避免在每次写入时阻塞事件循环
+            if (!this._rotationTimer) {
+                this._rotationTimer = setInterval(() => {
+                    try { this.checkAndRotateLogFile(); } catch (e) { /* ignore */ }
+                }, 10_000);
+                if (this._rotationTimer.unref) {
+                    this._rotationTimer.unref();
+                }
+            }
         } catch (error) {
             console.error('[Logger] Failed to initialize file logging:', error.message);
         }
@@ -296,8 +306,7 @@ class Logger {
         if (this.config.outputMode === 'file' || this.config.outputMode === 'all') {
             if (this.logStream && !this.logStream.destroyed && this.logStream.writable) {
                 try {
-                    // 检查文件大小并轮转
-                    this.checkAndRotateLogFile();
+                    // 写入，不在每次写入时检查轮转（轮转由后台任务负责）
                     this.logStream.write(message + '\n');
                 } catch (err) {
                     // 如果写入失败，输出到控制台作为备份
