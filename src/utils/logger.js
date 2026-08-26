@@ -211,7 +211,8 @@ class Logger {
         const message = args.map(arg => {
             if (typeof arg === 'object') {
                 try {
-                    return JSON.stringify(arg, null, 2);
+                    // Avoid expensive pretty-printing in hot paths; compact JSON is faster
+                    return JSON.stringify(arg);
                 } catch (e) {
                     return String(arg);
                 }
