@@ -36,6 +36,16 @@ function shouldShowUsage(providerType) {
 }
 
 /**
+ * 将提供商配置转换为快速查找表
+ * @returns {Map<string, Object>|null}
+ */
+function getProviderConfigMap() {
+    if (!currentProviderConfigs) return null;
+
+    return new Map(currentProviderConfigs.map(config => [config.id, config]));
+}
+
+/**
  * 初始化用量管理功能
  */
 export function initUsageManager() {
@@ -55,6 +65,7 @@ export function initUsageManager() {
 async function loadSupportedProviders() {
     const listEl = document.getElementById('supportedProvidersList');
     if (!listEl) return;
+    const providerConfigMap = getProviderConfigMap();
 
     try {
         const response = await fetch('/api/usage/supported-providers', {
@@ -80,8 +91,8 @@ async function loadSupportedProviders() {
             const isSupported = providers.includes(providerId);
             if (!isSupported) return;
 
-            if (currentProviderConfigs) {
-                const config = currentProviderConfigs.find(c => c.id === providerId);
+            if (providerConfigMap) {
+                const config = providerConfigMap.get(providerId);
                 if (config && config.visible === false) return;
             }
 
@@ -120,6 +131,7 @@ export async function loadUsage() {
     if (emptyEl) emptyEl.style.display = 'none';
 
     try {
+        const providerConfigMap = getProviderConfigMap();
         // 不带 refresh 参数，优先读取缓存
         const response = await fetch('/api/usage', {
             method: 'GET',
@@ -136,7 +148,7 @@ export async function loadUsage() {
         if (loadingEl) loadingEl.style.display = 'none';
         
         // 渲染用量数据
-        renderUsageData(data, contentEl);
+        renderUsageData(data, contentEl, providerConfigMap);
         
         // 更新服务端系统时间
         if (data.serverTime) {
@@ -207,7 +219,7 @@ export async function refreshUsage() {
         if (loadingEl) loadingEl.style.display = 'none';
         
         // 渲染用量数据
-        renderUsageData(data, contentEl);
+        renderUsageData(data, contentEl, providerConfigMap);
         
         // 更新服务端系统时间
         if (data.serverTime) {
@@ -249,7 +261,7 @@ export async function refreshUsage() {
  * @param {Object} data - 用量数据
  * @param {HTMLElement} container - 容器元素
  */
-function renderUsageData(data, container) {
+function renderUsageData(data, container, providerConfigMap = null) {
     if (!container) return;
 
     // 清空容器
@@ -270,8 +282,8 @@ function renderUsageData(data, container) {
     
     for (const [providerType, providerData] of Object.entries(data.providers)) {
         // 如果配置了不可见，则跳过
-        if (currentProviderConfigs) {
-            const config = currentProviderConfigs.find(c => c.id === providerType);
+        if (providerConfigMap) {
+            const config = providerConfigMap.get(providerType);
             if (config && config.visible === false) continue;
         }
 
@@ -305,8 +317,8 @@ function renderUsageData(data, container) {
     }
 
     // 按提供商分组渲染，使用统一的显示顺序
-    const displayOrder = currentProviderConfigs 
-        ? currentProviderConfigs.map(c => c.id) 
+    const displayOrder = providerConfigMap
+        ? Array.from(providerConfigMap.keys())
         : Object.keys(groupedInstances);
 
     displayOrder.forEach(providerType => {
