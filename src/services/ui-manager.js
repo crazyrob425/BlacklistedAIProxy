@@ -1,4 +1,5 @@
 import { existsSync, createReadStream } from 'fs';
+import { pipeline } from 'stream';
 import path from 'path';
 
 // Import UI modules
@@ -37,13 +38,22 @@ export async function serveStaticFiles(pathParam, res) {
             '.ico': 'image/x-icon'
         }[ext] || 'text/plain';
 
-        res.writeHead(200, { 'Content-Type': contentType });
         const stream = createReadStream(filePath);
-        stream.on('error', (err) => {
-            res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Failed to read file' }));
+        
+        stream.on('open', () => {
+            res.writeHead(200, { 'Content-Type': contentType });
         });
-        stream.pipe(res);
+
+        pipeline(stream, res, (err) => {
+            if (err) {
+                if (!res.headersSent) {
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'Failed to read file' }));
+                } else {
+                    res.destroy();
+                }
+            }
+        });
         return true;
     }
     return false;
